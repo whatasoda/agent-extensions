@@ -3,10 +3,13 @@
   "private": true,
   "workspaces": ["plugins/*", "packages/*"],
   "scripts": {
-    "build": "bun run scripts/build.ts",
+    "build": "bun run build:packages && bun run build:plugins",
+    "build:packages": "bun run scripts/build-packages.ts",
+    "build:plugins": "bun run scripts/build-plugins.ts",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
+    "@rslib/core": "^0.10.0",
     "@types/bun": "latest",
     "typescript": "^5"
   }

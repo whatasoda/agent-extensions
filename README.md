@@ -30,10 +30,17 @@ bun install
 
 ### Build
 
-Build all plugins (bundles `src/` → `dist/` for each plugin):
+Build packages (rslib) then plugins (bun build):
 
 ```sh
 bun run build
+```
+
+Or build individually:
+
+```sh
+bun run build:packages   # rslib build for packages/*
+bun run build:plugins    # bun build for plugins/*
 ```
 
 ### Type check
@@ -62,7 +69,8 @@ agent-extensions/
 │       ├── src/
 │       └── package.json       # @agent-extensions/<name>
 ├── scripts/
-│   └── build.ts              # Build script
+│   ├── build-packages.ts     # rslib build for packages
+│   └── build-plugins.ts      # bun build for plugins
 ├── package.json               # Workspace root
 └── tsconfig.json
 ```
