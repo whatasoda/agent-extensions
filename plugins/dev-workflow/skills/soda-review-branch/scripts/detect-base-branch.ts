@@ -281,4 +281,10 @@ async function main(): Promise<void> {
   console.log(JSON.stringify(output, null, 2));
 }
 
-main();
+main().catch((e) => {
+  const result: ErrorResult = {
+    error: `Unexpected error: ${e instanceof Error ? e.message : String(e)}`,
+  };
+  console.log(JSON.stringify(result, null, 2));
+  process.exit(1);
+});
