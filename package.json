@@ -1,0 +1,13 @@
+{
+  "name": "agent-extensions",
+  "private": true,
+  "workspaces": ["plugins/*", "packages/*"],
+  "scripts": {
+    "build": "bun run scripts/build.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5"
+  }
+}
