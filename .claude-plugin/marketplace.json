@@ -8,5 +8,12 @@
     "version": "0.1.0",
     "pluginRoot": "./plugins"
   },
-  "plugins": []
+  "plugins": [
+    {
+      "name": "hello",
+      "source": "./hello",
+      "description": "A sample plugin that greets the user",
+      "version": "0.1.0"
+    }
+  ]
 }

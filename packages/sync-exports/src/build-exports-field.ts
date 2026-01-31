@@ -70,21 +70,23 @@ export function buildExportsField(
   const exports: ExportsField = {};
 
   for (const entry of entries) {
-    const { exportPath, relativePath } = entry;
-    const distBase = `./${distDir}/${getDistName(entry)}`;
+    const { exportPath, relativePath, filename } = entry;
+    const distName = getDistName(entry);
     const conditions: ExportConditions = {};
 
     // Custom condition always points to source file
     conditions[conditionName] = `./${relativePath}`;
 
     if (includeTypes) {
-      conditions["types"] = `${distBase}${typesExtension}`;
+      // DTS with bundle:false preserves source filename
+      const dtsName = filename.replace(/\.(ts|tsx)$/, "");
+      conditions["types"] = `./${distDir}/${dtsName}${typesExtension}`;
     }
     if (includeImport) {
-      conditions["import"] = `${distBase}${esmExtension}`;
+      conditions["import"] = `./${distDir}/${distName}${esmExtension}`;
     }
     if (includeDefault) {
-      conditions["default"] = `${distBase}${esmExtension}`;
+      conditions["default"] = `./${distDir}/${distName}${esmExtension}`;
     }
 
     exports[exportPath] = conditions;

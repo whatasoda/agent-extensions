@@ -30,7 +30,7 @@ bun install
 
 ### Build
 
-Build packages (rslib) then plugins (bun build):
+Build packages (sync exports + rslib) then plugins (bun build):
 
 ```sh
 bun run build
@@ -39,7 +39,7 @@ bun run build
 Or build individually:
 
 ```sh
-bun run build:packages   # rslib build for packages/*
+bun run build:packages   # sync exports + rslib build for packages/*
 bun run build:plugins    # bun build for plugins/*
 ```
 
@@ -85,5 +85,7 @@ agent-extensions/
 ## Adding a Shared Package
 
 1. Create `packages/<package-name>/` with `package.json` (name: `@agent-extensions/<name>`)
-2. Add source in `src/`
-3. Reference from plugins via `"@agent-extensions/<name>": "workspace:*"` in their `package.json`
+2. Add source in `src/` and create `@public-index.ts` as the entry point
+3. Add `rslib.config.ts` for building
+4. `bun run build` will auto-generate the `exports` field in `package.json` from `@public-*.ts` files
+5. Reference from plugins via `"@agent-extensions/<name>": "workspace:*"` in their `package.json`

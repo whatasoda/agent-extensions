@@ -58,11 +58,14 @@ The `@agent-extensions/sync-exports` package provides tooling to detect these fi
 
 `bun run build` runs two phases in order:
 
-1. **Packages** (`bun run build:packages`): Builds each `packages/*/rslib.config.ts` with rslib (ESM + DTS)
+1. **Packages** (`bun run build:packages`):
+   - Runs `syncExports()` on all packages to auto-generate `exports` fields in `package.json` from `@public-*.ts` files
+   - Then builds each `packages/*/rslib.config.ts` with rslib (ESM + DTS)
 2. **Plugins** (`bun run build:plugins`): Bundles each `plugins/*/src/` into `dist/` using `bun build`
 
 - Plugin builds inline all dependencies (including `@agent-extensions/*` packages) so `dist/` is self-contained
 - `plugins/*/dist/` is committed (LFS tracked) because marketplace install cannot run builds
+- `packages/*/dist/` is **not** committed (gitignored) — only needed locally for development
 
 ### Marketplace Registration
 

@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "@rslib/core": "^0.10.0",
+    "@rslib/core": "^0.19.0",
     "@types/bun": "latest",
     "typescript": "^5"
   }
