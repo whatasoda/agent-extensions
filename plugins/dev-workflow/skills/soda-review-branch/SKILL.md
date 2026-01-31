@@ -10,15 +10,15 @@ Perform a comprehensive code review of the changes on the current branch.
 
 ## Current Branch Context
 
-- Branch: !`git rev-parse --abbrev-ref HEAD`
-- Diff stat: !`git diff --stat $(git merge-base HEAD main)..HEAD 2>/dev/null || echo "(no merge-base with main)"`
-- Commits: !`git log --oneline $(git merge-base HEAD main)..HEAD 2>/dev/null || echo "(no commits beyond main)"`
+!`bun ${CLAUDE_PLUGIN_ROOT}/skills/soda-review-branch/scripts/detect-base-branch.ts`
 
-If $ARGUMENTS is not empty, treat it as the review focus or an alternative base branch specification. When an alternative base is specified, re-fetch the diff using that base instead of the default.
+The above JSON provides `baseBranch`, `mergeBase`, `changedFiles`, `potentialConflicts`, and ready-to-use `commands.diff` / `commands.log`.
+
+If $ARGUMENTS is not empty, treat it as the review focus or an alternative base branch specification. When an alternative base is specified, re-compute the diff using that base instead of the detected one.
 
 ## Procedure
 
-1. **Identify the diff**: Use the pre-fetched context above as the starting point. If $ARGUMENTS specifies a different base, re-fetch the diff accordingly.
+1. **Identify the diff**: Use the pre-fetched branch context JSON above. Run `commands.diff` to get the full diff. If $ARGUMENTS specifies a different base, re-compute the merge-base and diff accordingly. If the JSON contains an `error` field, inform the user and stop.
 2. **Overview**: Summarize the changed files and the overall scope of changes.
 3. **Review**: Examine changes from the following perspectives:
    - Functional correctness (logic bugs, missed edge cases)
