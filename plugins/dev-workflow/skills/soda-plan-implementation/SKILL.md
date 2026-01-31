@@ -1,14 +1,18 @@
 ---
 name: soda-plan-implementation
 description: Create a detailed implementation plan with branch strategy and commit breakdown.
-user_invocable: true
+user-invocable: true
+argument-hint: [task description]
+allowed-tools: Bash(git *), Read, Grep, Glob
 ---
 
-Create a detailed implementation plan for the task the user wants to accomplish.
+Create a detailed implementation plan for the given task.
+
+If $ARGUMENTS is empty, ask the user what they want to implement before proceeding.
 
 ## Procedure
 
-1. **Investigate**: Explore the codebase to understand the scope, affected areas, and existing patterns relevant to the task.
+1. **Investigate**: Explore the codebase to understand the scope, affected areas, and existing patterns relevant to $ARGUMENTS.
 2. **Plan**: Formulate a detailed plan that includes:
    - A new branch name derived from the task description
    - Step-by-step implementation breakdown
@@ -22,8 +26,3 @@ Create a detailed implementation plan for the task the user wants to accomplish.
 - Create a new branch from the current branch by default. If the user specifies a different base, use that instead.
 - The plan must include incremental commits throughout the work.
 - The plan must be self-contained: it should include enough technical context that implementation can proceed from the plan alone.
-
-## Argument Handling
-
-If the user provides text after `/soda-plan-implementation`, treat it as the task description.
-If no text is provided, ask the user what they want to implement.
