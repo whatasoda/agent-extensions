@@ -25,6 +25,7 @@ Each plugin lives under `plugins/<plugin-name>/` and must contain:
 - `package.json` - Plugin dependencies (can reference `@agent-extensions/*` packages)
 - `tsconfig.json` - Extends root `tsconfig.json`
 - `skills/<skill-name>/SKILL.md` - At least one skill definition
+- `skills/<skill-name>/README.md` - Skill context document (background, purpose, design rationale for future improvement)
 
 Optional:
 
