@@ -1,0 +1,12 @@
+{
+  "name": "whatasoda-tools",
+  "owner": {
+    "name": "whatasoda"
+  },
+  "metadata": {
+    "description": "Personal Claude Code skills and plugins",
+    "version": "0.1.0",
+    "pluginRoot": "./plugins"
+  },
+  "plugins": []
+}
