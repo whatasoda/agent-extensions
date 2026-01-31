@@ -21,15 +21,34 @@ If $ARGUMENTS is empty, ask the user what they want to explore before proceeding
    - Implementation cost (scope of impact)
    - Risks and caveats
 5. **Recommend**: If one approach stands out, state the recommendation with reasoning.
+6. **Confirm selection**: When the user selects an approach, respond with a Proposal Summary (see format below) and suggest proceeding with `/soda-plan-implementation`.
 
 ## Output Format
 
 - Label each approach (A, B, C...) so the user can select easily.
 - Present trade-offs as a table or concise bullet list.
-- Structure the output so the user can follow up with `/soda-plan-implementation` after selecting an approach.
+
+## Proposal Summary Format
+
+When the user selects an approach, emit the following block. Keep it compact (under 30 lines total). This serves as a handoff point for `/soda-plan-implementation`.
+
+    ## Proposal Summary
+
+    **Problem**: (one-sentence description)
+    **Selected**: Approach (Label) — (one-sentence summary)
+
+    ### Key Findings
+    - (critical discovery from investigation)
+    - (relevant constraint or dependency)
+
+    ### Affected Areas
+    - `path/to/file` — (why relevant)
+
+    ### Risks
+    - (key risk specific to this approach)
 
 ## Constraints
 
 - This skill only proposes. Do NOT implement anything.
 - Do NOT modify any code (read-only investigation only).
-- Do NOT proceed to the next step until the user makes a selection.
+- After confirming the selection, wait for the user to decide the next step.
