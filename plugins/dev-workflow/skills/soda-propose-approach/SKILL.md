@@ -68,7 +68,7 @@ If only one viable approach was found, present it with a brief explanation of wh
 
 Otherwise, ask "Which approaches should I compare in detail?" using AskUserQuestion with multiSelect enabled so the user can select multiple approaches at once. List each approach label as a separate option.
 
-- If only 1 approach is selected: Provide a condensed deep-dive before emitting the Proposal Summary. Include affected files and areas with specifics (from Phase 2 findings) and condensed Impact Tracking (Gains / Losses only, no comparison table). Skip the Pros/Cons comparison and risk-per-approach comparison (no comparison target), but ensure the Proposal Summary contains sufficient detail for `/soda-plan-implementation`.
+- If only 1 approach is selected: Provide a condensed deep-dive before emitting the Proposal Summary. Include affected files and areas with specifics (from Phase 2 findings) and condensed Impact Tracking (Gains / Losses only, no comparison table). Skip the Pros/Cons comparison and risk-per-approach comparison (no comparison target), but ensure the Proposal Summary contains sufficient detail for `/soda-plan-implementation`. Include Implementation Hints and Scope Boundary in the Proposal Summary if relevant findings exist.
 - If all approaches are selected, or 2-3 approaches are selected, proceed to Phase 4.
 
 ## Phase 4: Detailed Comparison & Decision
@@ -83,6 +83,7 @@ For the shortlisted approaches, provide:
   - **Losses / Risks**: What might be lost or degraded (existing functionality, UX aspects, compatibility)
   - **UX Delta**: How the end-user experience changes concretely
 - Recommendation with reasoning
+- When emitting the Proposal Summary, populate Implementation Hints if the comparison revealed meaningful implementation ordering or architectural decisions. Populate Scope Boundary if the selected approach has explicit exclusions or deferrals.
 
 Use AskUserQuestion to confirm the final selection. Options should include each shortlisted approach by label, plus "None of these — revisit from scratch". On selection, emit the Proposal Summary and suggest `/soda-plan-implementation`.
 
@@ -90,7 +91,7 @@ If the user rejects all approaches, return to Phase 1. Use AskUserQuestion to de
 
 ## Proposal Summary Format
 
-When the user makes a final selection, emit the following block. Keep it compact (under 40 lines total). This serves as a handoff point for `/soda-plan-implementation`.
+When the user makes a final selection, emit the following block. Keep it compact (under 50 lines total). This serves as a handoff point for `/soda-plan-implementation`.
 
     ## Proposal Summary
 
