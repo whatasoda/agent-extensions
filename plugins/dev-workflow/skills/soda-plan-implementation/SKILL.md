@@ -19,7 +19,7 @@ Before starting, check the conversation for a **Proposal Summary** block (produc
 - **If found**: Use it as the starting context.
   - **Investigate**: Extract key findings and affected areas. Verify they are still current, then explore only uncovered gaps. Skip sub-agent investigation if the Proposal Summary covers the scope adequately.
   - **Plan**: Incorporate Expected Impact (gains, losses, UX changes) into the plan's risk assessment. Use Affected Areas as the starting point for step breakdown. Leverage Rejected Alternatives context to avoid re-exploring ruled-out directions. If Implementation Hints are provided, use them to inform step ordering and architectural decisions. If a Scope Boundary is provided, constrain the plan to the defined scope and note deferred items.
-  - **Clarify**: Do not re-ask about approach selection (already decided). Only clarify implementation-level ambiguities.
+  - **Clarify**: Do not re-ask about approach selection (already decided). Only clarify implementation-level ambiguities and design decisions.
 - **If not found**: Proceed normally using $ARGUMENTS as the task description.
 
 When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes precedence for the task description, but the Proposal Summary provides investigation context.
@@ -30,8 +30,12 @@ When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes preced
    - If no Proposal Summary is available, investigate from scratch using sub-agents:
      - Launch a sub-agent (Task, subagent_type: Explore) to survey project structure, dependencies, and conventions relevant to the task.
      - Based on findings, optionally launch 1-2 focused sub-agents in parallel to explore specific areas (e.g., existing implementation patterns, integration points, test coverage).
-   - Summarize investigation results before proceeding to planning.
-2. **Plan**: Formulate the plan using the following structure:
+   - Summarize investigation results before proceeding.
+2. **Branch Strategy**: Use AskUserQuestion to ask the user whether to create a new branch or continue on the current branch. Options:
+   - "Create a new branch" (default for most tasks)
+   - "Continue on the current branch" (for follow-up work or small additions)
+   If the user chooses a new branch, derive the branch name from the task description.
+3. **Plan**: Formulate the plan using the following structure:
 
        ## Implementation Plan: [Task Summary]
        **Branch**: `branch-name`
@@ -53,12 +57,13 @@ When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes preced
        ### Risks & Mitigation
        - (risk): (mitigation strategy)
 
-3. **Clarify**: If there are ambiguous requirements or missing information, ask the user before finalizing the plan. If investigation reveals multiple fundamentally different approaches, suggest the user run `/soda-propose-approach` first rather than choosing an approach within this skill.
+   If the plan involves software design decisions (architecture choices, pattern selection, library choices, data model design, API contract design), present each decision to the user via AskUserQuestion before incorporating it into the plan. Do not make design decisions autonomously.
+4. **Clarify**: If there are ambiguous requirements or missing information, ask the user before finalizing the plan. If investigation reveals multiple fundamentally different approaches, suggest the user run `/soda-propose-approach` first rather than choosing an approach within this skill.
 
 ## Constraints
 
 - Present the plan using plan mode. Do NOT begin implementation until the user approves the plan.
-- Create a new branch from the current branch by default. If the user specifies a different base, use that instead.
+- Branch strategy is determined by the user in the Branch Strategy step. If the user chooses a new branch, create it from the current branch unless a different base is specified.
 - The plan must include incremental commits throughout the work.
 - The plan must be self-contained: it should include enough technical context that implementation can proceed from the plan alone.
 - Each step must define a commit with an imperative-mood message.
