@@ -27,6 +27,8 @@ The core workflow cycle is: investigate → plan → approve → implement (with
 - **Structured investigation with sub-agents**: In standalone mode (no Proposal Summary), the skill uses a two-step sub-agent strategy — first surveying project structure and conventions, then optionally launching focused agents for specific areas. This mirrors `soda-propose-approach`'s Phase 2 in a lighter form (max 2 focused agents vs 3). When a Proposal Summary exists, sub-agent investigation is skipped in favor of verification and gap-filling.
 - **Explicit plan template**: The output structure (Investigation Summary → Steps with commits and technical context → Risks & Mitigation) is defined in the skill to make "self-contained" concrete and ensure consistent plan quality regardless of the task.
 - **Approach escalation**: When investigation reveals multiple fundamentally different approaches, the skill directs the user to `/soda-propose-approach` instead of attempting approach comparison. This maintains a clear separation of concerns between the two skills.
+- **Branch strategy question**: Instead of defaulting to a new branch, the skill asks the user whether to create a new branch or continue on the current branch. This covers both the common "new branch for new work" pattern and the "continue current work" pattern that was previously listed as a future improvement.
+- **Design decision confirmation**: When the plan involves software design decisions (architecture, patterns, libraries, data models, API contracts), the skill presents each decision to the user for confirmation rather than deciding autonomously. This ensures the user maintains control over technical direction, which is especially important for decisions that are costly to reverse.
 
 ## Typical Usage Patterns
 
@@ -47,5 +49,4 @@ A で進める
 ## Future Improvements
 
 - Auto-detect project-specific conventions (branch naming patterns, commit message style)
-- Support "this session" mode where the plan skips branch creation and works on the current branch
 - Consider adding AUTOPILOT mode integration for long-running implementation sessions
