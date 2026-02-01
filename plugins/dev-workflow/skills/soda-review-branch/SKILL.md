@@ -18,7 +18,7 @@ If $ARGUMENTS is not empty, treat it as the review focus or an alternative base 
 
 ## Procedure
 
-1. **Identify the diff**: Use the pre-fetched branch context JSON above. Run `commands.diff` to get the full diff. If $ARGUMENTS specifies a different base, re-compute the merge-base and diff accordingly. If the JSON contains an `error` field, inform the user and stop.
+1. **Identify the diff**: Use the pre-fetched branch context JSON above. Run `commands.diff` to get the full diff. If $ARGUMENTS specifies a different base, re-compute the merge-base and diff accordingly. If the JSON contains an `error` field, present the error to the user and use AskUserQuestion: "Specify a different base branch" / "Cancel review".
 2. **Overview**: Summarize the changed files and the overall scope of changes.
 3. **Review**: Examine changes from the following perspectives:
    - Functional correctness (logic bugs, missed edge cases)
@@ -26,6 +26,9 @@ If $ARGUMENTS is not empty, treat it as the review focus or an alternative base 
    - Code quality (naming, structure, duplication)
    - Potential issues (performance, security)
 4. **Report**: Present findings ordered by severity.
+5. **Next Steps**: After presenting the report, use AskUserQuestion to ask the user what to do next:
+   - "Create a plan to fix the issues" (suggest `/soda-plan-implementation`)
+   - "Note these for later"
 
 ## Constraints
 
