@@ -38,6 +38,10 @@ The typical flow: user describes a goal → this skill proposes options → user
 
 - **Recommendation included**: When one approach clearly dominates, the skill should say so. The user values opinionated technical guidance, not just neutral enumeration.
 
+- **Implementation Hints in Proposal Summary**: An optional section that carries implementation-oriented context (suggested ordering, dependency chains, architectural decisions) into the planning phase. This bridges the gap between approach-level reasoning and implementation-level planning, reducing information loss in the handoff. Kept optional so compact summaries remain possible.
+
+- **Scope Boundary in Proposal Summary**: An optional section that explicitly defines what is in scope and what is deferred. This prevents the planning phase from expanding beyond what the selected approach intended to cover.
+
 ## Typical Usage Patterns
 
 ```
