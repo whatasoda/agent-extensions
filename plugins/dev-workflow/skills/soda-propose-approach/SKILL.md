@@ -28,7 +28,7 @@ Present this understanding to the user, then use AskUserQuestion to confirm:
 
 If the user selects anything other than confirmation, incorporate their feedback (via free-text input), revise your understanding, and re-present. Do NOT proceed to Phase 2 until the user confirms.
 
-If consensus cannot be reached after 2 confirmation attempts, propose running Phase 2 in exploratory mode — investigate the current state first, then return to Phase 1 to collaboratively redefine the problem based on the investigation findings.
+If consensus cannot be reached after 2 confirmation attempts, use AskUserQuestion: "Run exploratory investigation first, then redefine the problem" / "Try defining the problem one more time" / "End this exploration".
 
 ## Phase 2: Investigation
 
