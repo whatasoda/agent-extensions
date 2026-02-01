@@ -12,26 +12,38 @@ If $ARGUMENTS is empty, ask the user what they want to explore before proceeding
 
 ## Phase 1: Problem Understanding
 
-Restate the problem described in $ARGUMENTS in your own words. Present your understanding to the user, then use AskUserQuestion to confirm the following before proceeding:
+Restate the problem described in $ARGUMENTS in your own words. Include your best assessment of:
 
-- **Scope**: What is in scope and out of scope for this exploration?
-- **Priority axis**: What matters most? (e.g., speed, maintainability, compatibility, UX quality)
-- **Constraints**: Are there approaches to avoid, or hard technical/business constraints?
+- **Scope**: What appears to be in scope and out of scope
+- **Priority axis**: What seems to matter most (e.g., speed, maintainability, compatibility, UX quality)
+- **Constraints**: Any apparent technical or business constraints
 
-Do NOT proceed to Phase 2 until the user confirms your understanding is correct.
+Present this understanding to the user, then use AskUserQuestion to confirm:
+- "This understanding is correct"
+- "Scope needs adjustment"
+- "Priority axis is different"
+- "There are additional constraints"
+
+If the user selects anything other than confirmation, incorporate their feedback (via free-text input), revise your understanding, and re-present. Do NOT proceed to Phase 2 until the user confirms.
 
 ## Phase 2: Investigation
 
 ### Step 1: Common Context
 
-Launch a sub-agent (Task, subagent_type: Explore) to gather shared context:
-- Project structure and architecture relevant to the problem
-- Key dependencies and constraints
-- Existing patterns and conventions
+Launch a sub-agent (Task, subagent_type: Explore) with a prompt that includes:
+- The problem statement and scope confirmed in Phase 1
+- Instruction to report: project structure, key dependencies, existing patterns, and relevant conventions
+
+Summarize the agent's findings into a Common Context block for use in Step 2.
 
 ### Step 2: Focused Investigation
 
-Based on the problem scope confirmed in Phase 1, launch 1-3 parallel sub-agents (Task, subagent_type: Explore), each targeting a specific area. Pass the common context from Step 1 to each agent.
+For each focused agent, construct the prompt to include:
+1. The Common Context block from Step 1 (summarized, not raw output)
+2. The specific investigation question for this agent
+3. The scope and priority axis confirmed in Phase 1
+
+Launch 1-3 agents in parallel (Task, subagent_type: Explore).
 
 Examples of focused investigations:
 - "How does the current X implementation work?"
