@@ -14,13 +14,28 @@ Key sub-patterns absorbed:
 
 Structured exploration of alternatives before committing to an implementation approach. Prevents jumping into implementation without considering trade-offs. Acts as the decision-support phase in the user's workflow.
 
-The typical flow: user describes a goal → this skill proposes options → user selects one → `/soda-plan-implementation` takes over.
+The typical flow: user describes a goal → this skill proposes options → user shortlists candidates → detailed comparison → final selection → `/soda-plan-implementation` takes over.
 
 ## Design Notes
 
+- **4-phase structure**: The skill is organized into Problem Understanding → Investigation → Initial Proposal → Detailed Comparison. Each phase has an explicit gate condition (user confirmation via AskUserQuestion) before proceeding. This prevents the AI from rushing through phases and ensures the user stays in control of the decision process at each step.
+
+- **Confirmation-based Phase 1**: Rather than asking open-ended questions (which don't fit AskUserQuestion's selection UI), the AI presents its own assessment of scope, priorities, and constraints, then asks the user to confirm or point out what's wrong. This reduces user effort (confirm vs. author from scratch) and makes the selection-based tool natural to use. A re-present loop handles corrections.
+
+- **Sub-agent investigation strategy (Phase 2)**: Investigation uses a two-step sub-agent approach: first a shared-context agent gathers project structure and conventions, then 1-3 focused agents explore specific areas in parallel. The shared-context step avoids redundant exploration across agents and ensures consistent architectural understanding. Step 1 results are explicitly summarized into a Common Context block before being passed to Step 2 agents — this prevents raw output relay and keeps focused agents' prompts concise.
+
+- **Impact Tracking**: Every approach is evaluated not just on technical merits but on what it achieves and what it risks losing — especially in terms of end-user experience. This reflects the user's actual decision-making priority: understanding how the application's users will be affected. Impact Outlook (Phase 3, brief) and Impact Tracking (Phase 4, detailed) ensure this perspective is never lost during the technical comparison.
+
 - **Labeled options (A, B, C...)**: The user frequently selects by label in follow-up messages ("Aで進める", "1 を採用する", "A と D をためそう"). Labels make this selection pattern frictionless.
+
+- **Multi-select shortlisting (Phase 3→4)**: Instead of forcing a single selection from brief summaries, the user can shortlist 2-3 candidates for detailed comparison. This matches the observed pattern where users often want to narrow down before committing, and prevents premature decisions based on insufficient information. When only 1 is selected, a condensed deep-dive (affected files, gains/losses) still runs before emitting the Proposal Summary — this ensures plan-implementation always receives sufficient detail regardless of the selection path.
+
+- **Edge case handling**: The skill defines explicit behavior for boundary scenarios: only one viable approach found (explain why others were ruled out), all approaches selected (full comparison), all rejected (return to Phase 1 with options), and ambiguous problems that can't reach Phase 1 consensus (fall back to exploratory investigation). These prevent the AI from stalling or making arbitrary choices when the standard flow doesn't apply.
+
 - **Read-only constraint**: This skill explicitly does not modify code. It exists purely in the investigation/proposal phase. This prevents the common anti-pattern of AI tools starting to implement before the user has decided on an approach.
-- **Chaining to plan-implementation**: The output format is designed so the user can naturally follow up with `/soda-plan-implementation` after selecting. This reflects the dominant two-phase flow in the history data.
+
+- **Chaining to plan-implementation**: The Proposal Summary output format is designed so the user can naturally follow up with `/soda-plan-implementation` after selecting. The summary includes Expected Impact and Rejected Alternatives so the planning phase inherits the full decision context.
+
 - **Recommendation included**: When one approach clearly dominates, the skill should say so. The user values opinionated technical guidance, not just neutral enumeration.
 
 ## Typical Usage Patterns
@@ -36,14 +51,17 @@ The typical flow: user describes a goal → this skill proposes options → user
 Chained flow:
 ```
 /soda-propose-approach キャッシュ戦略を改善したい
-→ (AI proposes A, B, C)
+→ (AI restates problem, confirms understanding)
+→ (AI investigates via sub-agents)
+→ (AI proposes A, B, C with Impact Outlook)
+→ User: "A と C を詳しく比較して"
+→ (AI provides detailed comparison with Impact Tracking)
 → User: "Aで進める"
+→ (AI emits Proposal Summary)
 → /soda-plan-implementation
 ```
 
 ## Future Improvements
 
-- Add a structured comparison table format as a standard output template
-- Support "investigate first, then propose" as an explicit two-phase mode for complex problems
 - Consider adding a "sparring" mode for design discussions (~53 occurrences of hypothesis-validation patterns)
 - Consider integration with document output ("md ファイルに書き出して") for preserving proposals across sessions
