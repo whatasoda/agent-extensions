@@ -27,12 +27,29 @@ When both are present, $ARGUMENTS takes precedence for the task description, but
      - Launch a sub-agent (Task, subagent_type: Explore) to survey project structure, dependencies, and conventions relevant to the task.
      - Based on findings, optionally launch 1-2 focused sub-agents in parallel to explore specific areas (e.g., existing implementation patterns, integration points, test coverage).
    - Summarize investigation results before proceeding to planning.
-2. **Plan**: Formulate a detailed plan that includes:
-   - A new branch name derived from the task description
-   - Step-by-step implementation breakdown
-   - Commit strategy: define what each commit should contain and at what granularity
-   - Technical details needed for implementation (type definitions, API contracts, dependency relationships, etc.) embedded directly in the plan at an appropriate level of detail
-3. **Clarify**: If there are multiple viable approaches or ambiguous requirements, ask the user before finalizing the plan.
+2. **Plan**: Formulate the plan using the following structure:
+
+       ## Implementation Plan: [Task Summary]
+       **Branch**: `branch-name`
+
+       ### Investigation Summary
+       - (key findings, affected areas, relevant patterns)
+
+       ### Steps
+
+       #### Step N: [Step Name]
+       **Commit**: `[commit message in imperative mood]`
+       **Changes**:
+       - `path/to/file` — what changes and why
+       **Technical Context**:
+       - (type definitions, API contracts, algorithms — include only when needed for this step)
+
+       (repeat for each step)
+
+       ### Risks & Mitigation
+       - (risk): (mitigation strategy)
+
+3. **Clarify**: If there are ambiguous requirements or missing information, ask the user before finalizing the plan. If investigation reveals multiple fundamentally different approaches, suggest the user run `/soda-propose-approach` first rather than choosing an approach within this skill.
 
 ## Constraints
 
@@ -40,3 +57,5 @@ When both are present, $ARGUMENTS takes precedence for the task description, but
 - Create a new branch from the current branch by default. If the user specifies a different base, use that instead.
 - The plan must include incremental commits throughout the work.
 - The plan must be self-contained: it should include enough technical context that implementation can proceed from the plan alone.
+- Each step must define a commit with an imperative-mood message.
+- The plan must identify at least one risk and its mitigation.
