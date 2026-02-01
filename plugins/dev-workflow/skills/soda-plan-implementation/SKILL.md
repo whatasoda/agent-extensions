@@ -31,12 +31,18 @@ When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes preced
      - Launch a sub-agent (Task, subagent_type: Explore) to survey project structure, dependencies, and conventions relevant to the task.
      - Based on findings, optionally launch 1-2 focused sub-agents in parallel to explore specific areas (e.g., existing implementation patterns, integration points, test coverage).
    - Summarize investigation results before proceeding.
-   - If investigation reveals multiple fundamentally different approaches, suggest the user run `/soda-propose-approach` first rather than choosing an approach within this skill.
-2. **Branch Strategy**: Use AskUserQuestion to ask the user whether to create a new branch or continue on the current branch. Options:
+   - If investigation reveals multiple fundamentally different approaches, use AskUserQuestion to let the user decide: "Run /soda-propose-approach to compare approaches" / "Continue — I'll specify the approach". Do not choose an approach autonomously.
+2. **Strategy Confirmation**: If no Proposal Summary is available, present the investigation findings and the intended implementation direction to the user. Use AskUserQuestion to confirm:
+   - "Proceed with this direction"
+   - "Adjust the direction" (incorporate user feedback, then re-present)
+   - "Run /soda-propose-approach to compare alternatives"
+   If the user wants to adjust, incorporate their feedback and re-present the direction. If they choose /soda-propose-approach, stop planning and suggest the user invoke it.
+   Skip this step when a Proposal Summary exists (approach already decided).
+3. **Branch Strategy**: Use AskUserQuestion to ask the user whether to create a new branch or continue on the current branch. Options:
    - "Create a new branch" (default for most tasks)
    - "Continue on the current branch" (for follow-up work or small additions)
    If the user chooses a new branch, derive the branch name from the task description.
-3. **Plan**: Formulate the plan using the following structure:
+4. **Plan**: Formulate the plan using the following structure:
 
        ## Implementation Plan: [Task Summary]
        **Branch**: `branch-name`
@@ -58,8 +64,8 @@ When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes preced
        ### Risks & Mitigation
        - (risk): (mitigation strategy)
 
-   If the plan involves software design decisions (architecture choices, pattern selection, library choices, data model design, API contract design), present each decision to the user via AskUserQuestion before incorporating it into the plan. Do not make design decisions autonomously.
-4. **Clarify**: If there are ambiguous requirements or missing information, ask the user before finalizing the plan.
+   If the plan involves software design decisions (architecture choices, pattern selection, library choices, data model design, API contract design), present each decision to the user via AskUserQuestion before incorporating it into the plan. For each decision, structure the options as concrete alternatives with a brief rationale (e.g., "Use Strategy A — simpler but less flexible" / "Use Strategy B — more complex but extensible"). Do not make design decisions autonomously. Implementation-level details (variable names, internal helper structure, iteration order) do not require user confirmation.
+5. **Clarify**: If there are ambiguous requirements or missing information, ask the user before finalizing the plan.
 
 ## Constraints
 
