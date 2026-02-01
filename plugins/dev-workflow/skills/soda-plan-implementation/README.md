@@ -24,6 +24,9 @@ The core workflow cycle is: investigate → plan → approve → implement (with
 - **Self-contained plans**: Plans must include enough technical detail (type definitions, API contracts, etc.) that implementation can proceed from the plan alone. This was added to the user's template after experiencing plans that were too high-level.
 - **Commit strategy always included**: Every plan defines commit granularity because the user consistently requests it. "適宜コミット" is the most frequent constraint across all projects (~304 occurrences).
 - **New branch by default**: Almost all implementation work starts on a new branch. The user specifies the base branch only when deviating from the current branch.
+- **Structured investigation with sub-agents**: In standalone mode (no Proposal Summary), the skill uses a two-step sub-agent strategy — first surveying project structure and conventions, then optionally launching focused agents for specific areas. This mirrors `soda-propose-approach`'s Phase 2 in a lighter form (max 2 focused agents vs 3). When a Proposal Summary exists, sub-agent investigation is skipped in favor of verification and gap-filling.
+- **Explicit plan template**: The output structure (Investigation Summary → Steps with commits and technical context → Risks & Mitigation) is defined in the skill to make "self-contained" concrete and ensure consistent plan quality regardless of the task.
+- **Approach escalation**: When investigation reveals multiple fundamentally different approaches, the skill directs the user to `/soda-propose-approach` instead of attempting approach comparison. This maintains a clear separation of concerns between the two skills.
 
 ## Typical Usage Patterns
 
@@ -43,7 +46,6 @@ A で進める
 
 ## Future Improvements
 
-- Integrate with `soda-propose-approach` for a seamless propose → select → plan flow
 - Auto-detect project-specific conventions (branch naming patterns, commit message style)
 - Support "this session" mode where the plan skips branch creation and works on the current branch
 - Consider adding AUTOPILOT mode integration for long-running implementation sessions
