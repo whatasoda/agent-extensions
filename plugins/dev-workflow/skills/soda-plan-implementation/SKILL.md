@@ -18,7 +18,7 @@ Before starting, check the conversation for a **Proposal Summary** block (produc
 
 - **If found**: Use it as the starting context.
   - **Investigate**: Extract key findings and affected areas. Verify they are still current, then explore only uncovered gaps. Skip sub-agent investigation if the Proposal Summary covers the scope adequately.
-  - **Plan**: Incorporate Expected Impact (gains, losses, UX changes) into the plan's risk assessment. Use Affected Areas as the starting point for step breakdown. Leverage Rejected Alternatives context to avoid re-exploring ruled-out directions. If Implementation Hints are provided, use them to inform step ordering and architectural decisions. If a Scope Boundary is provided, constrain the plan to the defined scope and note deferred items.
+  - **Plan**: Incorporate Expected Impact (gains, losses, UX changes) and Risks into the plan's risk assessment. Use Affected Areas as the starting point for step breakdown. Leverage Rejected Alternatives context to avoid re-exploring ruled-out directions. If Implementation Hints are provided, use them to inform step ordering and architectural decisions. If a Scope Boundary is provided, constrain the plan to the defined scope and note deferred items.
   - **Clarify**: Do not re-ask about approach selection (already decided). Only clarify implementation-level ambiguities and design decisions.
 - **If not found**: Proceed normally using $ARGUMENTS as the task description.
 
@@ -31,6 +31,7 @@ When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes preced
      - Launch a sub-agent (Task, subagent_type: Explore) to survey project structure, dependencies, and conventions relevant to the task.
      - Based on findings, optionally launch 1-2 focused sub-agents in parallel to explore specific areas (e.g., existing implementation patterns, integration points, test coverage).
    - Summarize investigation results before proceeding.
+   - If investigation reveals multiple fundamentally different approaches, suggest the user run `/soda-propose-approach` first rather than choosing an approach within this skill.
 2. **Branch Strategy**: Use AskUserQuestion to ask the user whether to create a new branch or continue on the current branch. Options:
    - "Create a new branch" (default for most tasks)
    - "Continue on the current branch" (for follow-up work or small additions)
@@ -58,7 +59,7 @@ When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes preced
        - (risk): (mitigation strategy)
 
    If the plan involves software design decisions (architecture choices, pattern selection, library choices, data model design, API contract design), present each decision to the user via AskUserQuestion before incorporating it into the plan. Do not make design decisions autonomously.
-4. **Clarify**: If there are ambiguous requirements or missing information, ask the user before finalizing the plan. If investigation reveals multiple fundamentally different approaches, suggest the user run `/soda-propose-approach` first rather than choosing an approach within this skill.
+4. **Clarify**: If there are ambiguous requirements or missing information, ask the user before finalizing the plan.
 
 ## Constraints
 
