@@ -4,9 +4,10 @@ import {
   readFileSync,
   writeFileSync,
   renameSync,
+  mkdirSync,
   existsSync,
 } from "node:fs";
-import { resolve, join } from "node:path";
+import { resolve, join, dirname } from "node:path";
 import { homedir } from "node:os";
 
 interface PlanIndexEntry {
@@ -105,6 +106,7 @@ function main() {
   index.entries.push(...newEntries);
   index.lastChecked = new Date().toISOString();
 
+  mkdirSync(dirname(indexPath), { recursive: true });
   const tmpPath = indexPath + ".tmp";
   writeFileSync(tmpPath, JSON.stringify(index, null, 2));
   renameSync(tmpPath, indexPath);
