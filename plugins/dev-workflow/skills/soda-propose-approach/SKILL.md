@@ -8,6 +8,8 @@ allowed-tools: Bash(git *), Read, Grep, Glob, Task
 
 Investigate and propose multiple approaches for the given problem or goal.
 
+Use English for internal reasoning (thinking). All user-facing output — problem restatement, proposals, comparisons, AskUserQuestion options, and Proposal Summary — must be in Japanese.
+
 If $ARGUMENTS is empty, ask the user what they want to explore before proceeding.
 
 ## Phase 1: Problem Understanding
