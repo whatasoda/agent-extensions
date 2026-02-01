@@ -112,6 +112,14 @@ When the user makes a final selection, emit the following block. Keep it compact
     ### Risks
     - (key risk specific to this approach)
 
+    ### Implementation Hints (optional)
+    - (suggested implementation order or dependency chain)
+    - (architectural decision made during comparison — e.g., "use X pattern because Y")
+
+    ### Scope Boundary (optional)
+    - **In scope**: (what this approach covers)
+    - **Deferred**: (what is intentionally left for future work)
+
     ### Rejected Alternatives
     - Approach (Label): (one-sentence reason) — rejected after detailed comparison
     (omit this section if no approaches were compared in Phase 4)
