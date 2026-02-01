@@ -64,7 +64,7 @@ Present 2-4 approaches labeled A, B, C... Each approach includes:
 
 After presenting all approaches, state a recommendation if one stands out.
 
-If only one viable approach was found, present it with a brief explanation of why other directions were ruled out. Use AskUserQuestion: "Proceed with detailed review of this approach" / "Re-investigate with a different angle". If proceeding, provide a condensed deep-dive (see below) and emit the Proposal Summary.
+If only one viable approach was found, present it with a brief explanation of why other directions were ruled out. Use AskUserQuestion: "Proceed with detailed review of this approach" / "Re-investigate with a different angle". If proceeding, provide a condensed deep-dive (see below) and emit the Proposal Summary. If re-investigating, ask the user what angle or constraint to change, then return to Phase 2 with the revised scope.
 
 Otherwise, use AskUserQuestion (multiSelect: true) to ask:
 "Which approaches should I compare in detail?"
