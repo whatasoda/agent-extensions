@@ -66,8 +66,7 @@ After presenting all approaches, state a recommendation if one stands out.
 
 If only one viable approach was found, present it with a brief explanation of why other directions were ruled out. Use AskUserQuestion: "Proceed with detailed review of this approach" / "Re-investigate with a different angle". If proceeding, provide a condensed deep-dive (see below) and emit the Proposal Summary. If re-investigating, ask the user what angle or constraint to change, then return to Phase 2 with the revised scope.
 
-Otherwise, use AskUserQuestion (multiSelect: true) to ask:
-"Which approaches should I compare in detail?"
+Otherwise, ask "Which approaches should I compare in detail?" using AskUserQuestion with multiSelect enabled so the user can select multiple approaches at once. List each approach label as a separate option.
 
 - If only 1 approach is selected: Provide a condensed deep-dive before emitting the Proposal Summary. Include affected files and areas with specifics (from Phase 2 findings) and condensed Impact Tracking (Gains / Losses only, no comparison table). Skip the Pros/Cons comparison and risk-per-approach comparison (no comparison target), but ensure the Proposal Summary contains sufficient detail for `/soda-plan-implementation`.
 - If all approaches are selected, or 2-3 approaches are selected, proceed to Phase 4.
