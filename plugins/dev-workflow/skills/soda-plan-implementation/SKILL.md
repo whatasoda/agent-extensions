@@ -3,7 +3,7 @@ name: soda-plan-implementation
 description: Create a detailed implementation plan with branch strategy and commit breakdown.
 user-invocable: true
 argument-hint: [task description]
-allowed-tools: Bash(git *), Read, Grep, Glob
+allowed-tools: Bash(git *), Read, Grep, Glob, Task
 ---
 
 Create a detailed implementation plan for the given task.
@@ -21,9 +21,12 @@ When both are present, $ARGUMENTS takes precedence for the task description, but
 
 ## Procedure
 
-1. **Investigate**: Explore the codebase to understand the scope, affected areas, and existing patterns relevant to the task.
+1. **Investigate**: Explore the codebase to understand the scope, affected areas, and existing patterns.
    - If a Proposal Summary is available, focus on verifying its findings and exploring gaps it did not cover.
-   - If no Proposal Summary is available, investigate from scratch.
+   - If no Proposal Summary is available, investigate from scratch using sub-agents:
+     - Launch a sub-agent (Task, subagent_type: Explore) to survey project structure, dependencies, and conventions relevant to the task.
+     - Based on findings, optionally launch 1-2 focused sub-agents in parallel to explore specific areas (e.g., existing implementation patterns, integration points, test coverage).
+   - Summarize investigation results before proceeding to planning.
 2. **Plan**: Formulate a detailed plan that includes:
    - A new branch name derived from the task description
    - Step-by-step implementation breakdown
