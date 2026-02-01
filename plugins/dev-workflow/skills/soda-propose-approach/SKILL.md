@@ -26,6 +26,8 @@ Present this understanding to the user, then use AskUserQuestion to confirm:
 
 If the user selects anything other than confirmation, incorporate their feedback (via free-text input), revise your understanding, and re-present. Do NOT proceed to Phase 2 until the user confirms.
 
+If consensus cannot be reached after 2 confirmation attempts, propose running Phase 2 in exploratory mode — investigate the current state first, then collaboratively define the problem based on findings.
+
 ## Phase 2: Investigation
 
 ### Step 1: Common Context
@@ -60,11 +62,13 @@ Present 2-4 approaches labeled A, B, C... Each approach includes:
 
 After presenting all approaches, state a recommendation if one stands out.
 
-Then use AskUserQuestion (multiSelect: true) to ask:
+If only one viable approach was found, present it with a brief explanation of why other directions were ruled out. Use AskUserQuestion: "Proceed with detailed review of this approach" / "Re-investigate with a different angle". If proceeding, provide a condensed deep-dive (see below) and emit the Proposal Summary.
+
+Otherwise, use AskUserQuestion (multiSelect: true) to ask:
 "Which approaches should I compare in detail?"
 
 - If only 1 approach is selected: Provide a condensed deep-dive before emitting the Proposal Summary. Include affected files and areas with specifics (from Phase 2 findings) and condensed Impact Tracking (Gains / Losses only, no comparison table). Skip the Pros/Cons comparison and risk-per-approach comparison (no comparison target), but ensure the Proposal Summary contains sufficient detail for `/soda-plan-implementation`.
-- If 2-3 approaches are selected, proceed to Phase 4.
+- If all approaches are selected, or 2-3 approaches are selected, proceed to Phase 4.
 
 ## Phase 4: Detailed Comparison & Decision
 
@@ -80,6 +84,8 @@ For the shortlisted approaches, provide:
 - Recommendation with reasoning
 
 Use AskUserQuestion to confirm the final selection. On selection, emit the Proposal Summary and suggest `/soda-plan-implementation`.
+
+If the user rejects all approaches, return to Phase 1. Use AskUserQuestion to determine the next step: "Redefine the problem and re-investigate" / "Broaden scope to find additional approaches" / "End this exploration".
 
 ## Proposal Summary Format
 
@@ -107,13 +113,6 @@ When the user makes a final selection, emit the following block. Keep it compact
 
     ### Rejected Alternatives
     - Approach (Label): (one-sentence reason for rejection)
-
-## Edge Cases
-
-- **Only one viable approach found**: Present it in Phase 3 with a brief explanation of why other directions were ruled out. Use AskUserQuestion: "Proceed with detailed review of this approach" / "Re-investigate with a different angle".
-- **User selects all approaches in Phase 3**: Proceed to Phase 4 with full comparison of all candidates.
-- **User rejects all approaches in Phase 4**: Return to Phase 1. Use AskUserQuestion to determine the next step: "Redefine the problem and re-investigate" / "Broaden scope to find additional approaches" / "End this exploration".
-- **Problem too ambiguous for Phase 1 consensus**: After 2 unsuccessful confirmation attempts, propose running Phase 2 in exploratory mode — investigate the current state first, then collaboratively define the problem based on findings.
 
 ## Constraints
 
