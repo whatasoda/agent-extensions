@@ -27,7 +27,7 @@ interface PlanIndex {
 const PLANS_DIR = resolve(homedir(), ".claude/plans");
 
 function getProjectKey(): string {
-  return process.cwd().replace(/\//g, "-");
+  return process.cwd().replace(/\//g, "_-_");
 }
 
 function getIndexPath(): string {

@@ -17,7 +17,7 @@ interface PlanIndex {
 }
 
 function getProjectKey(): string {
-  return process.cwd().replace(/\//g, "-");
+  return process.cwd().replace(/\//g, "_-_");
 }
 
 const indexPath = resolve(
@@ -42,6 +42,7 @@ if (!existsSync(indexPath)) {
 try {
   const index: PlanIndex = JSON.parse(readFileSync(indexPath, "utf-8"));
   const plans = index.entries
+    .filter((entry) => existsSync(entry.filePath))
     .sort(
       (a, b) =>
         new Date(b.fileModified).getTime() - new Date(a.fileModified).getTime()
