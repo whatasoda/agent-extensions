@@ -8,6 +8,8 @@ allowed-tools: Bash(git *), Read, Grep, Glob, Task
 
 Create a detailed implementation plan for the given task.
 
+Use English for internal reasoning (thinking). All user-facing output — plans, questions, summaries — must be in Japanese.
+
 If $ARGUMENTS is empty and no Proposal Summary exists in the conversation, ask the user what they want to implement before proceeding.
 
 ## Context Detection
@@ -16,7 +18,7 @@ Before starting, check the conversation for a **Proposal Summary** block (produc
 
 - **If found**: Use it as the starting context.
   - **Investigate**: Extract key findings and affected areas. Verify they are still current, then explore only uncovered gaps. Skip sub-agent investigation if the Proposal Summary covers the scope adequately.
-  - **Plan**: Incorporate Expected Impact (gains, losses, UX changes) into the plan's risk assessment. Use Affected Areas as the starting point for step breakdown. Leverage Rejected Alternatives context to avoid re-exploring ruled-out directions.
+  - **Plan**: Incorporate Expected Impact (gains, losses, UX changes) into the plan's risk assessment. Use Affected Areas as the starting point for step breakdown. Leverage Rejected Alternatives context to avoid re-exploring ruled-out directions. If Implementation Hints are provided, use them to inform step ordering and architectural decisions. If a Scope Boundary is provided, constrain the plan to the defined scope and note deferred items.
   - **Clarify**: Do not re-ask about approach selection (already decided). Only clarify implementation-level ambiguities.
 - **If not found**: Proceed normally using $ARGUMENTS as the task description.
 
@@ -25,7 +27,6 @@ When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes preced
 ## Procedure
 
 1. **Investigate**: Explore the codebase to understand the scope, affected areas, and existing patterns.
-   - If a Proposal Summary is available, focus on verifying its findings and exploring gaps it did not cover.
    - If no Proposal Summary is available, investigate from scratch using sub-agents:
      - Launch a sub-agent (Task, subagent_type: Explore) to survey project structure, dependencies, and conventions relevant to the task.
      - Based on findings, optionally launch 1-2 focused sub-agents in parallel to explore specific areas (e.g., existing implementation patterns, integration points, test coverage).
