@@ -12,12 +12,15 @@ If $ARGUMENTS is empty and no Proposal Summary exists in the conversation, ask t
 
 ## Context Detection
 
-Before starting, check the conversation for a **Proposal Summary** block (produced by `/soda-propose-approach` when the user selects an approach).
+Before starting, check the conversation for a **Proposal Summary** block (produced by `/soda-propose-approach`).
 
-- **If found**: Use it as the starting context. Extract the problem, selected approach, key findings, affected areas, and risks. Only investigate areas not already covered.
+- **If found**: Use it as the starting context.
+  - **Investigate**: Extract key findings and affected areas. Verify they are still current, then explore only uncovered gaps. Skip sub-agent investigation if the Proposal Summary covers the scope adequately.
+  - **Plan**: Incorporate Expected Impact (gains, losses, UX changes) into the plan's risk assessment. Use Affected Areas as the starting point for step breakdown. Leverage Rejected Alternatives context to avoid re-exploring ruled-out directions.
+  - **Clarify**: Do not re-ask about approach selection (already decided). Only clarify implementation-level ambiguities.
 - **If not found**: Proceed normally using $ARGUMENTS as the task description.
 
-When both are present, $ARGUMENTS takes precedence for the task description, but the Proposal Summary still provides useful investigation context.
+When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes precedence for the task description, but the Proposal Summary provides investigation context.
 
 ## Procedure
 
