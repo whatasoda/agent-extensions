@@ -26,7 +26,7 @@ Present this understanding to the user, then use AskUserQuestion to confirm:
 
 If the user selects anything other than confirmation, incorporate their feedback (via free-text input), revise your understanding, and re-present. Do NOT proceed to Phase 2 until the user confirms.
 
-If consensus cannot be reached after 2 confirmation attempts, propose running Phase 2 in exploratory mode — investigate the current state first, then collaboratively define the problem based on findings.
+If consensus cannot be reached after 2 confirmation attempts, propose running Phase 2 in exploratory mode — investigate the current state first, then return to Phase 1 to collaboratively redefine the problem based on the investigation findings.
 
 ## Phase 2: Investigation
 
@@ -83,7 +83,7 @@ For the shortlisted approaches, provide:
   - **UX Delta**: How the end-user experience changes concretely
 - Recommendation with reasoning
 
-Use AskUserQuestion to confirm the final selection. On selection, emit the Proposal Summary and suggest `/soda-plan-implementation`.
+Use AskUserQuestion to confirm the final selection. Options should include each shortlisted approach by label, plus "None of these — revisit from scratch". On selection, emit the Proposal Summary and suggest `/soda-plan-implementation`.
 
 If the user rejects all approaches, return to Phase 1. Use AskUserQuestion to determine the next step: "Redefine the problem and re-investigate" / "Broaden scope to find additional approaches" / "End this exploration".
 
@@ -112,7 +112,12 @@ When the user makes a final selection, emit the following block. Keep it compact
     - (key risk specific to this approach)
 
     ### Rejected Alternatives
-    - Approach (Label): (one-sentence reason for rejection)
+    - Approach (Label): (one-sentence reason) — rejected after detailed comparison
+    (omit this section if no approaches were compared in Phase 4)
+
+    ### Not Compared
+    - Approach (Label): (one-sentence reason for not shortlisting)
+    (omit this section if all proposed approaches were shortlisted)
 
 ## Constraints
 
