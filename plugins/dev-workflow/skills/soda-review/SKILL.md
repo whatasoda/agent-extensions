@@ -1,5 +1,5 @@
 ---
-name: soda-review-branch
+name: soda-review
 description: Review changes on the current branch and report issues, improvements, and gaps.
 user-invocable: true
 argument-hint: [focus or base branch]

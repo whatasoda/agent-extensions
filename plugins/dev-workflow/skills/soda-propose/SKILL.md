@@ -1,5 +1,5 @@
 ---
-name: soda-propose-approach
+name: soda-propose
 description: Propose multiple approaches for a given problem and summarize trade-offs.
 user-invocable: true
 argument-hint: [problem description]

@@ -1,5 +1,5 @@
 ---
-name: soda-plan-implementation
+name: soda-plan
 description: Create a detailed implementation plan with branch strategy and commit breakdown.
 user-invocable: true
 argument-hint: [task description]

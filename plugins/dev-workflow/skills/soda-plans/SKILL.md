@@ -1,5 +1,5 @@
 ---
-name: soda-review-plan
+name: soda-plans
 description: Browse and review implementation plans from other Claude Code sessions.
 user-invocable: true
 argument-hint: [plan title or keyword]
