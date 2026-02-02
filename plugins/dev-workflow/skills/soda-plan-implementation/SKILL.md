@@ -17,7 +17,7 @@ If $ARGUMENTS is empty and no Proposal Summary exists in the conversation, ask t
 Before starting, check the conversation for a **Proposal Summary** block (produced by `/soda-propose-approach`).
 
 - **If found**: Use it as the starting context.
-  - **Investigate**: Extract key findings and affected areas. Verify they are still current, then explore only uncovered gaps. Skip sub-agent investigation if the Proposal Summary covers the scope adequately.
+  - **Investigate**: Extract key findings and affected areas. Verify they are still current — if the Proposal Summary references specific files or patterns, spot-check that they still exist and haven't changed significantly. If key findings are outdated, note the discrepancies and investigate the gaps using sub-agents. Skip sub-agent investigation if the Proposal Summary covers the scope adequately.
   - **Plan**: Incorporate Expected Impact (gains, losses, UX changes) and Risks into the plan's risk assessment. Use Affected Areas as the starting point for step breakdown. Leverage Rejected Alternatives context to avoid re-exploring ruled-out directions. If Implementation Hints are provided, use them to inform step ordering and architectural decisions. If a Scope Boundary is provided, constrain the plan to the defined scope and note deferred items.
   - **Clarify**: Do not re-ask about approach selection (already decided). Clarify implementation-level ambiguities. Design decisions are handled in the Design Review step.
 - **If not found**: Proceed normally using $ARGUMENTS as the task description.
@@ -29,7 +29,8 @@ When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes preced
 1. **Investigate**: Explore the codebase to understand the scope, affected areas, and existing patterns.
    - If no Proposal Summary is available, investigate from scratch using sub-agents:
      - Launch a sub-agent (Task, subagent_type: Explore) to survey project structure, dependencies, and conventions relevant to the task.
-     - Based on findings, optionally launch 1-2 focused sub-agents in parallel to explore specific areas (e.g., existing implementation patterns, integration points, test coverage).
+     - Summarize the agent's findings into a Common Context block.
+     - Based on findings, optionally launch 1-2 focused sub-agents in parallel. Each prompt must include the Common Context block (summarized, not raw output) and the specific investigation question.
    - Summarize investigation results before proceeding.
    - If investigation reveals multiple fundamentally different approaches, use AskUserQuestion to let the user decide: "Run /soda-propose-approach to compare approaches" / "Continue — I'll specify the approach". Do not choose an approach autonomously.
 2. **Strategy Confirmation**: Present the investigation findings and the intended implementation direction to the user.
@@ -47,7 +48,7 @@ When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes preced
    - "Continue on the current branch" (for follow-up work or small additions)
    If the user chooses a new branch, derive the branch name from the task description.
    Do NOT proceed to Step 4 until the user responds.
-4. **Plan**: Formulate the plan. Include the following elements. Do not follow a fixed template — organize and format them as best fits the task.
+4. **Plan**: Formulate the plan. Include the following elements. Do not follow a fixed template — organize and format them as best fits the task. Follow the Compact-Resilience Guidelines below when authoring plan content.
 
    **Required elements:**
    - **Task summary and branch name**
@@ -57,14 +58,11 @@ When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes preced
      - File changes with full paths and rationale (`path/to/file` — what and why)
      - Validation criteria — how to verify this step is correct (test command, expected behavior, manual check)
      - Dependencies on prior steps and what this step produces for later steps (do not rely on ordering alone)
-       - _Compact-resilience: explicit dependency chains survive compaction; implicit ordering does not._
    - **Risks and mitigation** — at least one risk with a concrete mitigation strategy
 
    **Conditional elements** (include when applicable):
-   - **Technical context per step** — type signatures, API contracts, data shapes, algorithms. Prefer code snippets and structured data over prose descriptions.
-     - _Compact-resilience: `interface Foo { bar: string }` survives compaction intact; "Foo has a bar field of type string" gets summarized away._
-   - **Design rationale** — for non-obvious decisions, state "why" explicitly as a labeled callout, not embedded in prose.
-     - _Compact-resilience: a labeled "Why: ..." callout is retained as structure; rationale buried in a paragraph is dropped._
+   - **Technical context per step** — type signatures, API contracts, data shapes, algorithms
+   - **Design rationale** — for non-obvious decisions, state "why" explicitly as a labeled callout, not embedded in prose
    - **Cross-step shared context** — types, constants, or contracts used by multiple steps. Define once and reference by name in each step.
    - **Subagent utilization plan** (include when the plan has 4+ steps) — for each step, indicate whether it should be executed in a subagent or in the main context. See Subagent Criteria below for the decision rules.
 
@@ -94,6 +92,14 @@ When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes preced
 - Each step must define a commit with an imperative-mood message, explicit dependencies on prior steps, and validation criteria.
 - The plan must identify at least one risk and its mitigation.
 - When in doubt about whether to use AskUserQuestion, prefer asking. The plan's self-contained requirement does not override the need for user confirmation on design decisions.
+
+## Compact-Resilience Guidelines
+
+Plans must survive context compaction. Follow these rules when authoring plan content:
+
+- **Explicit dependency chains**: State what each step depends on and produces. Do not rely on step ordering alone — ordering is lost during compaction.
+- **Code over prose**: Prefer code snippets and structured data (`interface Foo { bar: string }`) over prose descriptions ("Foo has a bar field of type string"). Code survives intact; prose gets summarized away.
+- **Labeled callouts**: State design rationale as "Why: ..." callouts, not embedded in paragraphs. Labeled callouts are retained as structure; prose rationale is dropped.
 
 ## Subagent Criteria
 

@@ -3,7 +3,7 @@ name: soda-propose-approach
 description: Propose multiple approaches for a given problem and summarize trade-offs.
 user-invocable: true
 argument-hint: [problem description]
-allowed-tools: Bash(git *), Read, Grep, Glob, Task
+allowed-tools: Bash(git *), Read, Grep, Glob, Task, AskUserQuestion
 ---
 
 Investigate and propose multiple approaches for the given problem or goal.

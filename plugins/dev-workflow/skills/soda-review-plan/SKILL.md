@@ -3,7 +3,7 @@ name: soda-review-plan
 description: Browse and review implementation plans from other Claude Code sessions.
 user-invocable: true
 argument-hint: [plan title or keyword]
-allowed-tools: Bash(bun *), Read, Grep, Glob
+allowed-tools: Bash(bun *), Read, Grep, Glob, AskUserQuestion
 ---
 
 Browse and review implementation plans indexed from `~/.claude/plans/`.
@@ -18,7 +18,7 @@ The above JSON provides `plans` (array of `{slug, title, fileModified, filePath,
 
 ## Procedure
 
-1. **List Plans**: If `$ARGUMENTS` is provided, filter plans by keyword match against titles. Otherwise, show the 10 most recent plans as a numbered list with title and date. When `stepCount` or `hasDesignDecisions` are available, append metadata tags after the date (e.g., `[3ステップ | 設計判断あり]` or `[5ステップ]`). Omit tags for entries without metadata. If there are more plans, mention the total count.
+1. **List Plans**: If the plan index JSON contains a `message` field or `plans` is empty, inform the user that no plans were found for this project and suggest running `/soda-plan-implementation` to create one. End the skill. Otherwise, if `$ARGUMENTS` is provided, filter plans by keyword match against titles. Otherwise, show the 10 most recent plans as a numbered list with title and date. When `stepCount` or `hasDesignDecisions` are available, append metadata tags after the date (e.g., `[3ステップ | 設計判断あり]` or `[5ステップ]`). Omit tags for entries without metadata. If there are more plans, mention the total count.
 
 2. **Select Plan**: Use AskUserQuestion with plan titles as options (up to 4 from the filtered/recent list). If the user needs a plan not shown, they can provide a keyword in the "Other" option.
 
