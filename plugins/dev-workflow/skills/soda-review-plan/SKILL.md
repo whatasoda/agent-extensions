@@ -3,7 +3,7 @@ name: soda-review-plan
 description: Browse and review implementation plans from other Claude Code sessions.
 user-invocable: true
 argument-hint: [plan title or keyword]
-allowed-tools: Bash(bun *), Read, Grep, Glob
+allowed-tools: Bash(bun *), Read, Grep, Glob, AskUserQuestion
 ---
 
 Browse and review implementation plans indexed from `~/.claude/plans/`.

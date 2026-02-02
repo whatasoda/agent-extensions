@@ -3,10 +3,12 @@ name: soda-review-branch
 description: Review changes on the current branch and report issues, improvements, and gaps.
 user-invocable: true
 argument-hint: [focus or base branch]
-allowed-tools: Bash(git *), Read, Grep, Glob
+allowed-tools: Bash(git *), Read, Grep, Glob, AskUserQuestion
 ---
 
 Perform a comprehensive code review of the changes on the current branch.
+
+Use English for internal reasoning (thinking). All user-facing output must be in Japanese.
 
 ## Current Branch Context
 
