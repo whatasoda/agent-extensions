@@ -1,5 +1,6 @@
 {
   "name": "agent-extensions",
+  "license": "MIT",
   "private": true,
   "workspaces": ["plugins/*", "packages/*"],
   "scripts": {
