@@ -1,4 +1,4 @@
-# soda-review-branch
+# soda-review
 
 ## Background
 
@@ -24,15 +24,15 @@ Pre-PR quality gate. Catches functional issues, completeness gaps, and code qual
 ## Typical Usage Patterns
 
 ```
-/soda-review-branch
+/soda-review
 ```
 
 ```
-/soda-review-branch origin/develop からの差分を対象に
+/soda-review origin/develop からの差分を対象に
 ```
 
 ```
-/soda-review-branch 370c8b726a から最新のコミットまで
+/soda-review 370c8b726a から最新のコミットまで
 ```
 
 ## Future Improvements

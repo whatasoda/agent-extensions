@@ -12,7 +12,7 @@ Use English for internal reasoning (thinking). All user-facing output must be in
 
 ## Current Branch Context
 
-!`bun ${CLAUDE_PLUGIN_ROOT}/skills/soda-review-branch/scripts/detect-base-branch.ts`
+!`bun ${CLAUDE_PLUGIN_ROOT}/skills/soda-review/scripts/detect-base-branch.ts`
 
 The above JSON provides `baseBranch`, `mergeBase`, `changedFiles`, `potentialConflicts`, and ready-to-use `commands.diff` / `commands.log`.
 
@@ -30,7 +30,7 @@ If $ARGUMENTS is not empty, treat it as the review focus or an alternative base 
 4. **Report**: Present findings ordered by severity.
 5. **Next Steps**: After presenting the report, use AskUserQuestion to ask the user what to do next. Adjust the options based on the review outcome:
    - If issues were found:
-     - "Create a plan to fix the issues" (suggest `/soda-plan-implementation`)
+     - "Create a plan to fix the issues" (suggest `/soda-plan`)
      - "Note these for later"
    - If no issues were found:
      - "Looks good, no action needed"
