@@ -1,5 +1,5 @@
 ---
-name: soda-plan-implementation
+name: soda-plan
 description: Create a detailed implementation plan with branch strategy and commit breakdown.
 user-invocable: true
 argument-hint: [task description]
@@ -14,7 +14,7 @@ If $ARGUMENTS is empty and no Proposal Summary exists in the conversation, ask t
 
 ## Context Detection
 
-Before starting, check the conversation for a **Proposal Summary** block (produced by `/soda-propose-approach`).
+Before starting, check the conversation for a **Proposal Summary** block (produced by `/soda-propose`).
 
 - **If found**: Use it as the starting context.
   - **Investigate**: Extract key findings and affected areas. Verify they are still current — if the Proposal Summary references specific files or patterns, spot-check that they still exist and haven't changed significantly. If key findings are outdated, note the discrepancies and investigate the gaps using sub-agents. Skip sub-agent investigation if the Proposal Summary covers the scope adequately.
@@ -32,7 +32,7 @@ When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes preced
      - Summarize the agent's findings into a Common Context block.
      - Based on findings, optionally launch 1-2 focused sub-agents in parallel. Each prompt must include the Common Context block (summarized, not raw output) and the specific investigation question.
    - Summarize investigation results before proceeding.
-   - If investigation reveals multiple fundamentally different approaches, use AskUserQuestion to let the user decide: "Run /soda-propose-approach to compare approaches" / "Continue — I'll specify the approach". Do not choose an approach autonomously.
+   - If investigation reveals multiple fundamentally different approaches, use AskUserQuestion to let the user decide: "Run /soda-propose to compare approaches" / "Continue — I'll specify the approach". Do not choose an approach autonomously.
 2. **Strategy Confirmation**: Present the investigation findings and the intended implementation direction to the user.
    - **When a Proposal Summary exists**: Summarize the selected approach and key findings. Use AskUserQuestion to confirm:
      - "Proceed with this approach"
@@ -40,8 +40,8 @@ When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes preced
    - **When no Proposal Summary exists**: Present investigation findings and intended direction. Use AskUserQuestion to confirm:
      - "Proceed with this direction"
      - "Adjust the direction"
-     - "Run /soda-propose-approach to compare alternatives"
-   If the user wants to adjust, incorporate their feedback and re-present. If they choose /soda-propose-approach, stop planning and suggest the user invoke it.
+     - "Run /soda-propose to compare alternatives"
+   If the user wants to adjust, incorporate their feedback and re-present. If they choose /soda-propose, stop planning and suggest the user invoke it.
    Do NOT proceed to Step 3 until the user confirms.
 3. **Branch Strategy**: Use AskUserQuestion to ask the user whether to create a new branch or continue on the current branch. Options:
    - "Create a new branch" (default for most tasks)

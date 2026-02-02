@@ -1,5 +1,5 @@
 ---
-name: soda-review-plan
+name: soda-plans
 description: Browse and review implementation plans from other Claude Code sessions.
 user-invocable: true
 argument-hint: [plan title or keyword]
@@ -12,13 +12,13 @@ Use English for internal reasoning (thinking). All user-facing output must be in
 
 ## Plan Index
 
-!`bun ${CLAUDE_PLUGIN_ROOT}/skills/soda-review-plan/scripts/list-plans.ts`
+!`bun ${CLAUDE_PLUGIN_ROOT}/skills/soda-plans/scripts/list-plans.ts`
 
 The above JSON provides `plans` (array of `{slug, title, fileModified, filePath, stepCount?, hasDesignDecisions?}`) sorted by most recent first, and `totalCount`. The `stepCount` and `hasDesignDecisions` fields are optional — older index entries may lack them.
 
 ## Procedure
 
-1. **List Plans**: If the plan index JSON contains a `message` field or `plans` is empty, inform the user that no plans were found for this project and suggest running `/soda-plan-implementation` to create one. End the skill. Otherwise, if `$ARGUMENTS` is provided, filter plans by keyword match against titles. Otherwise, show the 10 most recent plans as a numbered list with title and date. When `stepCount` or `hasDesignDecisions` are available, append metadata tags after the date (e.g., `[3ステップ | 設計判断あり]` or `[5ステップ]`). Omit tags for entries without metadata. If there are more plans, mention the total count.
+1. **List Plans**: If the plan index JSON contains a `message` field or `plans` is empty, inform the user that no plans were found for this project and suggest running `/soda-plan` to create one. End the skill. Otherwise, if `$ARGUMENTS` is provided, filter plans by keyword match against titles. Otherwise, show the 10 most recent plans as a numbered list with title and date. When `stepCount` or `hasDesignDecisions` are available, append metadata tags after the date (e.g., `[3ステップ | 設計判断あり]` or `[5ステップ]`). Omit tags for entries without metadata. If there are more plans, mention the total count.
 
 2. **Select Plan**: Use AskUserQuestion with plan titles as options (up to 4 from the filtered/recent list). If the user needs a plan not shown, they can provide a keyword in the "Other" option.
 

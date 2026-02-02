@@ -1,4 +1,4 @@
-# soda-propose-approach
+# soda-propose
 
 ## Background
 
@@ -14,7 +14,7 @@ Key sub-patterns absorbed:
 
 Structured exploration of alternatives before committing to an implementation approach. Prevents jumping into implementation without considering trade-offs. Acts as the decision-support phase in the user's workflow.
 
-The typical flow: user describes a goal → this skill proposes options → user shortlists candidates → detailed comparison → final selection → `/soda-plan-implementation` takes over.
+The typical flow: user describes a goal → this skill proposes options → user shortlists candidates → detailed comparison → final selection → `/soda-plan` takes over.
 
 ## Design Notes
 
@@ -34,7 +34,7 @@ The typical flow: user describes a goal → this skill proposes options → user
 
 - **Read-only constraint**: This skill explicitly does not modify code. It exists purely in the investigation/proposal phase. This prevents the common anti-pattern of AI tools starting to implement before the user has decided on an approach.
 
-- **Chaining to plan-implementation**: The Proposal Summary output format is designed so the user can naturally follow up with `/soda-plan-implementation` after selecting. The summary includes Expected Impact and Rejected Alternatives so the planning phase inherits the full decision context.
+- **Chaining to plan-implementation**: The Proposal Summary output format is designed so the user can naturally follow up with `/soda-plan` after selecting. The summary includes Expected Impact and Rejected Alternatives so the planning phase inherits the full decision context.
 
 - **Recommendation included**: When one approach clearly dominates, the skill should say so. The user values opinionated technical guidance, not just neutral enumeration.
 
@@ -45,16 +45,16 @@ The typical flow: user describes a goal → this skill proposes options → user
 ## Typical Usage Patterns
 
 ```
-/soda-propose-approach フロントエンドの UI コンポーネントで park ui に寄せられるものはないだろうか
+/soda-propose フロントエンドの UI コンポーネントで park ui に寄せられるものはないだろうか
 ```
 
 ```
-/soda-propose-approach HMR の実装方法を検討したい
+/soda-propose HMR の実装方法を検討したい
 ```
 
 Chained flow:
 ```
-/soda-propose-approach キャッシュ戦略を改善したい
+/soda-propose キャッシュ戦略を改善したい
 → (AI restates problem, confirms understanding)
 → (AI investigates via sub-agents)
 → (AI proposes A, B, C with Impact Outlook)
@@ -62,7 +62,7 @@ Chained flow:
 → (AI provides detailed comparison with Impact Tracking)
 → User: "Aで進める"
 → (AI emits Proposal Summary)
-→ /soda-plan-implementation
+→ /soda-plan
 ```
 
 ## Future Improvements
