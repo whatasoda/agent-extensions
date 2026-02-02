@@ -20,13 +20,13 @@
         "@rslib/core": "^0.19.0",
       },
     },
-    "plugins/hello": {
-      "name": "@agent-extensions/plugin-hello",
+    "plugins/dev-workflow": {
+      "name": "@agent-extensions/plugin-dev-workflow",
       "version": "0.1.0",
     },
   },
   "packages": {
-    "@agent-extensions/plugin-hello": ["@agent-extensions/plugin-hello@workspace:plugins/hello"],
+    "@agent-extensions/plugin-dev-workflow": ["@agent-extensions/plugin-dev-workflow@workspace:plugins/dev-workflow"],
 
     "@agent-extensions/sync-exports": ["@agent-extensions/sync-exports@workspace:packages/sync-exports"],
 
