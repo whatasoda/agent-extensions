@@ -93,6 +93,7 @@ When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes preced
 - The plan must be self-contained: include enough technical context (as code snippets and structured data, not prose) that implementation can proceed from the plan alone, even after context compaction.
 - Each step must define a commit with an imperative-mood message, explicit dependencies on prior steps, and validation criteria.
 - The plan must identify at least one risk and its mitigation.
+- When in doubt about whether to use AskUserQuestion, prefer asking. The plan's self-contained requirement does not override the need for user confirmation on design decisions.
 
 ## Subagent Criteria
 
