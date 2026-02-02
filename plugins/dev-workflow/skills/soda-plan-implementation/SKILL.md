@@ -32,16 +32,21 @@ When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes preced
      - Based on findings, optionally launch 1-2 focused sub-agents in parallel to explore specific areas (e.g., existing implementation patterns, integration points, test coverage).
    - Summarize investigation results before proceeding.
    - If investigation reveals multiple fundamentally different approaches, use AskUserQuestion to let the user decide: "Run /soda-propose-approach to compare approaches" / "Continue — I'll specify the approach". Do not choose an approach autonomously.
-2. **Strategy Confirmation**: If no Proposal Summary is available, present the investigation findings and the intended implementation direction to the user. Use AskUserQuestion to confirm:
-   - "Proceed with this direction"
-   - "Adjust the direction" (incorporate user feedback, then re-present)
-   - "Run /soda-propose-approach to compare alternatives"
-   If the user wants to adjust, incorporate their feedback and re-present the direction. If they choose /soda-propose-approach, stop planning and suggest the user invoke it.
-   Skip this step when a Proposal Summary exists (approach already decided).
+2. **Strategy Confirmation**: Present the investigation findings and the intended implementation direction to the user.
+   - **When a Proposal Summary exists**: Summarize the selected approach and key findings. Use AskUserQuestion to confirm:
+     - "Proceed with this approach"
+     - "Adjust the approach before planning"
+   - **When no Proposal Summary exists**: Present investigation findings and intended direction. Use AskUserQuestion to confirm:
+     - "Proceed with this direction"
+     - "Adjust the direction"
+     - "Run /soda-propose-approach to compare alternatives"
+   If the user wants to adjust, incorporate their feedback and re-present. If they choose /soda-propose-approach, stop planning and suggest the user invoke it.
+   Do NOT proceed to Step 3 until the user confirms.
 3. **Branch Strategy**: Use AskUserQuestion to ask the user whether to create a new branch or continue on the current branch. Options:
    - "Create a new branch" (default for most tasks)
    - "Continue on the current branch" (for follow-up work or small additions)
    If the user chooses a new branch, derive the branch name from the task description.
+   Do NOT proceed to Step 4 until the user responds.
 4. **Plan**: Formulate the plan. Include the following elements. Do not follow a fixed template — organize and format them as best fits the task.
 
    **Required elements:**
@@ -63,8 +68,22 @@ When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes preced
    - **Cross-step shared context** — types, constants, or contracts used by multiple steps. Define once and reference by name in each step.
    - **Subagent utilization plan** (include when the plan has 4+ steps) — for each step, indicate whether it should be executed in a subagent or in the main context. See Subagent Criteria below for the decision rules.
 
-   If the plan involves software design decisions (architecture choices, pattern selection, library choices, data model design, API contract design), present each decision to the user via AskUserQuestion before incorporating it into the plan. For each decision, structure the options as concrete alternatives with a brief rationale (e.g., "Use Strategy A — simpler but less flexible" / "Use Strategy B — more complex but extensible"). Do not make design decisions autonomously. Implementation-level details (variable names, internal helper structure, iteration order) do not require user confirmation.
-5. **Clarify**: If there are ambiguous requirements or missing information, ask the user before finalizing the plan.
+5. **Design Review**: After drafting the plan, review it for software design decisions. A design decision is any choice that affects architecture, external contracts, or user-facing behavior. Examples of design decisions that REQUIRE user confirmation:
+   - Architecture patterns (e.g., monolith vs microservice, event-driven vs request-response)
+   - Library or framework selection
+   - Data model design (schema, relationships)
+   - API contract design (endpoints, request/response shapes)
+   - State management approach
+   - Authentication/authorization strategy
+
+   Examples that do NOT require confirmation (implementation details):
+   - Variable/function naming
+   - Internal helper structure
+   - Iteration order
+   - File organization within an already-decided architecture
+
+   For each design decision found, use AskUserQuestion to present concrete alternatives with rationale (e.g., "Use Strategy A — simpler but less flexible" / "Use Strategy B — more complex but extensible"). Do NOT finalize the plan until all design decisions are confirmed by the user. If no design decisions are found, state this explicitly and proceed.
+6. **Clarify**: If there are ambiguous requirements or missing information, ask the user before finalizing the plan.
 
 ## Constraints
 
