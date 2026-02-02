@@ -3,7 +3,7 @@ name: soda-plan-implementation
 description: Create a detailed implementation plan with branch strategy and commit breakdown.
 user-invocable: true
 argument-hint: [task description]
-allowed-tools: Bash(git *), Read, Grep, Glob, Task
+allowed-tools: Bash(git *), Read, Grep, Glob, Task, AskUserQuestion
 ---
 
 Create a detailed implementation plan for the given task.
