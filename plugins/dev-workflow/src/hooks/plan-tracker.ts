@@ -67,10 +67,7 @@ function extractMetadata(filePath: string): Pick<PlanIndexEntry, "stepCount" | "
       /Why:\s/m.test(content) ||
       /方針|設計判断|Design Decision|アーキテクチャ|architecture/im.test(content) ||
       undefined;
-    return {
-      ...(stepCount !== undefined && { stepCount }),
-      ...(hasDesignDecisions !== undefined && { hasDesignDecisions }),
-    };
+    return { stepCount, hasDesignDecisions };
   } catch {
     return {};
   }
