@@ -19,7 +19,7 @@ Before starting, check the conversation for a **Proposal Summary** block (produc
 - **If found**: Use it as the starting context.
   - **Investigate**: Extract key findings and affected areas. Verify they are still current, then explore only uncovered gaps. Skip sub-agent investigation if the Proposal Summary covers the scope adequately.
   - **Plan**: Incorporate Expected Impact (gains, losses, UX changes) and Risks into the plan's risk assessment. Use Affected Areas as the starting point for step breakdown. Leverage Rejected Alternatives context to avoid re-exploring ruled-out directions. If Implementation Hints are provided, use them to inform step ordering and architectural decisions. If a Scope Boundary is provided, constrain the plan to the defined scope and note deferred items.
-  - **Clarify**: Do not re-ask about approach selection (already decided). Only clarify implementation-level ambiguities and design decisions.
+  - **Clarify**: Do not re-ask about approach selection (already decided). Clarify implementation-level ambiguities. Design decisions are handled in the Design Review step.
 - **If not found**: Proceed normally using $ARGUMENTS as the task description.
 
 When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes precedence for the task description, but the Proposal Summary provides investigation context.
