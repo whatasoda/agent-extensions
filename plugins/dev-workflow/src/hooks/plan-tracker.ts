@@ -16,6 +16,8 @@ interface PlanIndexEntry {
   fileModified: string;
   detectedAt: string;
   slug: string;
+  stepCount?: number;
+  hasDesignDecisions?: boolean;
 }
 
 interface PlanIndex {
@@ -56,6 +58,21 @@ function extractTitle(filePath: string): string {
   }
 }
 
+function extractMetadata(filePath: string): Pick<PlanIndexEntry, "stepCount" | "hasDesignDecisions"> {
+  try {
+    const content = readFileSync(filePath, "utf-8").slice(0, 2000);
+    const headings = content.match(/^#{2,3}\s+/gm);
+    const stepCount = headings ? headings.length : undefined;
+    const hasDesignDecisions =
+      /Why:\s/m.test(content) ||
+      /方針|設計判断|Design Decision|アーキテクチャ|architecture/im.test(content) ||
+      undefined;
+    return { stepCount, hasDesignDecisions };
+  } catch {
+    return {};
+  }
+}
+
 function main() {
   if (!existsSync(PLANS_DIR)) return;
 
@@ -90,6 +107,7 @@ function main() {
       if (existing) {
         existing.fileModified = stat.mtime.toISOString();
         existing.title = extractTitle(fullPath);
+        Object.assign(existing, extractMetadata(fullPath));
       }
       continue;
     }
@@ -100,6 +118,7 @@ function main() {
       fileModified: stat.mtime.toISOString(),
       detectedAt: new Date().toISOString(),
       slug,
+      ...extractMetadata(fullPath),
     });
   }
 
