@@ -10,12 +10,6 @@
   },
   "plugins": [
     {
-      "name": "hello",
-      "source": "./plugins/hello",
-      "description": "A sample plugin that greets the user",
-      "version": "0.1.1"
-    },
-    {
       "name": "dev-workflow",
       "source": "./plugins/dev-workflow",
       "description": "Development workflow skills: implementation planning, approach proposals, and branch reviews",
