@@ -20,7 +20,7 @@ If $ARGUMENTS is not empty, treat it as the review focus or an alternative base 
 
 ## Procedure
 
-1. **Identify the diff**: Use the pre-fetched branch context JSON above. Run `commands.diff` to get the full diff. If $ARGUMENTS specifies a different base, re-compute the merge-base and diff accordingly. If the JSON contains an `error` field, present the error to the user and use AskUserQuestion: "Specify a different base branch" / "Cancel review". If the user specifies a different base branch, re-compute the merge-base and diff using that base, then continue from step 2. If the user cancels, end the review.
+1. **Identify the diff**: Use the pre-fetched branch context JSON above. Run `commands.diff` to get the full diff. If $ARGUMENTS specifies a different base, re-compute the merge-base and diff accordingly. If the JSON contains an `error` field, present the error to the user and use AskUserQuestion: "Specify a different base branch" / "Cancel review". If the user specifies a different base branch, re-compute the merge-base and diff using that base, then continue from step 2. If the user cancels, end the review. If the diff is empty (no changes between merge-base and HEAD), inform the user and use AskUserQuestion: "Specify a different base branch" / "End review".
 2. **Overview**: Summarize the changed files and the overall scope of changes.
 3. **Review**: Examine changes from the following perspectives:
    - Functional correctness (logic bugs, missed edge cases)
