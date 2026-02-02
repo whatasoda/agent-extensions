@@ -8,6 +8,8 @@ interface PlanIndexEntry {
   fileModified: string;
   detectedAt: string;
   slug: string;
+  stepCount?: number;
+  hasDesignDecisions?: boolean;
 }
 
 interface PlanIndex {
@@ -47,11 +49,13 @@ try {
       (a, b) =>
         new Date(b.fileModified).getTime() - new Date(a.fileModified).getTime()
     )
-    .map(({ slug, title, fileModified, filePath }) => ({
+    .map(({ slug, title, fileModified, filePath, stepCount, hasDesignDecisions }) => ({
       slug,
       title,
       fileModified,
       filePath,
+      stepCount,
+      hasDesignDecisions,
     }));
 
   console.log(JSON.stringify({ plans, totalCount: plans.length }));
