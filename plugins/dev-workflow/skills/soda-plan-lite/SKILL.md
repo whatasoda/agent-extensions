@@ -3,7 +3,7 @@ name: soda-plan-lite
 description: Create a lightweight implementation plan with branch strategy and commit breakdown
 user-invocable: true
 argument-hint: [task description]
-allowed-tools: Bash(git *), Read, Grep, Glob, AskUserQuestion
+allowed-tools: Bash(git *), Read, Grep, Glob, AskUserQuestion, EnterPlanMode
 ---
 
 Create a lightweight implementation plan for the given task.
