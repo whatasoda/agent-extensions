@@ -22,7 +22,7 @@ The above JSON provides `plans` (array of `{slug, title, fileModified, filePath,
 
 2. **Select Plan**: Use AskUserQuestion with plan titles as options (up to 4 from the filtered/recent list). If the user needs a plan not shown, they can provide a keyword in the "Other" option.
 
-3. **Read and Summarize**: Read the selected plan file using the Read tool. Present a structured summary:
+3. **Read and Summarize**: Read the selected plan file using the Read tool. Plans may be written in English for AI interpretability. Always present the summary in Japanese regardless of the plan's language. Present a structured summary:
    - **タイトル**: Plan title and creation date
    - **概要**: Problem statement and approach (from the plan's overview/problem section)
    - **設計判断**: Key design decisions found in the plan. Look for "Why:" labels, architectural choices, pattern/library selections, and sections titled 方針/設計判断/Design/アーキテクチャ. Present each decision as: what was decided and why. If alternatives were mentioned, note what was rejected. If no explicit design decisions are found, state "明示的な設計判断の記載なし".
