@@ -48,7 +48,7 @@ When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes preced
    - "Continue on the current branch" (for follow-up work or small additions)
    If the user chooses a new branch, derive the branch name from the task description.
    Do NOT proceed to Step 4 until the user responds.
-4. **Plan**: Formulate the plan. Include the following elements. Do not follow a fixed template — organize and format them as best fits the task. Follow the Compact-Resilience Guidelines below when authoring plan content.
+4. **Plan**: Enter plan mode and formulate the plan. Include the following elements. Do not follow a fixed template — organize and format them as best fits the task. Follow the Compact-Resilience Guidelines below when authoring plan content.
 
    **Required elements:**
    - **Task summary and branch name**
@@ -85,7 +85,7 @@ When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes preced
 
 ## Constraints
 
-- Present the plan using plan mode. Do NOT begin implementation until the user approves the plan.
+- Do NOT begin implementation until the user approves the plan.
 - Branch strategy is determined by the user in the Branch Strategy step. If the user chooses a new branch, create it from the current branch unless a different base is specified.
 - The plan must include incremental commits throughout the work.
 - The plan must be self-contained: include enough technical context (as code snippets and structured data, not prose) that implementation can proceed from the plan alone, even after context compaction.
