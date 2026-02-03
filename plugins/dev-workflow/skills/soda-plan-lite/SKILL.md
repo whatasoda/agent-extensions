@@ -41,7 +41,7 @@ When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes preced
    - If the user chooses a new branch, derive the branch name from the task description.
    - If the user wants to adjust, incorporate their feedback and re-present.
    - Do NOT proceed to Step 3 until the user confirms.
-3. **Plan**: Formulate the plan. Include the following required elements. Do not follow a fixed template — organize and format them as best fits the task. Follow the Compact-Resilience Guidelines below when authoring plan content.
+3. **Plan**: Use the EnterPlanMode tool to enter plan mode, then formulate the plan. Include the following required elements. Do not follow a fixed template — organize and format them as best fits the task. Follow the Compact-Resilience Guidelines below when authoring plan content.
 
    **Required elements:**
    - **Task summary and branch name**
@@ -57,7 +57,7 @@ When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes preced
 
 ## Constraints
 
-- Present the plan using plan mode. Call EnterPlanMode first, then write the plan to the file path provided in the system reminder, then call ExitPlanMode to request user approval. Do NOT begin implementation until the user approves the plan.
+- Do NOT begin implementation until the user approves the plan.
 - Branch strategy is determined by the user in the Strategy Confirmation + Branch Strategy step. If the user chooses a new branch, create it from the current branch unless a different base is specified.
 - The plan must include incremental commits throughout the work.
 - The plan must be self-contained: include enough technical context (as code snippets and structured data, not prose) that implementation can proceed from the plan alone, even after context compaction.
