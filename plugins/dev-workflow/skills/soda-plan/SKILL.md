@@ -8,7 +8,7 @@ allowed-tools: Bash(git *), Read, Grep, Glob, Task, AskUserQuestion
 
 Create a detailed implementation plan for the given task.
 
-Use English for internal reasoning (thinking). All user-facing output — plans, questions, summaries — must be in Japanese.
+Use English for internal reasoning (thinking). Plan content (written to plan mode file) must be in English — use structured data, code snippets, and technical English for maximum AI interpretability and compaction resilience. User interaction (AskUserQuestion options, confirmation messages, investigation summaries presented before plan mode) must be in Japanese.
 
 If $ARGUMENTS is empty and no Proposal Summary exists in the conversation, ask the user what they want to implement before proceeding.
 

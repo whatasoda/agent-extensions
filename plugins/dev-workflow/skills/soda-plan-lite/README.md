@@ -20,6 +20,7 @@ The core workflow cycle remains: investigate -> plan -> approve -> implement (wi
 - **Required elements only**: `soda-plan` has both required and conditional elements (technical context per step, design rationale callouts, cross-step shared context, subagent utilization plan). `soda-plan-lite` includes only the required elements: task summary, investigation summary, steps (with commits, file changes, validation, dependencies), and risks. This keeps plan output concise.
 - **No clarify step**: Instead of a separate clarification interaction, ambiguities are noted directly in the plan body. This avoids an additional round-trip while still surfacing uncertainties.
 - **No subagent criteria**: Since lite plans don't use sub-agents for execution either, the subagent utilization plan and eligibility criteria are omitted entirely.
+- **English plan content**: Same rationale as `soda-plan` — plan files are in English for AI interpretability and compaction resilience. User interaction remains in Japanese. See `soda-plan` README for full rationale.
 - **Compact-resilience retained**: The Compact-Resilience Guidelines (explicit dependency chains, code over prose, labeled callouts) are kept because plan quality and survivability after context compaction are important regardless of plan complexity.
 - **Plan mode enforced**: Same as `soda-plan` — plan mode presentation and user approval before implementation.
 
