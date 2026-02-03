@@ -48,7 +48,12 @@ If the user selects an approach, emit the Proposal Summary. If the user rejects 
 
 ## Proposal Summary Format
 
-When the user makes a final selection, emit the following block. Keep it compact (under 30 lines total). This serves as a handoff point for `/soda-plan`.
+When the user makes a final selection, emit the following block. This serves as a handoff point for `/soda-plan`.
+
+Guidelines for effective handoff:
+- Ensure `/soda-plan` can proceed without re-investigating the same areas
+- Prefer structured data (file paths, dependencies) over prose descriptions
+- Keep it focused — this is a lightweight proposal; omit optional sections
 
     ## Proposal Summary
 
