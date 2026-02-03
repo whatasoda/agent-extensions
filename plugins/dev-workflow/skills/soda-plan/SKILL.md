@@ -85,7 +85,7 @@ When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes preced
 
 ## Constraints
 
-- Present the plan using plan mode. Call EnterPlanMode first, then write the plan to the file path provided in the system reminder, then call ExitPlanMode to request user approval. Do NOT begin implementation until the user approves the plan.
+- Present the plan using plan mode. Do NOT begin implementation until the user approves the plan.
 - Branch strategy is determined by the user in the Branch Strategy step. If the user chooses a new branch, create it from the current branch unless a different base is specified.
 - The plan must include incremental commits throughout the work.
 - The plan must be self-contained: include enough technical context (as code snippets and structured data, not prose) that implementation can proceed from the plan alone, even after context compaction.
