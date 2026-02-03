@@ -41,7 +41,7 @@ When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes preced
    - If the user chooses a new branch, derive the branch name from the task description.
    - If the user wants to adjust, incorporate their feedback and re-present.
    - Do NOT proceed to Step 3 until the user confirms.
-3. **Plan**: Enter plan mode and formulate the plan. Include the following required elements. Do not follow a fixed template — organize and format them as best fits the task. Follow the Compact-Resilience Guidelines below when authoring plan content.
+3. **Plan**: Use the EnterPlanMode tool to enter plan mode, then formulate the plan. Include the following required elements. Do not follow a fixed template — organize and format them as best fits the task. Follow the Compact-Resilience Guidelines below when authoring plan content.
 
    **Required elements:**
    - **Task summary and branch name**

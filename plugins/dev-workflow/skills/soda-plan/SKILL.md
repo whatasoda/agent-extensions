@@ -48,7 +48,7 @@ When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes preced
    - "Continue on the current branch" (for follow-up work or small additions)
    If the user chooses a new branch, derive the branch name from the task description.
    Do NOT proceed to Step 4 until the user responds.
-4. **Plan**: Enter plan mode and formulate the plan. Include the following elements. Do not follow a fixed template — organize and format them as best fits the task. Follow the Compact-Resilience Guidelines below when authoring plan content.
+4. **Plan**: Use the EnterPlanMode tool to enter plan mode, then formulate the plan. Include the following elements. Do not follow a fixed template — organize and format them as best fits the task. Follow the Compact-Resilience Guidelines below when authoring plan content.
 
    **Required elements:**
    - **Task summary and branch name**
