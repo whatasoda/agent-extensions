@@ -1,6 +1,6 @@
 ---
 name: soda-propose
-description: Propose multiple approaches for a given problem and summarize trade-offs.
+description: Compare approaches with sub-agent investigation
 user-invocable: true
 argument-hint: [problem description]
 allowed-tools: Bash(git *), Read, Grep, Glob, Task, AskUserQuestion

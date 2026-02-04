@@ -1,6 +1,6 @@
 ---
 name: soda-plans
-description: Browse and review implementation plans from other Claude Code sessions.
+description: Browse and summarize plans from other sessions
 user-invocable: true
 argument-hint: [plan title or keyword]
 allowed-tools: Bash(bun *), Read, Grep, Glob, AskUserQuestion
