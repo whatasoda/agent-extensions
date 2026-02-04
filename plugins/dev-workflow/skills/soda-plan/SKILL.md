@@ -28,6 +28,8 @@ When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes preced
 
 1. **Investigate**: Explore the codebase to understand the scope, affected areas, and existing patterns.
    - If no Proposal Summary is available, investigate from scratch using sub-agents:
+     - **Sub-agent prompt constraints**: Every sub-agent prompt (both survey and focused) MUST begin with the following constraint block:
+       > You are a research-only agent. Do NOT use AskUserQuestion, EnterPlanMode, or any interactive/planning tools. Return your findings as structured text output only.
      - Launch a sub-agent (Task, subagent_type: Explore) to survey project structure, dependencies, and conventions relevant to the task.
      - Summarize the agent's findings into a Common Context block.
      - Based on findings, optionally launch 1-2 focused sub-agents in parallel. Each prompt must include the Common Context block (summarized, not raw output) and the specific investigation question.
