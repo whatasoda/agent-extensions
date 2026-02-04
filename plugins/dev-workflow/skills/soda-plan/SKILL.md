@@ -19,7 +19,7 @@ Before starting, check the conversation for a **Proposal Summary** block (produc
 - **If found**: Use it as the starting context.
   - **Investigate**: Extract key findings and affected areas. Verify they are still current — if the Proposal Summary references specific files or patterns, spot-check that they still exist and haven't changed significantly. If key findings are outdated, note the discrepancies and investigate the gaps using sub-agents. Skip sub-agent investigation if the Proposal Summary covers the scope adequately.
   - **Plan**: Incorporate Expected Impact (gains, losses, UX changes) and Risks into the plan's risk assessment. Use Affected Areas as the starting point for step breakdown. Leverage Rejected Alternatives context to avoid re-exploring ruled-out directions. If Implementation Hints are provided, use them to inform step ordering and architectural decisions. If a Scope Boundary is provided, constrain the plan to the defined scope and note deferred items.
-  - **Clarify**: Do not re-ask about approach selection (already decided). Clarify implementation-level ambiguities. Design decisions are handled in the Design Review step.
+  - **Clarify**: Do not re-ask about approach selection (already decided). Clarify implementation-level ambiguities. Design decisions are handled as labeled callouts in the plan body.
 - **If not found**: Proceed normally using $ARGUMENTS as the task description.
 
 When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes precedence for the task description, but the Proposal Summary provides investigation context.
@@ -28,27 +28,37 @@ When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes preced
 
 1. **Investigate**: Explore the codebase to understand the scope, affected areas, and existing patterns.
    - If no Proposal Summary is available, investigate from scratch using sub-agents:
+     - **Sub-agent prompt constraints**: Every sub-agent prompt (both survey and focused) MUST begin with the following constraint block:
+       > You are a research-only agent. Do NOT use AskUserQuestion, EnterPlanMode, or any interactive/planning tools. Return your findings in the output format specified below.
+     - **Sub-agent output contract**: Every sub-agent prompt MUST end with the following output format requirement:
+       > Return findings in this exact format:
+       > ### Files
+       > - `path/to/file` — relevance to the task
+       > ### Patterns
+       > - pattern name — description of the convention or pattern found
+       > ### Dependencies
+       > - dependency — how it affects the task
+       > ### Open Questions
+       > - question — what remains unclear from this investigation alone
      - Launch a sub-agent (Task, subagent_type: Explore) to survey project structure, dependencies, and conventions relevant to the task.
      - Summarize the agent's findings into a Common Context block.
-     - Based on findings, optionally launch 1-2 focused sub-agents in parallel. Each prompt must include the Common Context block (summarized, not raw output) and the specific investigation question.
+     - Based on findings, optionally launch 1-2 focused sub-agents in parallel. Each prompt must include the Common Context block (summarized, not raw output), the specific investigation question, and both the constraint block and output contract above.
    - Summarize investigation results before proceeding.
    - If investigation reveals multiple fundamentally different approaches, use AskUserQuestion to let the user decide: "Run /soda-propose to compare approaches" / "Continue — I'll specify the approach". Do not choose an approach autonomously.
-2. **Strategy Confirmation**: Present the investigation findings and the intended implementation direction to the user.
-   - **When a Proposal Summary exists**: Summarize the selected approach and key findings. Use AskUserQuestion to confirm:
-     - "Proceed with this approach"
-     - "Adjust the approach before planning"
-   - **When no Proposal Summary exists**: Present investigation findings and intended direction. Use AskUserQuestion to confirm:
-     - "Proceed with this direction"
-     - "Adjust the direction"
-     - "Run /soda-propose to compare alternatives"
+2. **Strategy Confirmation + Branch Strategy**: Present the investigation findings and the intended implementation direction to the user. Use a single AskUserQuestion with these options:
+   - **When a Proposal Summary exists**:
+     - "この方針で新ブランチ作成"
+     - "この方針で現ブランチ続行"
+     - "方針を調整"
+   - **When no Proposal Summary exists**:
+     - "この方針で新ブランチ作成"
+     - "この方針で現ブランチ続行"
+     - "方針を調整"
+     - "/soda-propose で代替案を比較"
+   If the user chooses a new branch, derive the branch name from the task description.
    If the user wants to adjust, incorporate their feedback and re-present. If they choose /soda-propose, stop planning and suggest the user invoke it.
    Do NOT proceed to Step 3 until the user confirms.
-3. **Branch Strategy**: Use AskUserQuestion to ask the user whether to create a new branch or continue on the current branch. Options:
-   - "Create a new branch" (default for most tasks)
-   - "Continue on the current branch" (for follow-up work or small additions)
-   If the user chooses a new branch, derive the branch name from the task description.
-   Do NOT proceed to Step 4 until the user responds.
-4. **Plan**: Use the EnterPlanMode tool to enter plan mode, then formulate the plan. Include the following elements. Do not follow a fixed template — organize and format them as best fits the task. Follow the Compact-Resilience Guidelines below when authoring plan content.
+3. **Plan**: Use the EnterPlanMode tool to enter plan mode, then formulate the plan. Include the following elements. Do not follow a fixed template — organize and format them as best fits the task. Follow the Compact-Resilience Guidelines below when authoring plan content.
 
    **Required elements:**
    - **Task summary and branch name**
@@ -65,33 +75,38 @@ When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes preced
    - **Design rationale** — for non-obvious decisions, state "why" explicitly as a labeled callout, not embedded in prose
    - **Cross-step shared context** — types, constants, or contracts used by multiple steps. Define once and reference by name in each step.
    - **Subagent utilization plan** (include when the plan has 4+ steps) — for each step, indicate whether it should be executed in a subagent or in the main context. See Subagent Criteria below for the decision rules.
+   - **Design decisions** (include when the plan involves architecture, external contracts, or user-facing behavior choices) — present each decision as a labeled callout in the plan body:
+     > **Design Decision: [topic]**
+     > Option A: ... — [trade-off]
+     > Option B: ... — [trade-off]
+     > Recommended: [option] — [rationale]
 
-5. **Design Review**: After drafting the plan, review it for software design decisions. A design decision is any choice that affects architecture, external contracts, or user-facing behavior. Examples of design decisions that REQUIRE user confirmation:
-   - Architecture patterns (e.g., monolith vs microservice, event-driven vs request-response)
-   - Library or framework selection
-   - Data model design (schema, relationships)
-   - API contract design (endpoints, request/response shapes)
-   - State management approach
-   - Authentication/authorization strategy
+     The user reviews and confirms design decisions when approving the plan via ExitPlanMode. If a decision significantly changes the plan structure, note this dependency explicitly.
 
-   Examples that do NOT require confirmation (implementation details):
-   - Variable/function naming
-   - Internal helper structure
-   - Iteration order
-   - File organization within an already-decided architecture
+     Examples of decisions that require callouts:
+     - Architecture patterns (e.g., monolith vs microservice, event-driven vs request-response)
+     - Library or framework selection
+     - Data model design (schema, relationships)
+     - API contract design (endpoints, request/response shapes)
+     - State management approach
+     - Authentication/authorization strategy
 
-   For each design decision found, use AskUserQuestion to present concrete alternatives with rationale (e.g., "Use Strategy A — simpler but less flexible" / "Use Strategy B — more complex but extensible"). Do NOT finalize the plan until all design decisions are confirmed by the user. If no design decisions are found, state this explicitly and proceed.
-6. **Clarify**: If there are ambiguous requirements or missing information, ask the user before finalizing the plan.
+     Examples that do NOT require callouts (implementation details):
+     - Variable/function naming
+     - Internal helper structure
+     - Iteration order
+     - File organization within an already-decided architecture
+   - **Ambiguities** — if there are ambiguous requirements or missing information, note them as labeled callouts in the plan body rather than asking separately.
 
 ## Constraints
 
 - Do NOT begin implementation until the user approves the plan.
-- Branch strategy is determined by the user in the Branch Strategy step. If the user chooses a new branch, create it from the current branch unless a different base is specified.
+- Branch strategy is determined by the user in the Strategy Confirmation + Branch Strategy step. If the user chooses a new branch, create it from the current branch unless a different base is specified.
 - The plan must include incremental commits throughout the work.
 - The plan must be self-contained: include enough technical context (as code snippets and structured data, not prose) that implementation can proceed from the plan alone, even after context compaction.
 - Each step must define a commit with an imperative-mood message, explicit dependencies on prior steps, and validation criteria.
 - The plan must identify at least one risk and its mitigation.
-- When in doubt about whether to use AskUserQuestion, prefer asking. The plan's self-contained requirement does not override the need for user confirmation on design decisions.
+- Design decisions must be presented as labeled callouts in the plan body. The user confirms them when approving the plan via ExitPlanMode.
 
 ## Compact-Resilience Guidelines
 
