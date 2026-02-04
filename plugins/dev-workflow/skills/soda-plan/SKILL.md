@@ -65,23 +65,28 @@ When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes preced
    - **Design rationale** — for non-obvious decisions, state "why" explicitly as a labeled callout, not embedded in prose
    - **Cross-step shared context** — types, constants, or contracts used by multiple steps. Define once and reference by name in each step.
    - **Subagent utilization plan** (include when the plan has 4+ steps) — for each step, indicate whether it should be executed in a subagent or in the main context. See Subagent Criteria below for the decision rules.
+   - **Design decisions** (include when the plan involves architecture, external contracts, or user-facing behavior choices) — present each decision as a labeled callout in the plan body:
+     > **Design Decision: [topic]**
+     > Option A: ... — [trade-off]
+     > Option B: ... — [trade-off]
+     > Recommended: [option] — [rationale]
 
-5. **Design Review**: After drafting the plan, review it for software design decisions. A design decision is any choice that affects architecture, external contracts, or user-facing behavior. Examples of design decisions that REQUIRE user confirmation:
-   - Architecture patterns (e.g., monolith vs microservice, event-driven vs request-response)
-   - Library or framework selection
-   - Data model design (schema, relationships)
-   - API contract design (endpoints, request/response shapes)
-   - State management approach
-   - Authentication/authorization strategy
+     The user reviews and confirms design decisions when approving the plan via ExitPlanMode. If a decision significantly changes the plan structure, note this dependency explicitly.
 
-   Examples that do NOT require confirmation (implementation details):
-   - Variable/function naming
-   - Internal helper structure
-   - Iteration order
-   - File organization within an already-decided architecture
+     Examples of decisions that require callouts:
+     - Architecture patterns (e.g., monolith vs microservice, event-driven vs request-response)
+     - Library or framework selection
+     - Data model design (schema, relationships)
+     - API contract design (endpoints, request/response shapes)
+     - State management approach
+     - Authentication/authorization strategy
 
-   For each design decision found, use AskUserQuestion to present concrete alternatives with rationale (e.g., "Use Strategy A — simpler but less flexible" / "Use Strategy B — more complex but extensible"). Do NOT finalize the plan until all design decisions are confirmed by the user. If no design decisions are found, state this explicitly and proceed.
-6. **Clarify**: If there are ambiguous requirements or missing information, ask the user before finalizing the plan.
+     Examples that do NOT require callouts (implementation details):
+     - Variable/function naming
+     - Internal helper structure
+     - Iteration order
+     - File organization within an already-decided architecture
+   - **Ambiguities** — if there are ambiguous requirements or missing information, note them as labeled callouts in the plan body rather than asking separately.
 
 ## Constraints
 
@@ -91,7 +96,7 @@ When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes preced
 - The plan must be self-contained: include enough technical context (as code snippets and structured data, not prose) that implementation can proceed from the plan alone, even after context compaction.
 - Each step must define a commit with an imperative-mood message, explicit dependencies on prior steps, and validation criteria.
 - The plan must identify at least one risk and its mitigation.
-- When in doubt about whether to use AskUserQuestion, prefer asking. The plan's self-contained requirement does not override the need for user confirmation on design decisions.
+- Design decisions must be presented as labeled callouts in the plan body. The user confirms them when approving the plan via ExitPlanMode.
 
 ## Compact-Resilience Guidelines
 
