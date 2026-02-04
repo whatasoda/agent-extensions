@@ -32,20 +32,37 @@ If consensus cannot be reached after 2 confirmation attempts, use AskUserQuestio
 
 ## Phase 2: Investigation
 
+**Sub-agent prompt constraints**: Every sub-agent prompt (both common-context and focused) MUST begin with the following constraint block:
+> You are a research-only agent. Do NOT use AskUserQuestion, EnterPlanMode, or any interactive/planning tools. Return your findings in the output format specified below.
+
+**Sub-agent output contract**: Every sub-agent prompt MUST end with the following output format requirement:
+> Return findings in this exact format:
+> ### Files
+> - `path/to/file` — relevance to the task
+> ### Patterns
+> - pattern name — description of the convention or pattern found
+> ### Dependencies
+> - dependency — how it affects the task
+> ### Open Questions
+> - question — what remains unclear from this investigation alone
+
 ### Step 1: Common Context
 
-Launch a sub-agent (Task, subagent_type: Explore) with a prompt that includes:
+Launch a sub-agent (Task, subagent_type: Explore) with a prompt that includes the constraint block, then:
 - The problem statement and scope confirmed in Phase 1
 - Instruction to report: project structure, key dependencies, existing patterns, and relevant conventions
+- The output contract
 
 Summarize the agent's findings into a Common Context block for use in Step 2.
 
 ### Step 2: Focused Investigation
 
 For each focused agent, construct the prompt to include:
-1. The Common Context block from Step 1 (summarized, not raw output)
-2. The specific investigation question for this agent
-3. The scope and priority axis confirmed in Phase 1
+1. The constraint block
+2. The Common Context block from Step 1 (summarized, not raw output)
+3. The specific investigation question for this agent
+4. The scope and priority axis confirmed in Phase 1
+5. The output contract
 
 Launch 1-3 agents in parallel (Task, subagent_type: Explore).
 
