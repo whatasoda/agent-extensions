@@ -1,6 +1,6 @@
 ---
 name: soda-review
-description: Review changes on the current branch and report issues, improvements, and gaps.
+description: Review branch changes from four perspectives
 user-invocable: true
 argument-hint: [focus or base branch]
 allowed-tools: Bash(git *), Read, Grep, Glob, AskUserQuestion

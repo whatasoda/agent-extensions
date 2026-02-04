@@ -1,6 +1,6 @@
 ---
 name: soda-plan-lite
-description: Create a lightweight implementation plan with branch strategy and commit breakdown
+description: Plan implementation quickly without sub-agents
 user-invocable: true
 argument-hint: [task description]
 allowed-tools: Bash(git *), Read, Grep, Glob, AskUserQuestion, EnterPlanMode, ExitPlanMode

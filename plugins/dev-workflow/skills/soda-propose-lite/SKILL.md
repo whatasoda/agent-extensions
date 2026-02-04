@@ -1,6 +1,6 @@
 ---
 name: soda-propose-lite
-description: Propose multiple approaches for a given problem (lightweight)
+description: Compare approaches quickly without sub-agents
 user-invocable: true
 argument-hint: [problem description]
 allowed-tools: Bash(git *), Read, Grep, Glob, AskUserQuestion

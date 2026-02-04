@@ -1,6 +1,6 @@
 ---
 name: soda-plan
-description: Create a detailed implementation plan with branch strategy and commit breakdown.
+description: Plan implementation with sub-agents and design review
 user-invocable: true
 argument-hint: [task description]
 allowed-tools: Bash(git *), Read, Grep, Glob, Task, AskUserQuestion, EnterPlanMode, ExitPlanMode

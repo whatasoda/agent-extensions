@@ -1,6 +1,6 @@
 ---
 name: soda-review-lite
-description: Quick code review of branch changes (lightweight)
+description: Review branch changes for correctness and gaps
 user-invocable: true
 argument-hint: [focus or base branch]
 allowed-tools: Bash(git *), Read, Grep, Glob
