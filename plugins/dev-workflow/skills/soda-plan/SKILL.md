@@ -74,7 +74,8 @@ When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes preced
    - **Technical context per step** — type signatures, API contracts, data shapes, algorithms
    - **Design rationale** — for non-obvious decisions, state "why" explicitly as a labeled callout, not embedded in prose
    - **Cross-step shared context** — types, constants, or contracts used by multiple steps. Define once and reference by name in each step.
-   - **Subagent utilization plan** (include when the plan has 4+ steps) — for each step, indicate whether it should be executed in a subagent or in the main context. See Subagent Criteria below for the decision rules.
+   - **Subagent utilization plan** (include for scale M and L) — for each step, indicate whether it should be executed in a subagent or in the main context. See Subagent Criteria below for the decision rules.
+   - **Task group splitting** (include for scale L only) — group subagent-eligible steps into named task groups that can be executed in parallel. See Task Scale Classification below for details.
    - **Design decisions** (include when the plan involves architecture, external contracts, or user-facing behavior choices) — present each decision as a labeled callout in the plan body:
      > **Design Decision: [topic]**
      > Option A: ... — [trade-off]
@@ -133,3 +134,48 @@ Use the main context for steps that:
 When the plan includes a subagent utilization plan, annotate each step with one of:
 - **Subagent-eligible** — meets all three criteria above
 - **Main-context** — state which criterion is not met
+
+## Task Scale Classification
+
+After investigation (Step 1) and before planning (Step 3), classify the task scale based on investigation results. The classification determines which conditional elements to include and how subagent utilization is structured.
+
+**Classification criteria** (use the first matching category):
+
+- **S (Small)** — 1-3 steps, no cross-step dependencies beyond sequential ordering
+  - Subagent utilization plan: omit (no benefit from subagent overhead)
+  - Task group splitting: omit
+- **M (Medium)** — 4-6 steps, fewer than 2 independent subtrees in the dependency graph
+  - Subagent utilization plan: include (per-step annotation as before)
+  - Task group splitting: omit (single chain — grouping adds no value)
+- **L (Large)** — 7+ steps, OR 4+ steps with 2+ independent subtrees in the dependency graph
+  - Subagent utilization plan: include (per-step annotation)
+  - Task group splitting: include (group subagent-eligible steps into parallelizable task groups)
+
+State the classification at the top of the plan body: `**Task Scale: [S|M|L]**`
+
+### Task Group Splitting (Scale L)
+
+For scale L tasks, after annotating each step with subagent eligibility (Subagent Criteria), group subagent-eligible steps into **task groups**:
+
+**Grouping rules**:
+1. Steps with no dependency relationship between them → same group (parallel execution)
+2. Steps that share input/output dependencies → separate groups (sequential execution)
+3. Main-context steps are never grouped — they execute in the main context between groups
+4. Each group must be nameable (e.g., "Group A: Setup infrastructure", "Group B: Implement feature modules")
+
+**Plan format for task groups**:
+
+    ### Task Groups
+
+    **Execution order**: Group A → Step 3 (main-context) → Group B → Step 7 (main-context, integration)
+
+    **Group A** — [description]
+    - Step 1: [commit message] (Subagent-eligible)
+    - Step 2: [commit message] (Subagent-eligible)
+
+    **Group B** — [description] (depends on: Group A, Step 3)
+    - Step 4: [commit message] (Subagent-eligible)
+    - Step 5: [commit message] (Subagent-eligible)
+    - Step 6: [commit message] (Subagent-eligible)
+
+**Constraint**: The execution order must be a valid topological sort of the step dependency graph. Every dependency declared in individual steps must be respected in the group ordering.
