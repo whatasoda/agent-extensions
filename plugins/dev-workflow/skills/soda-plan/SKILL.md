@@ -152,3 +152,30 @@ After investigation (Step 1) and before planning (Step 3), classify the task sca
   - Task group splitting: include (group subagent-eligible steps into parallelizable task groups)
 
 State the classification at the top of the plan body: `**Task Scale: [S|M|L]**`
+
+### Task Group Splitting (Scale L)
+
+For scale L tasks, after annotating each step with subagent eligibility (Subagent Criteria), group subagent-eligible steps into **task groups**:
+
+**Grouping rules**:
+1. Steps with no dependency relationship between them → same group (parallel execution)
+2. Steps that share input/output dependencies → separate groups (sequential execution)
+3. Main-context steps are never grouped — they execute in the main context between groups
+4. Each group must be nameable (e.g., "Group A: Setup infrastructure", "Group B: Implement feature modules")
+
+**Plan format for task groups**:
+
+    ### Task Groups
+
+    **Execution order**: Group A → Step 3 (main-context) → Group B → Step 7 (main-context, integration)
+
+    **Group A** — [description]
+    - Step 1: [commit message] (Subagent-eligible)
+    - Step 2: [commit message] (Subagent-eligible)
+
+    **Group B** — [description] (depends on: Group A, Step 3)
+    - Step 4: [commit message] (Subagent-eligible)
+    - Step 5: [commit message] (Subagent-eligible)
+    - Step 6: [commit message] (Subagent-eligible)
+
+**Constraint**: The execution order must be a valid topological sort of the step dependency graph. Every dependency declared in individual steps must be respected in the group ordering.
