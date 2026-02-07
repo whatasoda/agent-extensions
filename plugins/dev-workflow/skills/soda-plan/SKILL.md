@@ -141,10 +141,10 @@ After investigation (Step 1) and before planning (Step 3), classify the task sca
 
 **Classification criteria** (use the first matching category):
 
-- **S (Small)** — 1-3 steps, no cross-step dependencies beyond sequential ordering, touches ≤3 files
+- **S (Small)** — 1-3 steps, no cross-step dependencies beyond sequential ordering
   - Subagent utilization plan: omit (no benefit from subagent overhead)
   - Task group splitting: omit
-- **M (Medium)** — 4-6 steps, some independent steps exist but most form a single dependency chain
+- **M (Medium)** — 4-6 steps, fewer than 2 independent subtrees in the dependency graph
   - Subagent utilization plan: include (per-step annotation as before)
   - Task group splitting: omit (single chain — grouping adds no value)
 - **L (Large)** — 7+ steps, OR 4+ steps with 2+ independent subtrees in the dependency graph
