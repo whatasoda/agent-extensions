@@ -1,13 +1,22 @@
 ---
 name: soda-loop-setup
-description: Generate autonomous loop harness (validation + phase + vision-discovery)
+description: Generate autonomous loop harness from vision blueprint
 user-invocable: true
 allowed-tools: Bash(git *), Read, Grep, Glob, Write, AskUserQuestion
 ---
 
-Generate an autonomous multi-session loop harness for a project. The harness consists of four files: VISION.md, PROGRESS.md, AGENT_PROMPT.md, and run-loop.ts.
+Generate an autonomous multi-session loop harness for a project. The harness consists of three files: PROGRESS.md, AGENT_PROMPT.md, and run-loop.ts. It consumes a VISION.md produced by `/soda-loop-vision` (or provided inline).
 
 Use English for all generated file content and user interaction.
+
+## Vision Detection
+
+Before starting, check the conversation for a **Vision Blueprint** block (produced by `/soda-loop-vision`).
+
+- **If found**: Extract project name, target directory, goals, constraints, and out-of-scope items. Verify VISION.md exists at the target path. If VISION.md is missing, write it from the Vision Blueprint content.
+- **If not found**: Proceed to Step 1 to detect or create a vision manually.
+
+When a Vision Blueprint is found, skip Step 1 entirely and proceed to Step 2.
 
 ## Embedded Templates
 
@@ -115,25 +124,32 @@ Check Session Log for previous session's exit info:
 
 ## Procedure
 
-### Step 1: Project Context
+### Step 1: Vision Detection
 
-Use AskUserQuestion to gather:
+Check if VISION.md exists in the working directory (or ask for the target directory first).
 
-**Question 1** — What is the target directory path? (relative or absolute)
+Use AskUserQuestion:
+
+**Question 1** — What is the target directory path?
 
 Options:
 - `.` (current directory)
 - Other (user types path)
 
-**Question 2** — What is the project name?
+Then check for VISION.md:
+```bash
+ls {{TARGET_DIR}}/VISION.md 2>/dev/null
+```
 
-Options:
-- (infer from directory name)
-- Other (user types name)
+**If VISION.md exists**: Read it and extract project name, goals, constraints, and out-of-scope items. Present a summary to the user. Use AskUserQuestion:
+- "Use this VISION.md"
+- "Re-create vision with /soda-loop-vision"
 
-**Question 3** — Describe the vision. What is the desired end state when the project is complete?
+**If VISION.md does not exist**: Use AskUserQuestion:
+- "Run /soda-loop-vision first" (recommended) — inform the user to run `/soda-loop-vision` and stop here
+- "Quick inline vision" — ask for a project name and free-text vision, then write a minimal VISION.md with the user's text as a single goal. Proceed to Step 2.
 
-This must be free-text input. Present it as a single question with placeholder guidance.
+If the user chose "Run /soda-loop-vision first" or "Re-create vision with /soda-loop-vision", print the suggestion and stop. Do NOT continue to Step 2.
 
 ### Step 2: Advanced Configuration (optional)
 
@@ -154,24 +170,51 @@ If "Customize" is selected, ask a follow-up AskUserQuestion with these fields:
 - File scope restriction (default: `.` — current directory)
 - Commit prefix (default: `feat`)
 
-### Step 3: Phase Definition
+### Step 3: Phase Proposal
 
-Use AskUserQuestion to gather phase information:
+Derive phases from the goals in VISION.md. Do NOT ask the user to define phases manually.
 
-**Question 1** — How many phases?
+1. Parse goals from VISION.md (the `## Goals` section with `- [ ]` items).
+2. Analyze goal relationships and derive phases:
+   - Group related goals that form a logical unit of work
+   - Order phases by dependency: foundational goals first, dependent goals later
+   - Each phase should have 2-5 goals (split or merge if outside this range)
+3. For each phase, generate:
+   - Phase name (derived from the theme of its goals)
+   - Phase description (one sentence summarizing what this phase achieves)
+   - Implementation items (one per goal, with `[implement]` tag)
+   - Validation items (one per implementation item, with `[validate]` tag)
+   - Phase validation item (overall phase verification)
 
-Options:
-- 1 phase
-- 2 phases
-- 3 phases
-- Other
+Present the proposed phases:
 
-For each phase, ask:
-- Phase name (e.g., Setup, Implementation, Testing)
-- Phase description
-- Initial items (optional — if empty, the agent will add items via Discovery)
+```
+Proposed phases (derived from VISION.md):
 
-Each item needs: title, description, target files, validation criteria.
+Phase 1: {{PHASE_NAME}}
+  {{PHASE_DESCRIPTION}}
+  Items: {{IMPL_COUNT}} implementation + {{VAL_COUNT}} validation
+  Goals covered:
+    - {{GOAL_1}}
+    - {{GOAL_2}}
+
+Phase 2: {{PHASE_NAME}}
+  {{PHASE_DESCRIPTION}}
+  Items: {{IMPL_COUNT}} implementation + {{VAL_COUNT}} validation
+  Goals covered:
+    - {{GOAL_3}}
+    - {{GOAL_4}}
+
+...
+```
+
+Use AskUserQuestion:
+- "Generate with these phases"
+- "Merge phases" (combine phases to reduce count)
+- "Split a phase" (break a large phase into smaller ones)
+- "Adjust items" (modify specific items within phases)
+
+If the user requests adjustments, incorporate feedback and re-present. Do NOT proceed until the user confirms.
 
 ### Step 4: Confirmation
 
@@ -180,7 +223,8 @@ Present a summary of all configuration:
 ```
 Project: {{PROJECT_NAME}}
 Target: {{TARGET_DIR}}
-Phases: {{PHASE_COUNT}}
+Vision: VISION.md ({{GOAL_COUNT}} goals)
+Phases: {{PHASE_COUNT}} (auto-derived)
 Model: {{MODEL}} | Budget: ${{BUDGET}}/session | Max sessions: {{MAX_SESSIONS}}
 ```
 
@@ -195,18 +239,17 @@ Options:
 
 ### Step 5: Generate Files
 
-Before generating, check if any loop files already exist in the target directory:
+Before generating, check if loop files already exist in the target directory:
 ```bash
-ls {{TARGET_DIR}}/{VISION.md,PROGRESS.md,AGENT_PROMPT.md,run-loop.ts} 2>/dev/null
+ls {{TARGET_DIR}}/{PROGRESS.md,AGENT_PROMPT.md,run-loop.ts} 2>/dev/null
 ```
 If any exist, use AskUserQuestion to confirm overwrite.
 
 Generate files in this order:
 
-1. **VISION.md** — Write the user's vision text as-is
-2. **PROGRESS.md** — Substitute all `{{PLACEHOLDER}}` values in the template above. For each phase, generate the Items section with implementation items, validation items, and phase validation item. If the user provided initial items, include them. If not, include a comment indicating the agent should discover items.
-3. **AGENT_PROMPT.md** — Substitute `{{PROJECT_NAME}}`, `{{FILE_SCOPE}}`, and `{{COMMIT_PREFIX}}` in the template above.
-4. **run-loop.ts** — Copy from `${CLAUDE_PLUGIN_ROOT}/skills/soda-loop-setup/templates/run-loop.ts` and make executable:
+1. **PROGRESS.md** — Substitute all `{{PLACEHOLDER}}` values in the template above. For each phase, generate the Items section with implementation items, validation items, and phase validation item.
+2. **AGENT_PROMPT.md** — Substitute `{{PROJECT_NAME}}`, `{{FILE_SCOPE}}`, and `{{COMMIT_PREFIX}}` in the template above.
+3. **run-loop.ts** — Copy from `${CLAUDE_PLUGIN_ROOT}/skills/soda-loop-setup/templates/run-loop.ts` and make executable:
    ```bash
    cp "${CLAUDE_PLUGIN_ROOT}/skills/soda-loop-setup/templates/run-loop.ts" "{{TARGET_DIR}}/run-loop.ts"
    chmod +x "{{TARGET_DIR}}/run-loop.ts"
@@ -218,10 +261,11 @@ Print getting-started instructions:
 
 ```
 Loop files generated:
-- VISION.md — Vision definition
-- PROGRESS.md — Progress tracker
+- PROGRESS.md — Progress tracker ({{PHASE_COUNT}} phases, {{ITEM_COUNT}} items)
 - AGENT_PROMPT.md — Agent prompt
 - run-loop.ts — Loop harness
+
+Vision: {{TARGET_DIR}}/VISION.md (already exists)
 
 Prerequisites:
   bun must be installed (https://bun.sh)
