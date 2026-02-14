@@ -7,7 +7,7 @@ allowed-tools: Bash(git *), Read, Grep, Glob, Write, AskUserQuestion
 
 Generate an autonomous multi-session loop harness for a project. The harness consists of four files: VISION.md, PROGRESS.md, AGENT_PROMPT.md, and run-loop.ts.
 
-Use English for all generated file content — structured for AI agent consumption. User interaction (AskUserQuestion options, messages) must be in Japanese.
+Use English for all generated file content and user interaction.
 
 ## Embedded Templates
 
@@ -119,19 +119,19 @@ Check Session Log for previous session's exit info:
 
 Use AskUserQuestion to gather:
 
-**Question 1** — ターゲットディレクトリのパスを教えてください。（現在のディレクトリからの相対パス、または絶対パス）
+**Question 1** — What is the target directory path? (relative or absolute)
 
 Options:
-- `.` (現在のディレクトリ)
+- `.` (current directory)
 - Other (user types path)
 
-**Question 2** — プロジェクト名を入力してください。
+**Question 2** — What is the project name?
 
 Options:
 - (infer from directory name)
 - Other (user types name)
 
-**Question 3** — ビジョンを教えてください。プロジェクトが完了した時の最終状態を記述してください。
+**Question 3** — Describe the vision. What is the desired end state when the project is complete?
 
 This must be free-text input. Present it as a single question with placeholder guidance.
 
@@ -139,13 +139,13 @@ This must be free-text input. Present it as a single question with placeholder g
 
 Use AskUserQuestion:
 
-**Question** — 詳細設定をカスタマイズしますか？
+**Question** — Would you like to customize advanced settings?
 
 Options:
-- デフォルトで進める (use defaults for all)
-- カスタマイズする (ask follow-up questions)
+- Use defaults
+- Customize
 
-If "カスタマイズする" is selected, ask a follow-up AskUserQuestion with these fields:
+If "Customize" is selected, ask a follow-up AskUserQuestion with these fields:
 - Model (`sonnet` / `opus` / `haiku`)
 - Max budget per session USD (default: `10`)
 - Max sessions (default: `10`)
@@ -158,7 +158,7 @@ If "カスタマイズする" is selected, ask a follow-up AskUserQuestion with 
 
 Use AskUserQuestion to gather phase information:
 
-**Question 1** — フェーズ数を教えてください。
+**Question 1** — How many phases?
 
 Options:
 - 1 phase
@@ -167,9 +167,9 @@ Options:
 - Other
 
 For each phase, ask:
-- フェーズ名（例: Setup, Implementation, Testing）
-- フェーズの説明
-- 初期アイテム（任意 — 空の場合はエージェントが Discovery で追加）
+- Phase name (e.g., Setup, Implementation, Testing)
+- Phase description
+- Initial items (optional — if empty, the agent will add items via Discovery)
 
 Each item needs: title, description, target files, validation criteria.
 
@@ -178,20 +178,20 @@ Each item needs: title, description, target files, validation criteria.
 Present a summary of all configuration:
 
 ```
-プロジェクト: {{PROJECT_NAME}}
-ターゲット: {{TARGET_DIR}}
-フェーズ数: {{PHASE_COUNT}}
-モデル: {{MODEL}} | バジェット: ${{BUDGET}}/session | 最大セッション: {{MAX_SESSIONS}}
+Project: {{PROJECT_NAME}}
+Target: {{TARGET_DIR}}
+Phases: {{PHASE_COUNT}}
+Model: {{MODEL}} | Budget: ${{BUDGET}}/session | Max sessions: {{MAX_SESSIONS}}
 ```
 
 Use AskUserQuestion:
 
-**Question** — この設定でループファイルを生成しますか？
+**Question** — Generate loop files with this configuration?
 
 Options:
-- 生成する
-- 設定を調整する (go back to relevant step)
-- キャンセル
+- Generate
+- Adjust settings (go back to relevant step)
+- Cancel
 
 ### Step 5: Generate Files
 
@@ -217,25 +217,25 @@ Generate files in this order:
 Print getting-started instructions:
 
 ```
-ループファイルを生成しました:
-- VISION.md — ビジョン定義
-- PROGRESS.md — 進捗トラッカー
-- AGENT_PROMPT.md — エージェントプロンプト
-- run-loop.ts — ループハーネス
+Loop files generated:
+- VISION.md — Vision definition
+- PROGRESS.md — Progress tracker
+- AGENT_PROMPT.md — Agent prompt
+- run-loop.ts — Loop harness
 
-前提条件:
-  bun がインストールされていること (https://bun.sh)
+Prerequisites:
+  bun must be installed (https://bun.sh)
 
-開始方法:
+Start:
   cd {{TARGET_DIR}}
   ./run-loop.ts
 
-環境変数でカスタマイズ:
+Customize with env vars:
   CLAUDE_MODEL=opus MAX_BUDGET_USD=20 ./run-loop.ts
 
-停止方法:
+Stop:
   touch {{TARGET_DIR}}/STOP
 
-ログ確認:
+View logs:
   ls {{TARGET_DIR}}/.loop-logs/
 ```
