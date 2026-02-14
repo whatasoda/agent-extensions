@@ -12,14 +12,45 @@ None of these combines all desired properties: validation-driven progress, phase
 
 ## Purpose
 
-Formalize the autonomous multi-session loop pattern into a reusable scaffolding skill. Running `/soda-loop-setup` generates four files (VISION.md, PROGRESS.md, AGENT_PROMPT.md, run-loop.ts) that together orchestrate an autonomous agent loop with:
+Generate the autonomous multi-session loop harness from a structured vision. Running `/soda-loop-setup` generates three files (PROGRESS.md, AGENT_PROMPT.md, run-loop.ts) that together orchestrate an autonomous agent loop with:
 
 - **Phase-based structure**: Items organized by phases with explicit dependencies
 - **Validation-driven progress**: Each implementation item paired with a validation item
 - **Vision-based discovery**: Agent discovers new items by comparing current state to VISION.md
 - **Context-bounded sessions**: Hard limits on items per session, budget per session, and inactivity timeout
 
+## Vision-Setup Chain
+
+`soda-loop-setup` is designed to work as the second step in a two-skill workflow:
+
+```
+/soda-loop-vision → VISION.md → /soda-loop-setup → PROGRESS.md + AGENT_PROMPT.md + run-loop.ts
+```
+
+### Handoff mechanism
+
+Two detection paths, following the same pattern as `soda-propose` → `soda-plan`:
+
+1. **Conversation-based** (same-session): `soda-loop-vision` emits a `## Vision Blueprint` block. `soda-loop-setup` detects it by heading pattern and extracts project name, target directory, and goals.
+2. **File-based** (cross-session): `soda-loop-setup` reads an existing VISION.md from the target directory.
+
+### Fallback behavior
+
+When no VISION.md exists and no Vision Blueprint is in the conversation, the user can:
+- Run `/soda-loop-vision` first (recommended)
+- Provide a quick inline vision as free text (produces a minimal VISION.md, lower quality but functional)
+
 ## Design Notes
+
+### Phase derivation
+
+Phases are derived automatically from VISION.md goals rather than defined manually by the user. The derivation heuristics:
+
+- **Grouping**: Related goals that form a logical unit of work are grouped into the same phase
+- **Ordering**: Foundational goals (no dependencies) form early phases; dependent goals form later phases
+- **Size target**: Each phase should have 2-5 goals. Split or merge if outside this range.
+
+The user reviews and can adjust the proposed phases (merge, split, reorder) but does not need to design them from scratch.
 
 ### State model
 
@@ -55,14 +86,30 @@ Session exit info is appended to PROGRESS.md's Session Log section. The next ses
 
 ## Typical Usage
 
+### Recommended: Two-step workflow
+
 ```
-/soda-loop-setup
+/soda-loop-vision    # Define structured vision → VISION.md
+/soda-loop-setup     # Generate harness from vision → PROGRESS.md, AGENT_PROMPT.md, run-loop.ts
+./run-loop.ts        # Start the autonomous loop
 ```
 
-1. Answer prompts for project name, vision, phases, and optional advanced config
-2. Four files are generated in the target directory
-3. Requires [Bun](https://bun.sh) installed
-4. Run `./run-loop.ts` to start the autonomous loop
+### Quick: Standalone with inline vision
+
+```
+/soda-loop-setup     # No VISION.md → select "Quick inline vision" → provide free text
+./run-loop.ts
+```
+
+### Cross-session
+
+```
+# Session 1
+/soda-loop-vision    # Writes VISION.md
+
+# Session 2
+/soda-loop-setup     # Reads existing VISION.md
+```
 
 ## Environment Variables
 
