@@ -173,6 +173,7 @@ async function runSession(sessionNum: number): Promise<SessionResult> {
       "stream-json",
     ],
     {
+      cwd: resolve(config.loopDir),
       stdout: "pipe",
       stderr: "pipe",
       env: { ...process.env, CLAUDECODE: undefined },
