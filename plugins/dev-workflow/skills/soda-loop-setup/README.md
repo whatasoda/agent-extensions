@@ -5,14 +5,14 @@
 Derived from three ad-hoc loop implementations used across projects:
 
 1. **Task-driven** (`run-agent-loop.sh`) — TASKS.md checkbox tracking, STOP file sentinel, cooldown between sessions. Simple but lacks validation structure and context management.
-2. **Validation-driven** (`run-loop.sh`) — Four-state progress model, playground reset between sessions. Strong validation but no phase structure or discovery mechanism.
+2. **Validation-driven** (`run-loop.ts`) — Four-state progress model, playground reset between sessions. Strong validation but no phase structure or discovery mechanism.
 3. **Phase-parallel** (`implement-poc.sh`) — Heredoc prompts per phase, `&` + `wait` barriers for parallelism. Good structure but no validation integration or context bounding.
 
 None of these combines all desired properties: validation-driven progress, phase-based structure, vision-based item discovery, and context-bounded sessions.
 
 ## Purpose
 
-Formalize the autonomous multi-session loop pattern into a reusable scaffolding skill. Running `/soda-loop-setup` generates four files (VISION.md, PROGRESS.md, AGENT_PROMPT.md, run-loop.sh) that together orchestrate an autonomous agent loop with:
+Formalize the autonomous multi-session loop pattern into a reusable scaffolding skill. Running `/soda-loop-setup` generates four files (VISION.md, PROGRESS.md, AGENT_PROMPT.md, run-loop.ts) that together orchestrate an autonomous agent loop with:
 
 - **Phase-based structure**: Items organized by phases with explicit dependencies
 - **Validation-driven progress**: Each implementation item paired with a validation item
@@ -42,7 +42,7 @@ Uses `--max-budget-usd` (default $10) for per-session cost caps. This provides a
 
 ### Inactivity timeout
 
-30-minute default. The loop harness monitors the session log file's mtime. If no output is produced for the timeout period, the session is killed. This detects stuck sessions (e.g., waiting for input, infinite loops in tool use).
+30-minute default. The loop harness tracks the timestamp of the last stream-json event from the Claude session. If no events are received for the timeout period, the session is killed. This is more responsive than file mtime polling (checks every 10s vs 60s). Detects stuck sessions (e.g., waiting for input, infinite loops in tool use).
 
 ### Exit reason communication
 
@@ -50,7 +50,7 @@ Session exit info is appended to PROGRESS.md's Session Log section. The next ses
 
 ### Template strategy
 
-- **Shell script** (`run-loop.sh`): External file in `templates/`, copied to target directory at setup time. Too complex for inline embedding.
+- **TypeScript script** (`run-loop.ts`): External file in `templates/`, copied to target directory at setup time. Runs via Bun's JIT TypeScript compiler. Uses `--output-format stream-json` for session ID tracking and event-driven activity monitoring. Supports SIGINT graceful shutdown (two-press pattern: first press stops after current session, second press force kills).
 - **Markdown templates** (PROGRESS.md, AGENT_PROMPT.md): Embedded in SKILL.md with placeholder substitution. Keeps the skill self-contained and allows the agent to customize templates during generation.
 
 ## Typical Usage
@@ -61,7 +61,8 @@ Session exit info is appended to PROGRESS.md's Session Log section. The next ses
 
 1. Answer prompts for project name, vision, phases, and optional advanced config
 2. Four files are generated in the target directory
-3. Run `./run-loop.sh` to start the autonomous loop
+3. Requires [Bun](https://bun.sh) installed
+4. Run `./run-loop.ts` to start the autonomous loop
 
 ## Environment Variables
 

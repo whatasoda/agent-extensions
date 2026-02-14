@@ -5,7 +5,7 @@ user-invocable: true
 allowed-tools: Bash(git *), Read, Grep, Glob, Write, AskUserQuestion
 ---
 
-Generate an autonomous multi-session loop harness for a project. The harness consists of four files: VISION.md, PROGRESS.md, AGENT_PROMPT.md, and run-loop.sh.
+Generate an autonomous multi-session loop harness for a project. The harness consists of four files: VISION.md, PROGRESS.md, AGENT_PROMPT.md, and run-loop.ts.
 
 Use English for all generated file content — structured for AI agent consumption. User interaction (AskUserQuestion options, messages) must be in Japanese.
 
@@ -197,7 +197,7 @@ Options:
 
 Before generating, check if any loop files already exist in the target directory:
 ```bash
-ls {{TARGET_DIR}}/{VISION.md,PROGRESS.md,AGENT_PROMPT.md,run-loop.sh} 2>/dev/null
+ls {{TARGET_DIR}}/{VISION.md,PROGRESS.md,AGENT_PROMPT.md,run-loop.ts} 2>/dev/null
 ```
 If any exist, use AskUserQuestion to confirm overwrite.
 
@@ -206,10 +206,10 @@ Generate files in this order:
 1. **VISION.md** — Write the user's vision text as-is
 2. **PROGRESS.md** — Substitute all `{{PLACEHOLDER}}` values in the template above. For each phase, generate the Items section with implementation items, validation items, and phase validation item. If the user provided initial items, include them. If not, include a comment indicating the agent should discover items.
 3. **AGENT_PROMPT.md** — Substitute `{{PROJECT_NAME}}`, `{{FILE_SCOPE}}`, and `{{COMMIT_PREFIX}}` in the template above.
-4. **run-loop.sh** — Copy from `${CLAUDE_PLUGIN_ROOT}/skills/soda-loop-setup/templates/run-loop.sh` and make executable:
+4. **run-loop.ts** — Copy from `${CLAUDE_PLUGIN_ROOT}/skills/soda-loop-setup/templates/run-loop.ts` and make executable:
    ```bash
-   cp "${CLAUDE_PLUGIN_ROOT}/skills/soda-loop-setup/templates/run-loop.sh" "{{TARGET_DIR}}/run-loop.sh"
-   chmod +x "{{TARGET_DIR}}/run-loop.sh"
+   cp "${CLAUDE_PLUGIN_ROOT}/skills/soda-loop-setup/templates/run-loop.ts" "{{TARGET_DIR}}/run-loop.ts"
+   chmod +x "{{TARGET_DIR}}/run-loop.ts"
    ```
 
 ### Step 6: Usage Instructions
@@ -221,14 +221,17 @@ Print getting-started instructions:
 - VISION.md — ビジョン定義
 - PROGRESS.md — 進捗トラッカー
 - AGENT_PROMPT.md — エージェントプロンプト
-- run-loop.sh — ループハーネス
+- run-loop.ts — ループハーネス
+
+前提条件:
+  bun がインストールされていること (https://bun.sh)
 
 開始方法:
   cd {{TARGET_DIR}}
-  ./run-loop.sh
+  ./run-loop.ts
 
 環境変数でカスタマイズ:
-  CLAUDE_MODEL=opus MAX_BUDGET_USD=20 ./run-loop.sh
+  CLAUDE_MODEL=opus MAX_BUDGET_USD=20 ./run-loop.ts
 
 停止方法:
   touch {{TARGET_DIR}}/STOP
