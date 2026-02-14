@@ -7,7 +7,7 @@ allowed-tools: Bash(git *), Read, Grep, Glob, Write, AskUserQuestion
 
 Generate an autonomous multi-session loop harness for a project. The harness consists of three files: PROGRESS.md, AGENT_PROMPT.md, and run-loop.ts. It consumes a VISION.md produced by `/soda-loop-vision` (or provided inline).
 
-Use English for all generated file content and user interaction.
+Use English for all generated file content. User interaction (AskUserQuestion options, confirmation messages, phase presentations) must be in Japanese.
 
 ## Vision Detection
 

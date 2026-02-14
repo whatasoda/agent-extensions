@@ -283,6 +283,7 @@ async function main(): Promise<void> {
   );
 
   let sessionCount = 0;
+  let zeroItemRuns = 0;
 
   while (true) {
     if (stopState !== "running") {
@@ -304,8 +305,14 @@ async function main(): Promise<void> {
     );
 
     if (progress.pending === 0 && progress.inProgress === 0) {
-      log("No pending or in-progress items. Loop complete.");
-      break;
+      zeroItemRuns++;
+      if (zeroItemRuns >= 2) {
+        log("No pending or in-progress items after grace session. Loop complete.");
+        break;
+      }
+      log("No pending or in-progress items. Running grace session for discovery...");
+    } else {
+      zeroItemRuns = 0;
     }
 
     if (config.dryRun) {
