@@ -1,0 +1,468 @@
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+// === Types ===
+
+interface PhaseStatus {
+  number: number;
+  name: string;
+  items: {
+    pending: number;
+    inProgress: number;
+    done: number;
+    blocked: number;
+    total: number;
+  };
+}
+
+interface ItemInfo {
+  id: string;
+  title: string;
+  status: "pending" | "in-progress" | "done" | "blocked";
+}
+
+interface SessionEntry {
+  number: number;
+  timestamp: string;
+  exitReason: string;
+  sessionId: string | null;
+  costUsd: number | null;
+}
+
+interface VisionInfo {
+  exists: boolean;
+  purpose: string | null;
+  goalCount: number;
+  goals: Array<{ text: string; status: "pending" | "done" }>;
+}
+
+interface LoopStatusOutput {
+  loopDir: string;
+  projectName: string;
+  isRunning: boolean;
+  isStopped: boolean;
+  progress: {
+    pending: number;
+    inProgress: number;
+    done: number;
+    blocked: number;
+    total: number;
+    percentComplete: number;
+  };
+  phases: PhaseStatus[];
+  discoveredItems: {
+    count: number;
+    items: ItemInfo[];
+  };
+  blockedItems: Array<{ id: string; title: string }>;
+  sessions: {
+    count: number;
+    entries: SessionEntry[];
+    totalCostUsd: number | null;
+  };
+  vision: VisionInfo | null;
+  error?: string;
+  warnings: string[];
+}
+
+// === Parsing Helpers ===
+
+const ITEM_RE = /^- \[( |~|x|!)\] \*\*(.+?)\*\*:?\s*(.+)?/;
+const PHASE_RE = /^## Phase (\d+): (.+)/;
+const SESSION_LOG_RE =
+  /^### Session (\d+) \((.+?)\) \[exit: (.+?)\](?:\s*\[session: (.+?)\])?/;
+
+function parseItemStatus(marker: string): ItemInfo["status"] {
+  switch (marker) {
+    case " ":
+      return "pending";
+    case "~":
+      return "in-progress";
+    case "x":
+      return "done";
+    case "!":
+      return "blocked";
+    default:
+      return "pending";
+  }
+}
+
+function parseProgressFile(content: string): {
+  projectName: string;
+  phases: PhaseStatus[];
+  discoveredItems: { count: number; items: ItemInfo[] };
+  blockedItems: Array<{ id: string; title: string }>;
+  sessionLogEntries: Array<{
+    number: number;
+    timestamp: string;
+    exitReason: string;
+    sessionId: string | null;
+  }>;
+  counts: { pending: number; inProgress: number; done: number; blocked: number };
+} {
+  const lines = content.split("\n");
+
+  // Extract project name
+  let projectName = "unknown";
+  const titleMatch = lines[0]?.match(/^# (.+?) - Loop Progress/);
+  if (titleMatch) {
+    projectName = titleMatch[1];
+  }
+
+  // Parse all items with simple counting (fallback-safe, same as run-loop.ts)
+  const counts = { pending: 0, inProgress: 0, done: 0, blocked: 0 };
+  for (const line of lines) {
+    if (line.startsWith("- [ ]")) counts.pending++;
+    else if (line.startsWith("- [~]")) counts.inProgress++;
+    else if (line.startsWith("- [x]")) counts.done++;
+    else if (line.startsWith("- [!]")) counts.blocked++;
+  }
+
+  // Parse phases with structured item tracking
+  const phases: PhaseStatus[] = [];
+  const allItems: Array<ItemInfo & { phaseIndex: number }> = [];
+  let currentPhaseIndex = -1;
+  let inDiscoveredSection = false;
+  let inSessionLogSection = false;
+
+  const discoveredItems: ItemInfo[] = [];
+  const sessionLogEntries: Array<{
+    number: number;
+    timestamp: string;
+    exitReason: string;
+    sessionId: string | null;
+  }> = [];
+
+  for (const line of lines) {
+    // Detect section boundaries
+    const phaseMatch = line.match(PHASE_RE);
+    if (phaseMatch) {
+      inDiscoveredSection = false;
+      inSessionLogSection = false;
+      currentPhaseIndex = phases.length;
+      phases.push({
+        number: parseInt(phaseMatch[1], 10),
+        name: phaseMatch[2],
+        items: { pending: 0, inProgress: 0, done: 0, blocked: 0, total: 0 },
+      });
+      continue;
+    }
+
+    if (line.startsWith("## Discovered Items")) {
+      inDiscoveredSection = true;
+      inSessionLogSection = false;
+      currentPhaseIndex = -1;
+      continue;
+    }
+
+    if (line.startsWith("## Session Log")) {
+      inSessionLogSection = true;
+      inDiscoveredSection = false;
+      currentPhaseIndex = -1;
+      continue;
+    }
+
+    if (line.startsWith("## ") && !line.startsWith("## Phase")) {
+      inDiscoveredSection = false;
+      inSessionLogSection = false;
+      currentPhaseIndex = -1;
+      continue;
+    }
+
+    // Parse items
+    const itemMatch = line.match(ITEM_RE);
+    if (itemMatch) {
+      const status = parseItemStatus(itemMatch[1]);
+      const id = itemMatch[2];
+      const title = itemMatch[3]?.trim() ?? "";
+      const item: ItemInfo = { id, title, status };
+
+      if (inDiscoveredSection) {
+        discoveredItems.push(item);
+      } else if (currentPhaseIndex >= 0) {
+        allItems.push({ ...item, phaseIndex: currentPhaseIndex });
+        const phase = phases[currentPhaseIndex];
+        phase.items.total++;
+        switch (status) {
+          case "pending":
+            phase.items.pending++;
+            break;
+          case "in-progress":
+            phase.items.inProgress++;
+            break;
+          case "done":
+            phase.items.done++;
+            break;
+          case "blocked":
+            phase.items.blocked++;
+            break;
+        }
+      }
+    }
+
+    // Parse session log entries
+    if (inSessionLogSection) {
+      const sessionMatch = line.match(SESSION_LOG_RE);
+      if (sessionMatch) {
+        sessionLogEntries.push({
+          number: parseInt(sessionMatch[1], 10),
+          timestamp: sessionMatch[2],
+          exitReason: sessionMatch[3],
+          sessionId: sessionMatch[4] ?? null,
+        });
+      }
+    }
+  }
+
+  // Collect blocked items
+  const blockedItems = allItems
+    .filter((item) => item.status === "blocked")
+    .map(({ id, title }) => ({ id, title }));
+
+  // Also include blocked discovered items
+  for (const item of discoveredItems) {
+    if (item.status === "blocked") {
+      blockedItems.push({ id: item.id, title: item.title });
+    }
+  }
+
+  return {
+    projectName,
+    phases,
+    discoveredItems: { count: discoveredItems.length, items: discoveredItems },
+    blockedItems,
+    sessionLogEntries,
+    counts,
+  };
+}
+
+function parseSessionLogs(
+  logDir: string,
+  sessionLogEntries: Array<{
+    number: number;
+    timestamp: string;
+    exitReason: string;
+    sessionId: string | null;
+  }>,
+): { entries: SessionEntry[]; totalCostUsd: number | null } {
+  if (!existsSync(logDir)) {
+    // Fall back to PROGRESS.md session log entries only (no cost data)
+    return {
+      entries: sessionLogEntries.map((e) => ({
+        ...e,
+        costUsd: null,
+      })),
+      totalCostUsd: null,
+    };
+  }
+
+  const logFiles = readdirSync(logDir)
+    .filter((f) => /^session-\d+\.log$/.test(f))
+    .sort((a, b) => {
+      const numA = parseInt(a.match(/session-(\d+)/)?.[1] ?? "0", 10);
+      const numB = parseInt(b.match(/session-(\d+)/)?.[1] ?? "0", 10);
+      return numA - numB;
+    });
+
+  // Build a map of session number → {sessionId, costUsd} from log files
+  const logData = new Map<
+    number,
+    { sessionId: string | null; costUsd: number | null }
+  >();
+  for (const file of logFiles) {
+    const num = parseInt(file.match(/session-(\d+)/)?.[1] ?? "0", 10);
+    let sessionId: string | null = null;
+    let costUsd: number | null = null;
+
+    try {
+      const content = readFileSync(resolve(logDir, file), "utf-8");
+      for (const line of content.split("\n")) {
+        if (!line.trim()) continue;
+        try {
+          const event = JSON.parse(line);
+          if (event.type === "init" && event.session_id) {
+            sessionId = event.session_id;
+          }
+          if (event.type === "result" && event.cost_usd !== undefined) {
+            costUsd = event.cost_usd;
+          }
+        } catch {
+          // Skip malformed NDJSON lines
+        }
+      }
+    } catch {
+      // Skip unreadable log files
+    }
+
+    logData.set(num, { sessionId, costUsd });
+  }
+
+  // Merge PROGRESS.md session log with .loop-logs data
+  const entries: SessionEntry[] = [];
+
+  // Use PROGRESS.md entries as the base (they have timestamps and exit reasons)
+  for (const entry of sessionLogEntries) {
+    const logInfo = logData.get(entry.number);
+    entries.push({
+      number: entry.number,
+      timestamp: entry.timestamp,
+      exitReason: entry.exitReason,
+      sessionId: logInfo?.sessionId ?? entry.sessionId,
+      costUsd: logInfo?.costUsd ?? null,
+    });
+  }
+
+  // If there are log files without PROGRESS.md entries (e.g., session in progress)
+  for (const [num, info] of logData) {
+    if (!sessionLogEntries.some((e) => e.number === num)) {
+      entries.push({
+        number: num,
+        timestamp: "",
+        exitReason: "unknown",
+        sessionId: info.sessionId,
+        costUsd: info.costUsd,
+      });
+    }
+  }
+
+  entries.sort((a, b) => a.number - b.number);
+
+  const costs = entries.map((e) => e.costUsd).filter((c): c is number => c !== null);
+  const totalCostUsd = costs.length > 0 ? costs.reduce((a, b) => a + b, 0) : null;
+
+  return { entries, totalCostUsd };
+}
+
+function parseVision(visionPath: string): VisionInfo | null {
+  if (!existsSync(visionPath)) return null;
+
+  try {
+    const content = readFileSync(visionPath, "utf-8");
+    const lines = content.split("\n");
+
+    // Extract purpose
+    let purpose: string | null = null;
+    let inPurpose = false;
+    for (const line of lines) {
+      if (line.startsWith("## Purpose")) {
+        inPurpose = true;
+        continue;
+      }
+      if (inPurpose && line.startsWith("##")) break;
+      if (inPurpose && line.trim()) {
+        purpose = line.trim();
+        break;
+      }
+    }
+
+    // Extract goals
+    const goals: Array<{ text: string; status: "pending" | "done" }> = [];
+    let inGoals = false;
+    for (const line of lines) {
+      if (line.startsWith("## Goals")) {
+        inGoals = true;
+        continue;
+      }
+      if (inGoals && line.startsWith("##")) break;
+      if (inGoals) {
+        const goalMatch = line.match(/^- \[([ x])\] (.+)/);
+        if (goalMatch) {
+          goals.push({
+            text: goalMatch[2],
+            status: goalMatch[1] === "x" ? "done" : "pending",
+          });
+        }
+      }
+    }
+
+    return {
+      exists: true,
+      purpose,
+      goalCount: goals.length,
+      goals,
+    };
+  } catch {
+    return null;
+  }
+}
+
+// === Main ===
+
+function main(): void {
+  const loopDir = resolve(process.cwd(), process.argv[2] ?? ".");
+  const warnings: string[] = [];
+
+  const progressPath = resolve(loopDir, "PROGRESS.md");
+  if (!existsSync(progressPath)) {
+    console.log(
+      JSON.stringify({
+        loopDir,
+        error: `No PROGRESS.md found in ${loopDir}. This may not be a loop directory.`,
+        warnings: [],
+      }),
+    );
+    return;
+  }
+
+  try {
+    const progressContent = readFileSync(progressPath, "utf-8");
+    const progress = parseProgressFile(progressContent);
+
+    const logDir = resolve(loopDir, ".loop-logs");
+    if (!existsSync(logDir)) {
+      warnings.push("No .loop-logs directory found — session cost data unavailable");
+    }
+    const sessions = parseSessionLogs(logDir, progress.sessionLogEntries);
+
+    const visionPath = resolve(loopDir, "VISION.md");
+    const vision = parseVision(visionPath);
+    if (!vision) {
+      warnings.push("No VISION.md found");
+    }
+
+    const isStopped = existsSync(resolve(loopDir, "STOP"));
+    const total =
+      progress.counts.pending +
+      progress.counts.inProgress +
+      progress.counts.done +
+      progress.counts.blocked;
+    const percentComplete =
+      total > 0 ? Math.round((progress.counts.done / total) * 100) : 0;
+    const isRunning =
+      !isStopped &&
+      (progress.counts.pending > 0 || progress.counts.inProgress > 0);
+
+    const output: LoopStatusOutput = {
+      loopDir,
+      projectName: progress.projectName,
+      isRunning,
+      isStopped,
+      progress: {
+        ...progress.counts,
+        total,
+        percentComplete,
+      },
+      phases: progress.phases,
+      discoveredItems: progress.discoveredItems,
+      blockedItems: progress.blockedItems,
+      sessions: {
+        count: sessions.entries.length,
+        ...sessions,
+      },
+      vision,
+      warnings,
+    };
+
+    console.log(JSON.stringify(output));
+  } catch (e) {
+    console.log(
+      JSON.stringify({
+        loopDir,
+        error: `Failed to parse loop status: ${e instanceof Error ? e.message : String(e)}`,
+        warnings: [],
+      }),
+    );
+  }
+}
+
+main();
