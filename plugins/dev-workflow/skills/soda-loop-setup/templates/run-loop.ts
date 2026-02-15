@@ -4,7 +4,7 @@ import { resolve } from "node:path";
 
 // === Configuration (env vars with defaults) ===
 const config = {
-  loopDir: process.env.LOOP_DIR ?? ".",
+  loopDir: process.env.LOOP_DIR ?? import.meta.dir,
   claudeModel: process.env.CLAUDE_MODEL ?? "sonnet",
   maxSessions: parseInt(process.env.MAX_SESSIONS ?? "10", 10),
   maxBudgetUsd: parseFloat(process.env.MAX_BUDGET_USD ?? "10"),
@@ -158,11 +158,23 @@ async function runSession(sessionNum: number): Promise<SessionResult> {
 
   log(`Starting session ${sessionNum}...`);
 
+  // Inject loop file paths so the agent can find them from any cwd
+  const loopDirAbsolute = resolve(config.loopDir);
+  const enrichedPrompt = [
+    `## Loop Files`,
+    `- PROGRESS.md: ${resolve(loopDirAbsolute, "PROGRESS.md")}`,
+    `- VISION.md: ${resolve(loopDirAbsolute, "VISION.md")}`,
+    `- Working directory: ${process.cwd()}`,
+    ``,
+    promptContent,
+  ].join("\n");
+
   const proc = Bun.spawn(
     [
       "claude",
       "-p",
-      promptContent,
+      enrichedPrompt,
+      "--verbose",
       "--model",
       config.claudeModel,
       "--allowedTools",
@@ -173,7 +185,7 @@ async function runSession(sessionNum: number): Promise<SessionResult> {
       "stream-json",
     ],
     {
-      cwd: resolve(config.loopDir),
+      cwd: process.cwd(),
       stdout: "pipe",
       stderr: "pipe",
       env: { ...process.env, CLAUDECODE: undefined },
