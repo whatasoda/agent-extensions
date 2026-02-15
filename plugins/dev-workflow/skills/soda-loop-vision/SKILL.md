@@ -22,11 +22,7 @@ Options:
 - `.` (current directory)
 - Other (user types path)
 
-**Question 2** — What is the project name?
-
-Options:
-- (infer from directory name)
-- Other (user types name)
+Derive the project name automatically from the target directory's basename (e.g., `/foo/bar` → `bar`). Do NOT ask the user for the project name.
 
 ## Step 2: Goal Elicitation
 

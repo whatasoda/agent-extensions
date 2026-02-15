@@ -126,28 +126,33 @@ Check Session Log for previous session's exit info:
 
 ### Step 1: Vision Detection
 
-Check if VISION.md exists in the working directory (or ask for the target directory first).
+Derive the target directory — do NOT ask the user to type it from scratch.
+
+**Detection order**:
+1. If a Vision Blueprint was found in the conversation → use its `**Target**` field
+2. Else check if `./VISION.md` exists in the current directory → use `.`
+3. If neither found → ask the user for the path
+
+**After deriving the target directory**, confirm with the user:
 
 Use AskUserQuestion:
-
-**Question 1** — What is the target directory path?
-
-Options:
-- `.` (current directory)
-- Other (user types path)
+- "{{DERIVED_PATH}} で進める"
+- "別のパスを指定"
 
 Then check for VISION.md:
 ```bash
 ls {{TARGET_DIR}}/VISION.md 2>/dev/null
 ```
 
-**If VISION.md exists**: Read it and extract project name, goals, constraints, and out-of-scope items. Present a summary to the user. Use AskUserQuestion:
+Derive the project name automatically from the target directory's basename (e.g., `/foo/bar` → `bar`). Do NOT ask the user for the project name.
+
+**If VISION.md exists**: Read it and extract goals, constraints, and out-of-scope items. Present a summary to the user. Use AskUserQuestion:
 - "Use this VISION.md"
 - "Re-create vision with /soda-loop-vision"
 
 **If VISION.md does not exist**: Use AskUserQuestion:
 - "Run /soda-loop-vision first" (recommended) — inform the user to run `/soda-loop-vision` and stop here
-- "Quick inline vision" — ask for a project name and free-text vision, then write a minimal VISION.md with the user's text as a single goal. Proceed to Step 2.
+- "Quick inline vision" — ask for a free-text vision, then write a minimal VISION.md with the user's text as a single goal. Proceed to Step 2.
 
 If the user chose "Run /soda-loop-vision first" or "Re-create vision with /soda-loop-vision", print the suggestion and stop. Do NOT continue to Step 2.
 
@@ -270,12 +275,11 @@ Vision: {{TARGET_DIR}}/VISION.md (already exists)
 Prerequisites:
   bun must be installed (https://bun.sh)
 
-Start:
-  cd {{TARGET_DIR}}
-  ./run-loop.ts
+Start (from repo root):
+  {{TARGET_DIR}}/run-loop.ts
 
 Customize with env vars:
-  CLAUDE_MODEL=opus MAX_BUDGET_USD=20 ./run-loop.ts
+  CLAUDE_MODEL=opus MAX_BUDGET_USD=20 {{TARGET_DIR}}/run-loop.ts
 
 Stop:
   touch {{TARGET_DIR}}/STOP
