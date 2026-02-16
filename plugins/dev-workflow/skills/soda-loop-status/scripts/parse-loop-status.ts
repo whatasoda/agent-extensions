@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { resolve } from "node:path";
 
 // === Types ===
@@ -400,10 +400,68 @@ function parseVision(visionPath: string): VisionInfo | null {
   }
 }
 
+// === Auto-Discovery ===
+
+function findRepoRoot(): string | null {
+  const result = Bun.spawnSync(["git", "rev-parse", "--show-toplevel"]);
+  if (result.exitCode !== 0) return null;
+  return result.stdout.toString().trim();
+}
+
+function discoverLoopDir(): string | { multiple: { name: string; dir: string }[] } | null {
+  const repoRoot = findRepoRoot();
+  if (!repoRoot) return null;
+  const agentLoopsDir = resolve(repoRoot, ".agent-loops");
+  if (!existsSync(agentLoopsDir)) return null;
+
+  const loops = readdirSync(agentLoopsDir)
+    .filter((d) => {
+      const dirPath = resolve(agentLoopsDir, d);
+      return (
+        statSync(dirPath).isDirectory() &&
+        existsSync(resolve(dirPath, "PROGRESS.md"))
+      );
+    })
+    .map((d) => ({ name: d, dir: resolve(agentLoopsDir, d) }));
+
+  if (loops.length === 0) return null;
+  if (loops.length === 1) return loops[0].dir;
+  return { multiple: loops };
+}
+
 // === Main ===
 
 function main(): void {
-  const loopDir = resolve(process.cwd(), process.argv[2] ?? ".");
+  const explicitArg = process.argv[2];
+  let loopDir: string;
+
+  if (explicitArg && explicitArg !== ".") {
+    // Explicit path provided — use directly
+    loopDir = resolve(process.cwd(), explicitArg);
+  } else {
+    // Auto-discover from .agent-loops/
+    const discovered = discoverLoopDir();
+
+    if (discovered === null) {
+      // No loops found in .agent-loops/ — fall back to cwd check
+      loopDir = resolve(process.cwd(), explicitArg ?? ".");
+    } else if (typeof discovered === "string") {
+      // Single loop found
+      loopDir = discovered;
+    } else {
+      // Multiple loops found — output selection prompt
+      console.log(
+        JSON.stringify({
+          multipleLoops: true,
+          available: discovered.multiple.map((l) => l.name),
+          agentLoopsDir: resolve(findRepoRoot()!, ".agent-loops"),
+          warnings: [],
+        }),
+      );
+      return;
+    }
+  }
+
   const warnings: string[] = [];
 
   const progressPath = resolve(loopDir, "PROGRESS.md");
