@@ -31,8 +31,8 @@ Generate the autonomous multi-session loop harness from a structured vision. Run
 
 Two detection paths, following the same pattern as `soda-propose` → `soda-plan`:
 
-1. **Conversation-based** (same-session): `soda-loop-vision` emits a `## Vision Blueprint` block. `soda-loop-setup` detects it by heading pattern and extracts project name, target directory, and goals.
-2. **File-based** (cross-session): `soda-loop-setup` reads an existing VISION.md from the target directory.
+1. **Conversation-based** (same-session): `soda-loop-vision` emits a `## Vision Blueprint` block. `soda-loop-setup` detects it by heading pattern and extracts project name, loop name, and goals. Supports legacy `**Target**` field for backward compatibility.
+2. **File-based** (cross-session): `soda-loop-setup` scans `.agent-loops/` for existing loops containing VISION.md.
 
 ### Fallback behavior
 
@@ -81,41 +81,43 @@ Session exit info is appended to PROGRESS.md's Session Log section. The next ses
 
 ### Template strategy
 
-- **TypeScript script** (`run-loop.ts`): External file in `templates/`, copied to target directory at setup time. Runs via Bun's JIT TypeScript compiler. Uses `--output-format stream-json` with `--verbose` for session ID tracking and event-driven activity monitoring. Spawned claude sessions use the invocation directory as cwd (run from repo root). Loop files are resolved from the script's own directory by default (`import.meta.dir`). Supports SIGINT graceful shutdown (two-press pattern: first press stops after current session, second press force kills).
+- **TypeScript script** (`run-loop.ts`): External file in `templates/`, copied to `.agent-loops/<loop-name>/` at setup time. Runs via Bun's JIT TypeScript compiler. Uses `--output-format stream-json` with `--verbose` for session ID tracking and event-driven activity monitoring. Spawned claude sessions use the invocation directory as cwd (run from repo root). Loop files are resolved from the script's own directory by default (`import.meta.dir`), which naturally resolves to `.agent-loops/<loop-name>/`. Supports SIGINT graceful shutdown (two-press pattern: first press stops after current session, second press force kills).
 - **Markdown templates** (PROGRESS.md, AGENT_PROMPT.md): Embedded in SKILL.md with placeholder substitution. Keeps the skill self-contained and allows the agent to customize templates during generation.
 
 ## Typical Usage
 
+All loop artifacts are placed in `.agent-loops/<loop-name>/` at the repo root. This standardized location simplifies cross-skill discovery, inter-session handoff, and cleanup.
+
 ### Recommended: Two-step workflow
 
 ```
-/soda-loop-vision    # Define structured vision → VISION.md
-/soda-loop-setup     # Generate harness from vision → PROGRESS.md, AGENT_PROMPT.md, run-loop.ts
-path/to/run-loop.ts  # Start the autonomous loop (run from repo root)
+/soda-loop-vision              # Define vision → .agent-loops/<loop-name>/VISION.md
+/soda-loop-setup               # Generate harness → .agent-loops/<loop-name>/{PROGRESS,AGENT_PROMPT}.md + run-loop.ts
+.agent-loops/<loop-name>/run-loop.ts  # Start the autonomous loop (run from repo root)
 ```
 
 ### Quick: Standalone with inline vision
 
 ```
-/soda-loop-setup     # No VISION.md → select "Quick inline vision" → provide free text
-path/to/run-loop.ts  # Run from repo root
+/soda-loop-setup               # No VISION.md → select "Quick inline vision" → provide free text
+.agent-loops/<loop-name>/run-loop.ts  # Run from repo root
 ```
 
 ### Cross-session
 
 ```
 # Session 1
-/soda-loop-vision    # Writes VISION.md
+/soda-loop-vision              # Writes .agent-loops/<loop-name>/VISION.md
 
 # Session 2
-/soda-loop-setup     # Reads existing VISION.md
+/soda-loop-setup               # Scans .agent-loops/ for existing loops
 ```
 
 ## Environment Variables
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `LOOP_DIR` | `import.meta.dir` (script directory) | Directory containing loop files (PROGRESS.md, AGENT_PROMPT.md) |
+| `LOOP_DIR` | `import.meta.dir` (`.agent-loops/<loop-name>/`) | Directory containing loop files (PROGRESS.md, AGENT_PROMPT.md) |
 | `CLAUDE_MODEL` | `sonnet` | Model to use for agent sessions |
 | `MAX_SESSIONS` | `10` | Maximum number of sessions before halting |
 | `MAX_BUDGET_USD` | `10` | Per-session cost cap in USD |
