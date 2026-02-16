@@ -55,6 +55,7 @@ interface LoopStatusOutput {
     items: ItemInfo[];
   };
   blockedItems: Array<{ id: string; title: string }>;
+  inProgressItems: Array<{ id: string; title: string }>;
   sessions: {
     count: number;
     entries: SessionEntry[];
@@ -92,6 +93,7 @@ function parseProgressFile(content: string): {
   phases: PhaseStatus[];
   discoveredItems: { count: number; items: ItemInfo[] };
   blockedItems: Array<{ id: string; title: string }>;
+  inProgressItems: Array<{ id: string; title: string }>;
   sessionLogEntries: Array<{
     number: number;
     timestamp: string;
@@ -226,11 +228,23 @@ function parseProgressFile(content: string): {
     }
   }
 
+  // Collect in-progress items
+  const inProgressItems = allItems
+    .filter((item) => item.status === "in-progress")
+    .map(({ id, title }) => ({ id, title }));
+
+  for (const item of discoveredItems) {
+    if (item.status === "in-progress") {
+      inProgressItems.push({ id: item.id, title: item.title });
+    }
+  }
+
   return {
     projectName,
     phases,
     discoveredItems: { count: discoveredItems.length, items: discoveredItems },
     blockedItems,
+    inProgressItems,
     sessionLogEntries,
     counts,
   };
@@ -445,6 +459,7 @@ function main(): void {
       phases: progress.phases,
       discoveredItems: progress.discoveredItems,
       blockedItems: progress.blockedItems,
+      inProgressItems: progress.inProgressItems,
       sessions: {
         count: sessions.entries.length,
         ...sessions,
