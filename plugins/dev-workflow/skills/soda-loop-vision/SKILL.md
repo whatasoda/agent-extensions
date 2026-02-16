@@ -81,12 +81,18 @@ Out of Scope: {{EXCLUSION_COUNT}} (or "none")
 Followed by the full content that will be written to VISION.md.
 
 Use AskUserQuestion:
-- "Generate VISION.md"
+- "新ブランチを作成して生成"
+- "現ブランチで生成"
 - "Adjust goals"
 - "Adjust constraints/scope"
-- "Cancel"
 
 If adjustments are requested, go back to the relevant step. Do NOT proceed until the user confirms generation.
+
+**Branch creation** (if user chose "新ブランチを作成して生成"):
+Derive branch name as `loop/{{LOOP_NAME}}` and create it:
+```bash
+git checkout -b loop/{{LOOP_NAME}}
+```
 
 ## Step 5: Generate VISION.md
 
