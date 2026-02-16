@@ -79,6 +79,26 @@ Uses `--max-budget-usd` (default $10) for per-session cost caps. This provides a
 
 Session exit info is appended to PROGRESS.md's Session Log section. The next session reads this to understand why the previous session ended and what to prioritize. Three exit scenarios: normal (voluntary exit), budget-exceeded (cost limit hit), timeout (inactivity kill).
 
+### Prompt optimization
+
+The AGENT_PROMPT.md template follows a "fewer sections, higher compliance" principle. Research on frontier LLMs shows instruction compliance drops beyond ~150-200 instructions, and Claude Code's system prompt already consumes ~50. The template consolidates 9 sections into 6 by merging:
+
+- **Forced Exit Recovery** → Session Lifecycle step 2 (single point of recovery logic)
+- **Context Management** → Session Lifecycle step 9 + Rules (inline where relevant)
+- **Context Pollution Prevention** → Rules (last bullet)
+
+Negative instructions ("NEVER do X") are rewritten as positive actions ("do Y instead") where possible, since positive framing improves compliance.
+
+### Self-review protocol
+
+A self-review step (Session Lifecycle step 7) is inserted between execution and completion marking. The agent must:
+
+1. Run `git diff` to verify changes are intentional
+2. Check changes against the item's Validation field
+3. Apply type-specific checks (`[implement]` vs `[validate]`)
+
+This adds ~1 sub-step of token overhead per item but reduces cross-session rework from items marked `[x]` prematurely. Fix attempts during self-review count toward the 3-retry limit, preventing infinite review loops.
+
 ### Template strategy
 
 - **TypeScript script** (`run-loop.ts`): External file in `templates/`, copied to `.agent-loops/<loop-name>/` at setup time. Runs via Bun's JIT TypeScript compiler. Uses `--output-format stream-json` with `--verbose` for session ID tracking and event-driven activity monitoring. Spawned claude sessions use the invocation directory as cwd (run from repo root). Loop files are resolved from the script's own directory by default (`import.meta.dir`), which naturally resolves to `.agent-loops/<loop-name>/`. Supports SIGINT graceful shutdown (two-press pattern: first press stops after current session, second press force kills).
