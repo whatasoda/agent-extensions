@@ -22,7 +22,7 @@ This separation keeps the SKILL.md focused on user interaction while the script 
 
 ### Loop directory detection
 
-Two-tier detection: CLI argument > current directory PROGRESS.md presence. This matches the pattern used by run-loop.ts itself (LOOP_DIR env var > import.meta.dir). If neither works, SKILL.md asks the user.
+Three-tier detection: CLI argument > auto-discovery in `.agent-loops/` > current directory PROGRESS.md presence. The auto-discovery scans `<repo-root>/.agent-loops/` for subdirectories containing PROGRESS.md. If a single loop is found, it's used automatically. If multiple loops exist, the script outputs a selection prompt for the SKILL.md to present. If neither works, SKILL.md asks the user.
 
 ### Progress bar and dashboard format
 
@@ -43,4 +43,6 @@ soda-loop-vision → soda-loop-setup → (run-loop.ts) → soda-loop-status
     (VISION.md)     (PROGRESS.md,        (runs)       (reads all,
                      AGENT_PROMPT.md,                   read-only)
                      run-loop.ts)
+
+All artifacts in: .agent-loops/<loop-name>/
 ```

@@ -2,11 +2,13 @@
 name: soda-loop-status
 description: Check results and status of a soda-loop run
 user-invocable: true
-argument-hint: [loop directory path]
+argument-hint: [loop name or directory path]
 allowed-tools: Bash(bun *), Read, Grep, Glob, AskUserQuestion
 ---
 
 Check the results and status of a soda-loop run. Parses PROGRESS.md, session logs, VISION.md, and STOP sentinel to present a unified status dashboard.
+
+Loop artifacts are located in `<repo-root>/.agent-loops/<loop-name>/`. The script auto-discovers loops when no argument is provided.
 
 Use English for internal reasoning (thinking). All user-facing output must be in Japanese.
 
@@ -28,18 +30,29 @@ The above JSON provides the full loop status. See the schema description below f
 - `inProgressItems[]` — Items in in-progress state with `id` and `title`
 - `sessions` — Session history: `count`, `entries[]` with `number`, `timestamp`, `exitReason`, `sessionId`, `costUsd`, and `totalCostUsd`
 - `vision` — VISION.md data: `purpose`, `goalCount`, `goals[]` with `text` and `status`
+- `multipleLoops` — Present when multiple loops are found in `.agent-loops/`. Contains `available` (loop name list) and `agentLoopsDir` (path)
 - `error` — Present when a fatal error occurred (e.g., no PROGRESS.md found)
 - `warnings[]` — Non-fatal issues (e.g., missing .loop-logs)
 
 ## Procedure
 
-### Step 1: Error Check
+### Step 1: Loop Selection / Error Check
 
-If the JSON contains an `error` field, inform the user in Japanese and use AskUserQuestion:
-- "パスを指定する" — user provides loop directory path
+**If the JSON contains a `multipleLoops` field**: Multiple loops were found in `.agent-loops/`. Present the available loops and use AskUserQuestion to let the user choose:
+- One option per loop name from `available` array
 - "終了" — end the skill
 
-If the user provides a path, re-run the script:
+After the user selects a loop, re-run the script with the loop directory path:
+```bash
+bun ${CLAUDE_PLUGIN_ROOT}/skills/soda-loop-status/scripts/parse-loop-status.ts <agentLoopsDir>/<selected-loop-name>
+```
+Parse the new JSON and continue to Step 2.
+
+**If the JSON contains an `error` field**: Inform the user in Japanese and use AskUserQuestion:
+- "ループ名を指定する" — user provides loop name or directory path
+- "終了" — end the skill
+
+If the user provides a name or path, re-run the script:
 ```bash
 bun ${CLAUDE_PLUGIN_ROOT}/skills/soda-loop-status/scripts/parse-loop-status.ts <user-provided-path>
 ```
@@ -150,7 +163,7 @@ Use AskUserQuestion to ask which phase (list phase names as options). Then use G
 Use Read tool to display the file at `{{loopDir}}/PROGRESS.md`.
 
 **最新セッションのログを見る:**
-Determine the latest session number from `sessions.entries`. Read `.loop-logs/session-{{N}}.log` using the Read tool. Present key events:
+Determine the latest session number from `sessions.entries`. Read `{{loopDir}}/.loop-logs/session-{{N}}.log` using the Read tool. Present key events:
 - `init` event → session ID
 - `tool_use` events → summarize tools used (count by tool name)
 - `result` event → cost, if present
