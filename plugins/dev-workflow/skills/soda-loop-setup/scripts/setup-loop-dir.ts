@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
 /**
- * Setup loop directory with gitignore and file existence checks.
+ * Setup loop directory with gitignore check and file existence checks.
  *
  * Usage:
  *   bun setup-loop-dir.ts <repo-root> <loop-name> [--check file1 file2 ...]
@@ -9,19 +9,19 @@
  *   {
  *     "loopDir": "/abs/path/.agent-loops/loop-name",
  *     "created": true,
- *     "gitignore": "created" | "exists" | "updated",
+ *     "gitignored": true,
  *     "existing": ["VISION.md"],
  *     "missing": ["PROGRESS.md"]
  *   }
  */
 
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 import { resolve } from "node:path";
 
 interface Output {
   loopDir: string;
   created: boolean;
-  gitignore: "created" | "exists" | "updated";
+  gitignored: boolean;
   existing: string[];
   missing: string[];
 }
@@ -30,17 +30,20 @@ interface ErrorOutput {
   error: string;
 }
 
-const GITIGNORE_CONTENT = `# Ignore all loop artifacts
-*
-!.gitignore
-`;
+function checkGitIgnored(repoRoot: string, path: string): boolean {
+  const result = Bun.spawnSync(["git", "check-ignore", "-q", path], {
+    cwd: repoRoot,
+  });
+  return result.exitCode === 0;
+}
 
 function main(): void {
   const args = process.argv.slice(2);
 
   if (args.length < 2) {
     const error: ErrorOutput = {
-      error: "Usage: bun setup-loop-dir.ts <repo-root> <loop-name> [--check file1 file2 ...]",
+      error:
+        "Usage: bun setup-loop-dir.ts <repo-root> <loop-name> [--check file1 file2 ...]",
     };
     console.log(JSON.stringify(error));
     process.exit(1);
@@ -62,22 +65,8 @@ function main(): void {
   const dirExisted = existsSync(loopDir);
   mkdirSync(loopDir, { recursive: true });
 
-  // Handle .agent-loops/.gitignore
-  const gitignorePath = resolve(agentLoopsDir, ".gitignore");
-  let gitignoreStatus: Output["gitignore"];
-
-  if (!existsSync(gitignorePath)) {
-    writeFileSync(gitignorePath, GITIGNORE_CONTENT, "utf-8");
-    gitignoreStatus = "created";
-  } else {
-    const content = readFileSync(gitignorePath, "utf-8");
-    if (content.includes("*")) {
-      gitignoreStatus = "exists";
-    } else {
-      writeFileSync(gitignorePath, content.trimEnd() + "\n*\n", "utf-8");
-      gitignoreStatus = "updated";
-    }
-  }
+  // Check if .agent-loops/ is gitignored (expected via global gitignore)
+  const gitignored = checkGitIgnored(repoRoot, ".agent-loops/");
 
   // Check file existence
   const existing: string[] = [];
@@ -93,7 +82,7 @@ function main(): void {
   const output: Output = {
     loopDir,
     created: !dirExisted,
-    gitignore: gitignoreStatus,
+    gitignored,
     existing,
     missing,
   };

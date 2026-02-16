@@ -100,7 +100,9 @@ git checkout -b loop/{{LOOP_NAME}}
 ```bash
 bun ${CLAUDE_PLUGIN_ROOT}/skills/soda-loop-setup/scripts/setup-loop-dir.ts <repo-root> {{LOOP_NAME}} --check VISION.md
 ```
-This creates `.agent-loops/{{LOOP_NAME}}/` directory and `.agent-loops/.gitignore` (ignoring loop artifacts from git). Parse the JSON output. If `existing` contains `VISION.md`, use AskUserQuestion to confirm overwrite.
+This creates `.agent-loops/{{LOOP_NAME}}/` directory and checks gitignore status. Parse the JSON output:
+- If `gitignored` is `false`, warn the user that `.agent-loops/` is not gitignored and suggest adding it to their global gitignore (`git config --global core.excludesFile` → add `.agent-loops/` entry).
+- If `existing` contains `VISION.md`, use AskUserQuestion to confirm overwrite.
 
 Write VISION.md to the loop directory using this format:
 
