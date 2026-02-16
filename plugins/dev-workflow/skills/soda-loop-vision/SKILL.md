@@ -14,15 +14,25 @@ If $ARGUMENTS is empty, ask the user to describe the project goal before proceed
 
 ## Step 1: Project Context
 
-Use AskUserQuestion to gather:
+Determine the loop name and loop directory.
 
-**Question 1** — What is the target directory path?
+**Repo root detection**:
+```bash
+git rev-parse --show-toplevel
+```
+If this fails (non-git context), use the current working directory as the repo root.
 
-Options:
-- `.` (current directory)
-- Other (user types path)
+**Loop name derivation**:
+- If `$ARGUMENTS` is provided, derive a suggested loop name by slugifying: lowercase, replace spaces/special chars with hyphens, trim to 50 chars (e.g., "Add dark mode support" → `add-dark-mode-support`)
+- If `$ARGUMENTS` is empty, ask the user for a loop name
 
-Derive the project name automatically from the target directory's basename (e.g., `/foo/bar` → `bar`). Do NOT ask the user for the project name.
+**Confirm loop name** with AskUserQuestion:
+- "「{{SUGGESTED_LOOP_NAME}}」で進める"
+- "別の名前を指定"
+
+The loop directory is: `<repo-root>/.agent-loops/<loop-name>/`
+
+The project name equals the loop name.
 
 ## Step 2: Goal Elicitation
 
@@ -62,7 +72,7 @@ Present the complete VISION.md draft:
 
 ```
 Project: {{PROJECT_NAME}}
-Target: {{TARGET_DIR}}
+Loop: .agent-loops/{{LOOP_NAME}}/
 Goals: {{GOAL_COUNT}}
 Constraints: {{CONSTRAINT_COUNT}} (or "none")
 Out of Scope: {{EXCLUSION_COUNT}} (or "none")
@@ -80,13 +90,23 @@ If adjustments are requested, go back to the relevant step. Do NOT proceed until
 
 ## Step 5: Generate VISION.md
 
-Before generating, check if VISION.md already exists in the target directory:
+**Ensure `.agent-loops/` is gitignored**:
 ```bash
-ls {{TARGET_DIR}}/VISION.md 2>/dev/null
+grep -q '^\.agent-loops/' <repo-root>/.gitignore 2>/dev/null || echo '.agent-loops/' >> <repo-root>/.gitignore
+```
+
+**Create loop directory**:
+```bash
+mkdir -p <repo-root>/.agent-loops/{{LOOP_NAME}}/
+```
+
+**Check for existing VISION.md**:
+```bash
+ls <repo-root>/.agent-loops/{{LOOP_NAME}}/VISION.md 2>/dev/null
 ```
 If it exists, use AskUserQuestion to confirm overwrite.
 
-Write VISION.md to the target directory using this format:
+Write VISION.md to the loop directory using this format:
 
 ````markdown
 # {{PROJECT_NAME}} - Vision
@@ -120,7 +140,7 @@ After writing the file, emit a **Vision Blueprint** block in the conversation. T
 ## Vision Blueprint
 
 **Project**: {{PROJECT_NAME}}
-**Target**: {{TARGET_DIR}}
+**Loop Name**: {{LOOP_NAME}}
 
 ### Goals
 - {{GOAL_1}}
@@ -140,7 +160,7 @@ Then print next steps:
 
 ```
 Vision defined:
-- {{TARGET_DIR}}/VISION.md — {{GOAL_COUNT}} verifiable goals
+- .agent-loops/{{LOOP_NAME}}/VISION.md — {{GOAL_COUNT}} verifiable goals
 
 Next:
   /soda-loop-setup — Generate loop harness from this vision
