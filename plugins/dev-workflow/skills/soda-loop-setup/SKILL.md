@@ -80,15 +80,21 @@ You are an autonomous agent working in a multi-session loop. Your goal is to mak
 - `[!]` blocked — failed after 3 retries
 
 ## Session Lifecycle
-1. Read PROGRESS.md — check Session Log for previous exit reason
-2. If previous session exited with `budget-exceeded` or `timeout`: check for `[~]` items with partial progress
-3. Find next actionable item: first any `[~]` item (resume), then first `[ ]` item whose deps are all `[x]`
+1. Read PROGRESS.md and its Session Log for previous exit reason
+2. Resume any `[~]` item first — previous session may have exited mid-work (budget-exceeded or timeout). Inspect partial progress before restarting.
+3. If no `[~]` item: find first `[ ]` item whose deps are all `[x]`
 4. If no actionable items → Discovery Protocol (see below)
 5. Mark item `[~]` in PROGRESS.md
 6. Execute item (implement or validate per item type)
-7. On success: mark `[x]`. On failure after 3 retries: mark `[!]` with reason
-8. Context check: if processed 3+ items OR context feels heavy → exit
-9. Otherwise → back to step 3
+7. Self-review before completion:
+   - Run `git diff` to verify all changes are intentional and complete
+   - Check changes against the item's Validation field
+   - For `[implement]` items: confirm the implementation satisfies the description and does not introduce unrelated changes
+   - For `[validate]` items: confirm all pass criteria are met with evidence
+   - Fix any issues found (each fix attempt counts toward the 3-retry limit)
+8. On success: mark `[x]`. On failure after 3 retries: mark `[!]` with reason.
+9. Context check: if 3+ items processed OR context feels heavy → exit early (the loop creates a fresh session). Exit before context compaction triggers.
+10. Otherwise → back to step 3
 
 ## Discovery Protocol
 Triggered when no `[ ]` or `[~]` items remain and not all phases are complete:
@@ -98,30 +104,12 @@ Triggered when no `[ ]` or `[~]` items remain and not all phases are complete:
 4. Add up to 3 new items with `D-N` prefix to Discovered Items section
 5. Exit session immediately (do NOT execute discovered items — next session handles them)
 
-## Context Management
-- Process at most 3 items per session
-- After completing each item: self-assess remaining context capacity
-- If uncertain whether context is sufficient → exit early (the loop creates a fresh session)
-- NEVER allow context compaction — exit before it happens
-
-## Forced Exit Recovery
-Check Session Log for previous session's exit info:
-- `budget-exceeded`: Previous session hit token budget. Any `[~]` items may have partial work.
-- `timeout`: Previous session was killed for inactivity. Check `[~]` items carefully for inconsistent state.
-- Always prioritize `[~]` items over `[ ]` items.
-
-## Safety Rules
+## Rules
 - File boundaries: {{FILE_SCOPE}}
-- NEVER use `git add -A` or `git add .` — always add specific files
-- Commit format: `{{COMMIT_PREFIX}}: <description>`
+- Commit format: `{{COMMIT_PREFIX}}: <description>` — always stage specific files (never `git add -A` or `git add .`)
 - Max 3 retries per item, then mark `[!]` with failure reason
-- Do not modify PROGRESS.md structure — only update item states and Session Log
-
-## Context Pollution Prevention
-- Never read entire large files — use Grep to find relevant sections
-- Pipe long command output to temp files: `cmd > /tmp/output.log 2>&1`
-- Check results with: `tail -20 /tmp/output.log`
-- Avoid storing large content in variables
+- Only update item states and append to Session Log in PROGRESS.md — do not alter its structure
+- Use Grep to find relevant sections in large files; pipe long command output to temp files (`cmd > /tmp/output.log 2>&1`) and check with `tail -20 /tmp/output.log`
 ````
 
 ## Procedure
