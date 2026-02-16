@@ -35,6 +35,10 @@ Uses the same pattern as `soda-propose` → `soda-plan`:
 - **Conversation-based**: A Vision Blueprint block is emitted after file generation. `soda-loop-setup` detects this block by heading pattern (`## Vision Blueprint`) and extracts project name, loop name, and goals. This enables same-session chaining.
 - **File-based**: VISION.md persists across sessions at `.agent-loops/<loop-name>/VISION.md`. `soda-loop-setup` can scan `.agent-loops/` for existing loops when no Vision Blueprint exists in the conversation. This enables cross-session workflows.
 
+### Branch strategy
+
+At the draft review step, the user can choose to create a new branch (`loop/<loop-name>`) before VISION.md is generated. This follows the same pattern as `soda-plan`'s strategy confirmation step. The branch is created before any files are written, so the entire loop project (vision → setup → execution) lives on a dedicated branch.
+
 ### Relationship to soda-loop-setup
 
 ```
