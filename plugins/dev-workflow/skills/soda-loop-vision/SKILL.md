@@ -3,7 +3,7 @@ name: soda-loop-vision
 description: Define structured vision with verifiable goals for autonomous loop projects
 user-invocable: true
 argument-hint: [project goal description]
-allowed-tools: Bash(git *), Read, Grep, Glob, Write, AskUserQuestion
+allowed-tools: Bash(git *), Bash(bun *), Read, Grep, Glob, Write, AskUserQuestion
 ---
 
 Define a structured vision for an autonomous multi-session loop project. The output is a VISION.md file containing verifiable goals — an intermediate artifact between a high-level vision and a concrete implementation plan.
@@ -96,21 +96,11 @@ git checkout -b loop/{{LOOP_NAME}}
 
 ## Step 5: Generate VISION.md
 
-**Ensure `.agent-loops/` is gitignored**:
+**Initialize loop directory and check for existing files**:
 ```bash
-grep -q '^\.agent-loops/' <repo-root>/.gitignore 2>/dev/null || echo '.agent-loops/' >> <repo-root>/.gitignore
+bun ${CLAUDE_PLUGIN_ROOT}/skills/soda-loop-setup/scripts/setup-loop-dir.ts <repo-root> {{LOOP_NAME}} --check VISION.md
 ```
-
-**Create loop directory**:
-```bash
-mkdir -p <repo-root>/.agent-loops/{{LOOP_NAME}}/
-```
-
-**Check for existing VISION.md**:
-```bash
-ls <repo-root>/.agent-loops/{{LOOP_NAME}}/VISION.md 2>/dev/null
-```
-If it exists, use AskUserQuestion to confirm overwrite.
+This creates `.agent-loops/{{LOOP_NAME}}/` directory and `.agent-loops/.gitignore` (ignoring loop artifacts from git). Parse the JSON output. If `existing` contains `VISION.md`, use AskUserQuestion to confirm overwrite.
 
 Write VISION.md to the loop directory using this format:
 
