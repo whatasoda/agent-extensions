@@ -7,13 +7,15 @@ allowed-tools: Bash(git *), Read, Grep, Glob, Write, AskUserQuestion
 
 Generate an autonomous multi-session loop harness for a project. The harness consists of three files: PROGRESS.md, AGENT_PROMPT.md, and run-loop.ts. It consumes a VISION.md produced by `/soda-loop-vision` (or provided inline).
 
+All loop artifacts are placed in `<repo-root>/.agent-loops/<loop-name>/`.
+
 Use English for all generated file content. User interaction (AskUserQuestion options, confirmation messages, phase presentations) must be in Japanese.
 
 ## Vision Detection
 
 Before starting, check the conversation for a **Vision Blueprint** block (produced by `/soda-loop-vision`).
 
-- **If found**: Extract project name, target directory, goals, constraints, and out-of-scope items. Verify VISION.md exists at the target path. If VISION.md is missing, write it from the Vision Blueprint content.
+- **If found**: Extract project name, loop name, goals, constraints, and out-of-scope items. Detect `**Loop Name**` field to derive the loop directory (`<repo-root>/.agent-loops/<loop-name>/`). If the Vision Blueprint uses the legacy `**Target**` field instead, derive the loop name from the target directory's basename and use `<repo-root>/.agent-loops/<loop-name>/` as the loop directory. Verify VISION.md exists at the loop directory path. If VISION.md is missing, write it from the Vision Blueprint content.
 - **If not found**: Proceed to Step 1 to detect or create a vision manually.
 
 When a Vision Blueprint is found, skip Step 1 entirely and proceed to Step 2.
@@ -126,25 +128,38 @@ Check Session Log for previous session's exit info:
 
 ### Step 1: Vision Detection
 
-Derive the target directory — do NOT ask the user to type it from scratch.
+Determine the loop directory. Do NOT ask the user to type a path from scratch.
+
+**Repo root detection**:
+```bash
+git rev-parse --show-toplevel
+```
+If this fails (non-git context), use the current working directory as the repo root.
 
 **Detection order**:
-1. If a Vision Blueprint was found in the conversation → use its `**Target**` field
-2. Else check if `./VISION.md` exists in the current directory → use `.`
-3. If neither found → ask the user for the path
+1. If a Vision Blueprint was found in the conversation → use its `**Loop Name**` (or legacy `**Target**` basename) to derive `.agent-loops/<loop-name>/`
+2. Else scan for existing loops:
+   ```bash
+   ls <repo-root>/.agent-loops/*/VISION.md 2>/dev/null
+   ```
+   - If a single loop is found → suggest it
+   - If multiple loops are found → list them and let user choose via AskUserQuestion
+3. If no loops found → ask the user for a loop name (or suggest running `/soda-loop-vision`)
 
-**After deriving the target directory**, confirm with the user:
+**After determining the loop name**, confirm with the user:
 
 Use AskUserQuestion:
-- "{{DERIVED_PATH}} で進める"
-- "別のパスを指定"
+- "`.agent-loops/{{LOOP_NAME}}/` で進める"
+- "別のループを指定"
 
-Then check for VISION.md:
+The loop directory is: `<repo-root>/.agent-loops/<loop-name>/`
+
+Derive the project name from the loop name. Do NOT ask the user for the project name.
+
+**Check for VISION.md**:
 ```bash
-ls {{TARGET_DIR}}/VISION.md 2>/dev/null
+ls <repo-root>/.agent-loops/{{LOOP_NAME}}/VISION.md 2>/dev/null
 ```
-
-Derive the project name automatically from the target directory's basename (e.g., `/foo/bar` → `bar`). Do NOT ask the user for the project name.
 
 **If VISION.md exists**: Read it and extract goals, constraints, and out-of-scope items. Present a summary to the user. Use AskUserQuestion:
 - "Use this VISION.md"
@@ -172,7 +187,7 @@ If "Customize" is selected, ask a follow-up AskUserQuestion with these fields:
 - Max sessions (default: `10`)
 - Idle timeout seconds (default: `1800`)
 - Allowed tools (default: `Read,Write,Edit,Bash,Glob,Grep`)
-- File scope restriction (default: `.` — current directory)
+- File scope restriction (default: `.` — repo root)
 - Commit prefix (default: `feat`)
 
 ### Step 3: Phase Proposal
@@ -227,7 +242,7 @@ Present a summary of all configuration:
 
 ```
 Project: {{PROJECT_NAME}}
-Target: {{TARGET_DIR}}
+Loop: .agent-loops/{{LOOP_NAME}}/
 Vision: VISION.md ({{GOAL_COUNT}} goals)
 Phases: {{PHASE_COUNT}} (auto-derived)
 Model: {{MODEL}} | Budget: ${{BUDGET}}/session | Max sessions: {{MAX_SESSIONS}}
@@ -244,20 +259,30 @@ Options:
 
 ### Step 5: Generate Files
 
-Before generating, check if loop files already exist in the target directory:
+**Ensure `.agent-loops/` is gitignored**:
 ```bash
-ls {{TARGET_DIR}}/{PROGRESS.md,AGENT_PROMPT.md,run-loop.ts} 2>/dev/null
+grep -q '^\.agent-loops/' <repo-root>/.gitignore 2>/dev/null || echo '.agent-loops/' >> <repo-root>/.gitignore
+```
+
+**Create loop directory** (if not already created by `/soda-loop-vision`):
+```bash
+mkdir -p <repo-root>/.agent-loops/{{LOOP_NAME}}/
+```
+
+**Check for existing loop files**:
+```bash
+ls <repo-root>/.agent-loops/{{LOOP_NAME}}/{PROGRESS.md,AGENT_PROMPT.md,run-loop.ts} 2>/dev/null
 ```
 If any exist, use AskUserQuestion to confirm overwrite.
 
 Generate files in this order:
 
-1. **PROGRESS.md** — Substitute all `{{PLACEHOLDER}}` values in the template above. For each phase, generate the Items section with implementation items, validation items, and phase validation item.
-2. **AGENT_PROMPT.md** — Substitute `{{PROJECT_NAME}}`, `{{FILE_SCOPE}}`, and `{{COMMIT_PREFIX}}` in the template above.
-3. **run-loop.ts** — Copy from `${CLAUDE_PLUGIN_ROOT}/skills/soda-loop-setup/templates/run-loop.ts` and make executable:
+1. **PROGRESS.md** — Substitute all `{{PLACEHOLDER}}` values in the template above. For each phase, generate the Items section with implementation items, validation items, and phase validation item. Write to `<repo-root>/.agent-loops/{{LOOP_NAME}}/PROGRESS.md`.
+2. **AGENT_PROMPT.md** — Substitute `{{PROJECT_NAME}}`, `{{FILE_SCOPE}}`, and `{{COMMIT_PREFIX}}` in the template above. Write to `<repo-root>/.agent-loops/{{LOOP_NAME}}/AGENT_PROMPT.md`.
+3. **run-loop.ts** — Copy from plugin templates and make executable:
    ```bash
-   cp "${CLAUDE_PLUGIN_ROOT}/skills/soda-loop-setup/templates/run-loop.ts" "{{TARGET_DIR}}/run-loop.ts"
-   chmod +x "{{TARGET_DIR}}/run-loop.ts"
+   cp "${CLAUDE_PLUGIN_ROOT}/skills/soda-loop-setup/templates/run-loop.ts" "<repo-root>/.agent-loops/{{LOOP_NAME}}/run-loop.ts"
+   chmod +x "<repo-root>/.agent-loops/{{LOOP_NAME}}/run-loop.ts"
    ```
 
 ### Step 6: Usage Instructions
@@ -270,20 +295,24 @@ Loop files generated:
 - AGENT_PROMPT.md — Agent prompt
 - run-loop.ts — Loop harness
 
-Vision: {{TARGET_DIR}}/VISION.md (already exists)
+All files in: .agent-loops/{{LOOP_NAME}}/
+Vision: .agent-loops/{{LOOP_NAME}}/VISION.md (already exists)
 
 Prerequisites:
   bun must be installed (https://bun.sh)
 
 Start (from repo root):
-  {{TARGET_DIR}}/run-loop.ts
+  .agent-loops/{{LOOP_NAME}}/run-loop.ts
 
 Customize with env vars:
-  CLAUDE_MODEL=opus MAX_BUDGET_USD=20 {{TARGET_DIR}}/run-loop.ts
+  CLAUDE_MODEL=opus MAX_BUDGET_USD=20 .agent-loops/{{LOOP_NAME}}/run-loop.ts
 
 Stop:
-  touch {{TARGET_DIR}}/STOP
+  touch .agent-loops/{{LOOP_NAME}}/STOP
 
 View logs:
-  ls {{TARGET_DIR}}/.loop-logs/
+  ls .agent-loops/{{LOOP_NAME}}/.loop-logs/
+
+Check status:
+  /soda-loop-status
 ```
