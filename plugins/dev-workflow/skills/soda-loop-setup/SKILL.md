@@ -2,7 +2,7 @@
 name: soda-loop-setup
 description: Generate autonomous loop harness from vision blueprint
 user-invocable: true
-allowed-tools: Bash(git *), Read, Grep, Glob, Write, AskUserQuestion
+allowed-tools: Bash(git *), Bash(bun *), Read, Grep, Glob, Write, AskUserQuestion
 ---
 
 Generate an autonomous multi-session loop harness for a project. The harness consists of three files: PROGRESS.md, AGENT_PROMPT.md, and run-loop.ts. It consumes a VISION.md produced by `/soda-loop-vision` (or provided inline).
@@ -126,10 +126,7 @@ If this fails (non-git context), use the current working directory as the repo r
 
 **Detection order**:
 1. If a Vision Blueprint was found in the conversation → use its `**Loop Name**` (or legacy `**Target**` basename) to derive `.agent-loops/<loop-name>/`
-2. Else scan for existing loops:
-   ```bash
-   ls <repo-root>/.agent-loops/*/VISION.md 2>/dev/null
-   ```
+2. Else scan for existing loops using Glob tool with pattern `<repo-root>/.agent-loops/*/VISION.md`
    - If a single loop is found → suggest it
    - If multiple loops are found → list them and let user choose via AskUserQuestion
 3. If no loops found → ask the user for a loop name (or suggest running `/soda-loop-vision`)
@@ -144,10 +141,7 @@ The loop directory is: `<repo-root>/.agent-loops/<loop-name>/`
 
 Derive the project name from the loop name. Do NOT ask the user for the project name.
 
-**Check for VISION.md**:
-```bash
-ls <repo-root>/.agent-loops/{{LOOP_NAME}}/VISION.md 2>/dev/null
-```
+**Check for VISION.md**: Use Glob tool with pattern `<repo-root>/.agent-loops/{{LOOP_NAME}}/VISION.md` to check if the file exists.
 
 **If VISION.md exists**: Read it and extract goals, constraints, and out-of-scope items. Present a summary to the user. Use AskUserQuestion:
 - "Use this VISION.md"
@@ -247,21 +241,13 @@ Options:
 
 ### Step 5: Generate Files
 
-**Ensure `.agent-loops/` is gitignored**:
+**Initialize loop directory and check for existing files**:
 ```bash
-grep -q '^\.agent-loops/' <repo-root>/.gitignore 2>/dev/null || echo '.agent-loops/' >> <repo-root>/.gitignore
+bun ${CLAUDE_PLUGIN_ROOT}/skills/soda-loop-setup/scripts/setup-loop-dir.ts <repo-root> {{LOOP_NAME}} --check PROGRESS.md AGENT_PROMPT.md run-loop.ts
 ```
-
-**Create loop directory** (if not already created by `/soda-loop-vision`):
-```bash
-mkdir -p <repo-root>/.agent-loops/{{LOOP_NAME}}/
-```
-
-**Check for existing loop files**:
-```bash
-ls <repo-root>/.agent-loops/{{LOOP_NAME}}/{PROGRESS.md,AGENT_PROMPT.md,run-loop.ts} 2>/dev/null
-```
-If any exist, use AskUserQuestion to confirm overwrite.
+Parse the JSON output:
+- If `gitignored` is `false`, warn the user that `.agent-loops/` is not gitignored and suggest adding it to their global gitignore (`git config --global core.excludesFile` → add `.agent-loops/` entry).
+- If `existing` is non-empty, use AskUserQuestion to confirm overwrite.
 
 Generate files in this order:
 
@@ -269,8 +255,7 @@ Generate files in this order:
 2. **AGENT_PROMPT.md** — Substitute `{{PROJECT_NAME}}`, `{{FILE_SCOPE}}`, and `{{COMMIT_PREFIX}}` in the template above. Write to `<repo-root>/.agent-loops/{{LOOP_NAME}}/AGENT_PROMPT.md`.
 3. **run-loop.ts** — Copy from plugin templates and make executable:
    ```bash
-   cp "${CLAUDE_PLUGIN_ROOT}/skills/soda-loop-setup/templates/run-loop.ts" "<repo-root>/.agent-loops/{{LOOP_NAME}}/run-loop.ts"
-   chmod +x "<repo-root>/.agent-loops/{{LOOP_NAME}}/run-loop.ts"
+   bun ${CLAUDE_PLUGIN_ROOT}/skills/soda-loop-setup/scripts/install-template.ts "${CLAUDE_PLUGIN_ROOT}/skills/soda-loop-setup/templates/run-loop.ts" "<repo-root>/.agent-loops/{{LOOP_NAME}}/run-loop.ts"
    ```
 
 ### Step 6: Usage Instructions
