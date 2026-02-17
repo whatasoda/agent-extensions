@@ -6,8 +6,9 @@ The original `soda-loop-setup` skill handled everything: vision definition, phas
 
 1. **Cognitive overload**: Users had to specify vision, phase count, phase names, and individual items in a single session. The phase definition step was particularly demanding — users needed to decompose their vision into phases and items before the agent could help.
 2. **Low-quality vision input**: The free-text vision field produced vague aspirational statements rather than concrete requirements. This made the agent's Discovery Protocol less effective, as it compared codebase state against imprecise descriptions.
+3. **Shallow requirements capture**: The direct path from free-text description to goal decomposition meant the agent operated on potentially ambiguous or incomplete input. Ambiguous terms, unstated motivations, and implicit assumptions flowed directly into goals, producing goals that were technically verifiable but did not capture what the user actually intended.
 
-Separating vision definition into its own skill addresses both issues by dedicating a full interactive session to producing a high-quality, structured vision document.
+Separating vision definition into its own skill addresses these issues by dedicating a full interactive session to producing a high-quality, structured vision document. The skill now includes an interactive requirements discovery phase that clarifies ambiguities and surfaces implicit assumptions before goal decomposition, improving the quality and relevance of the resulting goals.
 
 ## Purpose
 
@@ -38,6 +39,20 @@ Uses the same pattern as `soda-propose` → `soda-plan`:
 ### Branch strategy
 
 At the draft review step, the user can choose to create a new branch (`loop/<loop-name>`) before VISION.md is generated. This follows the same pattern as `soda-plan`'s strategy confirmation step. The branch is created before any files are written, so the entire loop project (vision → setup → execution) lives on a dedicated branch.
+
+### Requirements discovery phase
+
+The Requirements Discovery step (Step 2) is inserted between project context setup and goal decomposition. This follows the same "understand before decompose" principle used in `soda-propose`'s Phase 1 (Problem Understanding), adapted for vision definition rather than approach comparison.
+
+Key design choices:
+- **2-4 questions per round** (not all at once): Prevents cognitive overload and allows answers to inform subsequent questions. This mirrors real requirements elicitation where each answer can reveal new questions.
+- **Flexible depth**: The agent offers a checkpoint after each round rather than enforcing a fixed number of rounds. Short descriptions with clear scope may need only one round; complex multi-stakeholder projects may need three or four.
+- **Categories as guidance, not checklist**: The six question categories (motivation, scope, ambiguity, technical context, success criteria, assumptions) guide the agent's analysis but are not presented as a form to fill out. The agent selects the most relevant categories per round.
+- **Constraint pre-population**: Constraints discovered during the dialogue carry forward to Step 4, reducing redundant questioning.
+
+### Goal deep-dive
+
+The deep-dive mechanism in Step 3 allows the user to examine individual goals after the initial decomposition. This addresses a gap where goals could be technically verifiable but miss important edge cases or have acceptance criteria that do not match user intent. The deep-dive is a sub-loop within the existing confirm-or-adjust loop, so it composes naturally with add/remove/granularity adjustments.
 
 ### Relationship to soda-loop-setup
 
