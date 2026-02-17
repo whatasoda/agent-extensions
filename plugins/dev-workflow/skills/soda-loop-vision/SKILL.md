@@ -61,6 +61,11 @@ If after the first round of questions no further ambiguities remain, proceed dir
 
 Carry forward any constraints or exclusions that emerged during this dialogue — they will be pre-populated in Step 4.
 
+Also retain the following context from the dialogue for use in Step 6:
+- **Problem background**: The problem statement, current situation, and motivation that emerged
+- **Technical landscape**: Technologies, architecture details, file paths, APIs, and environmental details discussed
+- **Key decisions**: Important choices resolved during discovery — what was chosen, what was rejected, and why
+
 ## Step 3: Goal Elicitation
 
 Using the enriched understanding from Requirements Discovery, decompose the project into 3-10 verifiable goals. If no $ARGUMENTS was provided, use the understanding built through the discovery dialogue. Each goal must be:
@@ -121,6 +126,9 @@ Present the complete VISION.md draft:
 ```
 Project: {{PROJECT_NAME}}
 Loop: .agent-loops/{{LOOP_NAME}}/
+Background: {{PARAGRAPH_COUNT}} paragraphs
+Technical Context: {{DETAIL_COUNT}} items
+Key Decisions: {{DECISION_COUNT}} decisions
 Goals: {{GOAL_COUNT}}
 Constraints: {{CONSTRAINT_COUNT}} (or "none")
 Out of Scope: {{EXCLUSION_COUNT}} (or "none")
@@ -160,6 +168,24 @@ Write VISION.md to the loop directory using this format:
 ## Purpose
 {{ONE_SENTENCE_PURPOSE}}
 
+## Background
+{{BACKGROUND_PARAGRAPH_1}}
+
+{{BACKGROUND_PARAGRAPH_2}}
+
+{{BACKGROUND_PARAGRAPH_3_IF_NEEDED}}
+
+## Technical Context
+- {{TECHNOLOGY_OR_ARCHITECTURE_DETAIL_1}}
+- {{TECHNOLOGY_OR_ARCHITECTURE_DETAIL_2}}
+- {{FILE_PATH_OR_API_DETAIL}}
+...
+
+## Key Decisions
+- {{DECISION_1}}: {{CHOSEN_OPTION}} (not {{REJECTED_OPTION}} — {{RATIONALE}})
+- {{DECISION_2}}: {{CHOSEN_OPTION}} (not {{REJECTED_OPTION}} — {{RATIONALE}})
+...
+
 ## Goals
 - [ ] {{VERIFIABLE_GOAL_1}}
 - [ ] {{VERIFIABLE_GOAL_2}}
@@ -175,8 +201,27 @@ Write VISION.md to the loop directory using this format:
 ...
 ````
 
+Omit the `## Background` section if the project context is straightforward and no meaningful background emerged during discovery (e.g., a simple one-goal project initiated without discovery dialogue).
+Omit the `## Technical Context` section if no specific technologies, file paths, or APIs were discussed.
+Omit the `## Key Decisions` section if no ambiguities were resolved and no alternatives were considered during discovery.
 Omit the `## Constraints` section if no constraints were defined.
 Omit the `## Out of Scope` section if no exclusions were defined.
+
+**Background** guidelines:
+- 2-3 paragraphs of prose (not bullet points)
+- Paragraph 1: Problem statement — what is wrong or missing in the current state
+- Paragraph 2: Motivation — why this matters now, who is affected
+- Paragraph 3 (optional): Broader context — how this fits into larger goals or recent changes
+
+**Technical Context** guidelines:
+- Bullet list of concrete technical details
+- Include: relevant technologies/frameworks, existing architecture patterns, important file paths, APIs or interfaces involved, environment or platform constraints
+- Each item should be factual and specific (e.g., "`src/auth/` handles OAuth2 flows using passport.js" not "uses authentication")
+
+**Key Decisions** guidelines:
+- Each entry follows the format: "{{TOPIC}}: {{CHOSEN}} (not {{REJECTED}} — {{REASON}})"
+- Only include decisions that were actively resolved during requirements discovery — do not fabricate decisions that were never discussed
+- Include decisions about scope, approach, technology choice, or priority that affect how goals should be interpreted
 
 ## Step 7: Vision Blueprint & Next Steps
 
@@ -187,6 +232,19 @@ After writing the file, emit a **Vision Blueprint** block in the conversation. T
 
 **Project**: {{PROJECT_NAME}}
 **Loop Name**: {{LOOP_NAME}}
+
+### Background
+{{BACKGROUND_SUMMARY_1_2_SENTENCES}}
+
+### Technical Context
+- {{DETAIL_1}}
+- {{DETAIL_2}}
+...
+
+### Key Decisions
+- {{DECISION_1}}
+- {{DECISION_2}}
+...
 
 ### Goals
 - {{GOAL_1}}
@@ -201,6 +259,8 @@ After writing the file, emit a **Vision Blueprint** block in the conversation. T
 - {{EXCLUSION}}
 ...
 ```
+
+The same omission rules apply to the Vision Blueprint: omit `### Background`, `### Technical Context`, or `### Key Decisions` if the corresponding VISION.md section was omitted.
 
 Then print next steps:
 

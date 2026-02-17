@@ -15,7 +15,7 @@ Use English for all generated file content. User interaction (AskUserQuestion op
 
 Before starting, check the conversation for a **Vision Blueprint** block (produced by `/soda-loop-vision`).
 
-- **If found**: Extract project name, loop name, goals, constraints, and out-of-scope items. Detect `**Loop Name**` field to derive the loop directory (`<repo-root>/.agent-loops/<loop-name>/`). If the Vision Blueprint uses the legacy `**Target**` field instead, derive the loop name from the target directory's basename and use `<repo-root>/.agent-loops/<loop-name>/` as the loop directory. Verify VISION.md exists at the loop directory path. If VISION.md is missing, write it from the Vision Blueprint content.
+- **If found**: Extract project name, loop name, goals, constraints, out-of-scope items, and contextual sections (background, technical context, key decisions). Detect `**Loop Name**` field to derive the loop directory (`<repo-root>/.agent-loops/<loop-name>/`). If the Vision Blueprint uses the legacy `**Target**` field instead, derive the loop name from the target directory's basename and use `<repo-root>/.agent-loops/<loop-name>/` as the loop directory. Verify VISION.md exists at the loop directory path. If VISION.md is missing, write it from the Vision Blueprint content.
 - **If not found**: Proceed to Step 1 to detect or create a vision manually.
 
 When a Vision Blueprint is found, skip Step 1 entirely and proceed to Step 2.
