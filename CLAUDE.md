@@ -75,6 +75,21 @@ When adding or removing a plugin, update `.claude-plugin/marketplace.json`:
 - Add an entry to the `plugins` array with `name`, `source` (relative path), `description`, and `version`
 - Keep the `metadata.version` in sync when making structural changes
 
+### CI / Automation
+
+A GitHub Actions workflow (`.github/workflows/ci.yml`) runs on every push to `main`:
+
+1. Detects if plugin source files changed (`skills/`, `src/`, `hooks/hooks.json`, `package.json`)
+2. Auto-bumps the patch version in both `plugin.json` and `marketplace.json`
+3. Rebuilds `plugins/*/dist/`
+4. Commits and pushes with `[skip ci]` to prevent re-triggering
+
+**Version bumping conventions:**
+
+- **Patch versions**: Handled automatically by CI — do NOT bump manually
+- **Minor/major versions**: Bump manually when needed (use `bun run scripts/bump-version.ts <plugin-name>` or edit directly)
+- `scripts/bump-version.ts` accepts a plugin name and an optional `--dry-run` flag
+
 ### Naming
 
 - Plugin names: kebab-case (e.g., `my-plugin`)
