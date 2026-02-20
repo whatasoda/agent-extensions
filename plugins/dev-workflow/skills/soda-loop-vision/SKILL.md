@@ -274,6 +274,7 @@ Next:
 
 ## Constraints
 
+- Do NOT use EnterPlanMode or enter plan mode. This skill is an interactive dialogue — not an implementation task.
 - This skill only defines the vision. Do NOT generate PROGRESS.md, AGENT_PROMPT.md, or run-loop.ts.
 - Do NOT propose phases or work items — that is `/soda-loop-setup`'s responsibility.
 - The Vision Blueprint block format must be stable — `/soda-loop-setup` detects it by heading pattern.
