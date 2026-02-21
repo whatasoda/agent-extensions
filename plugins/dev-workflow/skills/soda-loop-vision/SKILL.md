@@ -6,6 +6,8 @@ argument-hint: [project goal description]
 allowed-tools: Bash(git *), Bash(bun *), Read, Grep, Glob, Write, AskUserQuestion
 ---
 
+**CRITICAL**: Do NOT use EnterPlanMode or enter plan mode at any point during this skill. This is an interactive dialogue skill — not an implementation task. Proceed directly through the steps below without planning.
+
 Define a structured vision for an autonomous multi-session loop project. The output is a VISION.md file containing verifiable goals — an intermediate artifact between a high-level vision and a concrete implementation plan.
 
 Use English for all generated file content. User interaction (AskUserQuestion options, draft presentations) must be in Japanese.
@@ -274,7 +276,6 @@ Next:
 
 ## Constraints
 
-- Do NOT use EnterPlanMode or enter plan mode. This skill is an interactive dialogue — not an implementation task.
 - This skill only defines the vision. Do NOT generate PROGRESS.md, AGENT_PROMPT.md, or run-loop.ts.
 - Do NOT propose phases or work items — that is `/soda-loop-setup`'s responsibility.
 - The Vision Blueprint block format must be stable — `/soda-loop-setup` detects it by heading pattern.
