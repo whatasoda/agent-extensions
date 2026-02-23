@@ -8,7 +8,7 @@ allowed-tools: Bash(git *), Read, Grep, Glob, Task, AskUserQuestion
 
 Investigate and propose multiple approaches for the given problem or goal.
 
-Use English for internal reasoning (thinking). All user-facing output — problem restatement, proposals, comparisons, AskUserQuestion options, and Proposal Summary — must be in Japanese.
+Use English for internal reasoning (thinking). All user-facing output — problem restatement, proposals, comparisons, and AskUserQuestion options — must be in Japanese. The Proposal Summary block must use the exact English template format for downstream compatibility.
 
 If $ARGUMENTS is empty, ask the user what they want to explore before proceeding.
 
@@ -45,6 +45,13 @@ If consensus cannot be reached after 2 confirmation attempts, use AskUserQuestio
 > - dependency — how it affects the task
 > ### Open Questions
 > - question — what remains unclear from this investigation alone
+
+### Research Summary Detection
+
+Before launching sub-agents, check for a **Research Summary** block (produced by `/soda-research`) in the conversation.
+
+- **If found**: Use Key Findings, Architecture & Dependencies, and Code References as the Common Context block (Step 1). Skip the survey sub-agent entirely. Proceed directly to Step 2 (Focused Investigation), using Open Questions from the Research Summary to guide focused agent prompts. Treat Domain Knowledge entries as authoritative constraints.
+- **If not found**: Proceed normally with Step 1 survey agent.
 
 ### Step 1: Common Context
 

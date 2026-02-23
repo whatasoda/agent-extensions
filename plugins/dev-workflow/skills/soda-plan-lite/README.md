@@ -23,6 +23,9 @@ The core workflow cycle remains: investigate -> plan -> approve -> implement (wi
 - **English plan content**: Same rationale as `soda-plan` — plan files are in English for AI interpretability and compaction resilience. User interaction remains in Japanese. See `soda-plan` README for full rationale.
 - **Compact-resilience retained**: The Compact-Resilience Guidelines (explicit dependency chains, code over prose, labeled callouts) are kept because plan quality and survivability after context compaction are important regardless of plan complexity.
 - **Plan mode enforced**: Same as `soda-plan` — plan mode presentation and user approval before implementation.
+- **Research Summary context detection**: When a Research Summary block (from `/soda-research`) is present, the skill uses Key Findings and Code References as investigation context, skipping redundant investigation. Same pattern as `soda-plan` but without the multi-source priority description (lite version doesn't need the complexity).
+- **Annotation encouragement**: Rather than the full annotation guidance in `soda-plan` (which identifies specific annotation points), the lite version simply encourages the user to provide corrections for areas of uncertainty. This keeps the single-interaction design while still supporting iterative refinement.
+- **Progress tracking**: Same `- [ ]` / `- [x]` convention as `soda-plan`. See `soda-plan` README for full rationale.
 
 ## Typical Usage Patterns
 

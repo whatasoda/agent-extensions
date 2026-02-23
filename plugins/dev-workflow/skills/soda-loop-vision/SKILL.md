@@ -3,7 +3,7 @@ name: soda-loop-vision
 description: Define structured vision with verifiable goals for autonomous loop projects
 user-invocable: true
 argument-hint: [project goal description]
-allowed-tools: Bash(git *), Bash(bun *), Read, Grep, Glob, Write, AskUserQuestion
+allowed-tools: Bash(git *), Bash(bun *), Read, Grep, Glob, Write, Task, AskUserQuestion
 ---
 
 **CRITICAL**: Do NOT use EnterPlanMode or enter plan mode at any point during this skill. This is an interactive dialogue skill — not an implementation task. Proceed directly through the steps below without planning.
@@ -53,11 +53,15 @@ Analyze the user's project description (from $ARGUMENTS or free-text input) to i
 2. After receiving answers, assess whether new ambiguities or gaps have surfaced.
 3. Use AskUserQuestion to offer a checkpoint:
    - "さらに深掘りしたい（追加の質問がある）"
+   - "コードベースを調査して裏付けを取る"
+   - "参考実装を指定する"
    - "十分理解できた（ゴール分解に進む）"
    - "自分から補足情報を追加したい"
 4. If "さらに深掘りしたい" is selected: ask the next round of questions (informed by previous answers). Repeat from step 1.
-5. If "自分から補足情報を追加したい" is selected: accept the user's free-text input, then return to step 2.
-6. If "十分理解できた" is selected: proceed to Step 3.
+5. If "コードベースを調査して裏付けを取る" is selected: execute the Codebase Investigation sub-procedure (see below), then return to step 2 (re-present checkpoint with updated context).
+6. If "参考実装を指定する" is selected: execute the Reference Implementation sub-procedure (see below), then return to step 2 (re-present checkpoint with updated context).
+7. If "自分から補足情報を追加したい" is selected: accept the user's free-text input, then return to step 2.
+8. If "十分理解できた" is selected: proceed to Step 3.
 
 If after the first round of questions no further ambiguities remain, proceed directly to Step 3 without presenting the checkpoint. Do NOT ask unnecessary checkpoint questions.
 
@@ -67,6 +71,57 @@ Also retain the following context from the dialogue for use in Step 6:
 - **Problem background**: The problem statement, current situation, and motivation that emerged
 - **Technical landscape**: Technologies, architecture details, file paths, APIs, and environmental details discussed
 - **Key decisions**: Important choices resolved during discovery — what was chosen, what was rejected, and why
+- **Investigation findings**: Codebase patterns, file paths, and constraints discovered through sub-agent investigation (if performed)
+- **Reference implementation**: Structure and patterns from the reference code analyzed (if specified)
+
+### Codebase Investigation (sub-procedure)
+
+Triggered when user selects "コードベースを調査して裏付けを取る" at the Step 2 checkpoint.
+
+**Sub-agent prompt constraints**: Every sub-agent prompt MUST begin with the following constraint block:
+> You are a research-only agent. Do NOT use AskUserQuestion, EnterPlanMode, or any interactive/planning tools. Return your findings in the output format specified below.
+
+**Sub-agent output contract**: Every sub-agent prompt MUST end with the following output format requirement:
+> Return findings in this exact format:
+> ### Files
+> - `path/to/file` — relevance to the project goal
+> ### Patterns
+> - pattern name — description of the convention or pattern found
+> ### Dependencies
+> - dependency — how it relates to the project goal
+> ### Open Questions
+> - question — what remains unclear from this investigation alone
+
+**Investigation prompt construction**:
+
+Launch a single sub-agent (Task, subagent_type: Explore) with a prompt that includes:
+1. The constraint block
+2. The project goal and all context gathered during requirements discovery so far (summarized, not raw dialogue)
+3. Specific investigation questions derived from the current dialogue state (e.g., ambiguities that could be resolved by looking at existing code, patterns that would inform goal feasibility)
+4. The output contract
+
+**Findings integration**:
+
+Synthesize the sub-agent's output into the requirements discovery context:
+- Relevant file paths and patterns are added to the retained Technical Landscape context
+- Open questions become candidates for the next dialogue round
+- Any constraints discovered in the code are carried forward to Step 4
+
+Present a brief summary of findings in Japanese before returning to the Step 2 checkpoint. The user can then continue discovery dialogue with the enriched context, investigate further, or proceed to goal decomposition.
+
+### Reference Implementation (sub-procedure)
+
+Triggered when user selects "参考実装を指定する" at the Step 2 checkpoint.
+
+Ask the user to identify the reference implementation: file paths, feature names, or patterns to emulate. Then launch a focused sub-agent (Task, subagent_type: Explore) with:
+1. The constraint block (same as Codebase Investigation)
+2. The user-specified reference implementation targets
+3. Instruction to analyze: structure, patterns, conventions, API design, and behavior of the reference code
+4. The output contract (same as Codebase Investigation)
+
+Synthesize findings as Reference Implementation context. This context informs goal decomposition in Step 3 — goals may reference the reference implementation as a model for structure, naming, or behavior.
+
+Present a brief summary of the reference implementation analysis in Japanese before returning to the Step 2 checkpoint.
 
 ## Step 3: Goal Elicitation
 

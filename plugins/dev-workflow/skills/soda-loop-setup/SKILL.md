@@ -89,7 +89,7 @@ You are an autonomous agent working in a multi-session loop. Your goal is to mak
 7. Self-review before completion:
    - Run `git diff` to verify all changes are intentional and complete
    - Check changes against the item's Validation field
-   - For `[implement]` items: confirm the implementation satisfies the description and does not introduce unrelated changes
+   - For `[implement]` items: run verification commands (see ## Verification) and confirm the implementation satisfies the description
    - For `[validate]` items: confirm all pass criteria are met with evidence
    - Fix any issues found (each fix attempt counts toward the 3-retry limit)
 8. On success: mark `[x]`. On failure after 3 retries: mark `[!]` with reason.
@@ -110,9 +110,46 @@ Triggered when no `[ ]` or `[~]` items remain and not all phases are complete:
 - Max 3 retries per item, then mark `[!]` with failure reason
 - Only update item states and append to Session Log in PROGRESS.md — do not alter its structure
 - Use Grep to find relevant sections in large files; pipe long command output to temp files (`cmd > /tmp/output.log 2>&1`) and check with `tail -20 /tmp/output.log`
+
+## Verification
+Run the following commands for each `[implement]` item as part of the self-review step (Step 7):
+{{VERIFY_COMMANDS}}
+
+If a verification command fails, fix the issue before marking the item `[x]`. Each fix attempt counts toward the 3-retry limit.
+If no verification commands are listed, skip this section.
 ````
 
 ## Procedure
+
+### Project Convention Detection
+
+Run automatically before Step 2 to inform default configuration values. Uses Glob and Read tools (no sub-agents needed).
+
+**Detection targets**:
+
+1. **Package manager** — Glob for lock files at repo root:
+   - `bun.lockb` → bun
+   - `pnpm-lock.yaml` → pnpm
+   - `yarn.lock` → yarn
+   - `package-lock.json` → npm
+   If none found, default to `npm`.
+
+2. **Verification commands** — Read `package.json` at repo root (if exists) and extract from `scripts`:
+   - `scripts.typecheck` or `scripts.tsc` → type check command (e.g., `bun run typecheck`)
+   - `scripts.lint` → lint command (e.g., `bun run lint`)
+   - `scripts.test` → test command (e.g., `bun test`)
+   Construct each command using the detected package manager: `{{PM}} run {{SCRIPT_NAME}}` (or `{{PM}} test` for test scripts using bun/npm).
+   If `package.json` does not exist, check for `Makefile` (extract `lint:`, `test:`, `check:` targets) or `pyproject.toml` (extract tool.pytest, tool.mypy, tool.ruff sections).
+
+3. **Commit convention** — Run `git log --oneline -20` and analyze patterns:
+   - If 70%+ of commits match `type: message` or `type(scope): message` → detect conventional commits, extract most common type as commit prefix
+   - Also Glob for `.commitlintrc*` or `commitlint.config.*` — if found, confirm conventional commits
+   - If no pattern detected, default to `feat`
+
+**Output**: Store detected values for use in Step 2 and Step 5:
+- `detected_pm`: package manager name
+- `detected_verify_cmds`: list of `{name, command}` pairs (e.g., `[{name: "typecheck", cmd: "bun run typecheck"}, {name: "lint", cmd: "bun run lint"}]`)
+- `detected_commit_prefix`: detected commit prefix
 
 ### Step 1: Vision Detection
 
@@ -155,22 +192,30 @@ If the user chose "Run /soda-loop-vision first" or "Re-create vision with /soda-
 
 ### Step 2: Advanced Configuration (optional)
 
+**Present detected conventions** (from Project Convention Detection):
+
+> 検出されたプロジェクト規約:
+> - パッケージマネージャ: {{DETECTED_PM}}
+> - 検証コマンド: {{DETECTED_VERIFY_CMDS_SUMMARY}} (or "なし")
+> - コミット規約: {{DETECTED_COMMIT_PREFIX}}
+
 Use AskUserQuestion:
 
 **Question** — Would you like to customize advanced settings?
 
 Options:
-- Use defaults
-- Customize
+- デフォルトで進める（検出値を使用）
+- カスタマイズ
 
-If "Customize" is selected, ask a follow-up AskUserQuestion with these fields:
+If "カスタマイズ" is selected, ask a follow-up AskUserQuestion with these fields:
 - Model (`sonnet` / `opus` / `haiku`)
 - Max budget per session USD (default: `10`)
 - Max sessions (default: `10`)
 - Idle timeout seconds (default: `1800`)
 - Allowed tools (default: `Read,Write,Edit,Bash,Glob,Grep`)
 - File scope restriction (default: `.` — repo root)
-- Commit prefix (default: `feat`)
+- Commit prefix (default: `{{DETECTED_COMMIT_PREFIX}}` or `feat`)
+- Verification commands (default: `{{DETECTED_VERIFY_CMDS}}` — user can add/remove/modify)
 
 ### Step 3: Phase Proposal
 
@@ -228,6 +273,7 @@ Loop: .agent-loops/{{LOOP_NAME}}/
 Vision: VISION.md ({{GOAL_COUNT}} goals)
 Phases: {{PHASE_COUNT}} (auto-derived)
 Model: {{MODEL}} | Budget: ${{BUDGET}}/session | Max sessions: {{MAX_SESSIONS}}
+Verification: {{VERIFY_CMD_COUNT}} commands ({{VERIFY_CMD_NAMES}}) (or "none")
 ```
 
 Use AskUserQuestion:
@@ -252,7 +298,7 @@ Parse the JSON output:
 Generate files in this order:
 
 1. **PROGRESS.md** — Substitute all `{{PLACEHOLDER}}` values in the template above. For each phase, generate the Items section with implementation items, validation items, and phase validation item. Write to `<repo-root>/.agent-loops/{{LOOP_NAME}}/PROGRESS.md`.
-2. **AGENT_PROMPT.md** — Substitute `{{PROJECT_NAME}}`, `{{FILE_SCOPE}}`, and `{{COMMIT_PREFIX}}` in the template above. Write to `<repo-root>/.agent-loops/{{LOOP_NAME}}/AGENT_PROMPT.md`.
+2. **AGENT_PROMPT.md** — Substitute `{{PROJECT_NAME}}`, `{{FILE_SCOPE}}`, `{{COMMIT_PREFIX}}`, and `{{VERIFY_COMMANDS}}` in the template above. `{{VERIFY_COMMANDS}}` is generated from the detected/configured verification commands (one `- \`command\` — description` line per command, or "None configured." if empty). Write to `<repo-root>/.agent-loops/{{LOOP_NAME}}/AGENT_PROMPT.md`.
 3. **run-loop.ts** — Copy from plugin templates and make executable:
    ```bash
    bun ${CLAUDE_PLUGIN_ROOT}/skills/soda-loop-setup/scripts/install-template.ts "${CLAUDE_PLUGIN_ROOT}/skills/soda-loop-setup/templates/run-loop.ts" "<repo-root>/.agent-loops/{{LOOP_NAME}}/run-loop.ts"

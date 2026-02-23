@@ -25,6 +25,13 @@ Before starting, check the conversation for a **Proposal Summary** block (produc
 
 When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes precedence for the task description, but the Proposal Summary provides investigation context.
 
+Also check for a **Research Summary** block (produced by `/soda-research`).
+
+- **If found**: Use Key Findings and Code References as investigation context. Skip redundant investigation of areas already covered. Treat Domain Knowledge entries as authoritative.
+- **If not found**: No change to normal flow.
+
+When both a Proposal Summary and Research Summary are present, the Proposal Summary takes precedence for approach selection; the Research Summary supplements with codebase understanding.
+
 ## Procedure
 
 1. **Investigate**: Explore the codebase directly using Grep, Glob, and Read to understand the scope, affected areas, and existing patterns. Do NOT use sub-agents (Task tool).
@@ -47,6 +54,7 @@ When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes preced
    - **Task summary and branch name**
    - **Investigation summary** — key findings, affected areas, relevant patterns discovered
    - **Steps** — each step must include:
+     - Progress marker: `- [ ]` prefix (updated to `- [x]` during implementation as each step completes)
      - Commit message (imperative mood)
      - File changes with full paths and rationale (`path/to/file` — what and why)
      - Validation criteria — how to verify this step is correct (test command, expected behavior, manual check)
@@ -63,6 +71,8 @@ When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes preced
 - The plan must be self-contained: include enough technical context (as code snippets and structured data, not prose) that implementation can proceed from the plan alone, even after context compaction.
 - Each step must define a commit with an imperative-mood message, explicit dependencies on prior steps, and validation criteria.
 - The plan must identify at least one risk and its mitigation.
+- When presenting the plan, note any areas of uncertainty that would benefit from user input. The user can provide corrections before approving — encourage this when relevant.
+- During implementation, update the plan's step markers from `- [ ]` to `- [x]` as each step's commit is completed. This provides at-a-glance progress visibility.
 
 ## Compact-Resilience Guidelines
 

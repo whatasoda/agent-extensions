@@ -32,6 +32,8 @@ The typical flow: user describes a goal, this skill proposes 2-3 options with tr
 
 - **Read-only constraint**: Same as the full version. This skill does not modify code.
 
+- **Research Summary context detection**: When a Research Summary block (from `/soda-research`) is present, Key Findings are used as pre-existing investigation context. Investigation focuses on areas not covered by the Research Summary. Same pattern as the full version but without survey-agent skipping (lite has no sub-agents to skip).
+
 ## Typical Usage Patterns
 
 ```

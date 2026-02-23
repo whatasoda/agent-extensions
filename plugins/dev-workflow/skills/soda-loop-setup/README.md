@@ -104,6 +104,26 @@ This adds ~1 sub-step of token overhead per item but reduces cross-session rewor
 - **TypeScript script** (`run-loop.ts`): External file in `templates/`, copied to `.agent-loops/<loop-name>/` at setup time. Runs via Bun's JIT TypeScript compiler. Uses `--output-format stream-json` with `--verbose` for session ID tracking and event-driven activity monitoring. Spawned claude sessions use the invocation directory as cwd (run from repo root). Loop files are resolved from the script's own directory by default (`import.meta.dir`), which naturally resolves to `.agent-loops/<loop-name>/`. Supports SIGINT graceful shutdown (two-press pattern: first press stops after current session, second press force kills).
 - **Markdown templates** (PROGRESS.md, AGENT_PROMPT.md): Embedded in SKILL.md with placeholder substitution. Keeps the skill self-contained and allows the agent to customize templates during generation.
 
+### Project convention detection
+
+The setup procedure auto-detects project conventions before presenting Advanced Configuration (Step 2). Detection uses Glob and Read tools to scan common config files (package.json, lock files, commitlint config) without sub-agents.
+
+Key design choices:
+- **Best-effort detection**: Missing config files produce empty results, not errors. Users can always override or supplement detected values.
+- **Package manager inference from lock files**: More reliable than parsing package.json `packageManager` field, which is often absent.
+- **Verification command extraction from package.json scripts**: Uses standard script names (`typecheck`, `tsc`, `lint`, `test`). Non-standard names are not detected — users add them manually in the customize step.
+- **Commit convention from git log heuristic**: Analyzes the 20 most recent commits for `type: message` patterns. This is a heuristic that works for projects with established conventions. New repositories default to `feat`.
+
+### Continuous verification in AGENT_PROMPT.md
+
+A `## Verification` section is added to the AGENT_PROMPT.md template, populated with project-specific commands detected during setup. The autonomous agent runs these commands after each `[implement]` item as part of the self-review protocol (Session Lifecycle Step 7).
+
+Design choices:
+- **Separate section, referenced from Step 7**: Keeps verification commands visible as a dedicated reference rather than buried in the lifecycle steps. The agent can consult the section when needed.
+- **Integrated into self-review, not a separate lifecycle step**: Adding a new lifecycle step increases the instruction count. Integrating into Step 7 follows the "fewer sections, higher compliance" principle documented above.
+- **Fix attempts count toward retry limit**: Verification failures consume the same 3-retry budget as other failures. This prevents infinite fix-verify loops.
+- **Skippable when empty**: "None configured." text signals the agent to skip verification. This maintains backward compatibility for loops generated without convention detection.
+
 ## Typical Usage
 
 All loop artifacts are placed in `.agent-loops/<loop-name>/` at the repo root. This standardized location simplifies cross-skill discovery, inter-session handoff, and cleanup.
@@ -148,6 +168,5 @@ All loop artifacts are placed in `.agent-loops/<loop-name>/` at the repo root. T
 
 ## Future Improvements
 
-- Auto-detect project conventions (test framework, linter, commit format) from existing config
 - Template library for common patterns (migration, refactoring, test coverage)
 - Merge support for combining discovered items across sessions into new phases

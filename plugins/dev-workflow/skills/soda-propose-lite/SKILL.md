@@ -10,7 +10,7 @@ Investigate and propose multiple approaches for the given problem or goal. This 
 
 For deeper investigation with sub-agent exploration and detailed comparison, use `/soda-propose`.
 
-Use English for internal reasoning (thinking). All user-facing output — problem restatement, proposals, AskUserQuestion options, and Proposal Summary — must be in Japanese.
+Use English for internal reasoning (thinking). All user-facing output — problem restatement, proposals, and AskUserQuestion options — must be in Japanese. The Proposal Summary block must use the exact English template format for downstream compatibility.
 
 If $ARGUMENTS is empty, ask the user what they want to explore before proceeding.
 
@@ -27,6 +27,11 @@ Investigate the codebase directly using Grep, Glob, and Read. Focus on:
 - Relevant code structure and patterns
 - Key dependencies and integration points
 - Existing conventions that affect the approach
+
+Before investigating, check for a **Research Summary** block (produced by `/soda-research`) in the conversation.
+
+- **If found**: Use Key Findings as pre-existing investigation context. Focus investigation on areas not covered by the Research Summary. Treat Domain Knowledge entries as authoritative.
+- **If not found**: Proceed normally.
 
 Perform a single-pass investigation — gather all needed context in one round of tool usage. Do NOT use sub-agents (Task tool).
 

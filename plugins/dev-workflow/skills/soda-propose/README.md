@@ -44,6 +44,8 @@ The typical flow: user describes a goal → this skill proposes options → user
 
 - **Scope Boundary in Proposal Summary**: An optional section that explicitly defines what is in scope and what is deferred. This prevents the planning phase from expanding beyond what the selected approach intended to cover.
 
+- **Research Summary context detection (Phase 2)**: When a Research Summary block (from `/soda-research`) is present in the conversation, its Key Findings and Architecture & Dependencies are used as the Common Context block, skipping the survey sub-agent (Step 1) entirely. Open Questions from the Research Summary guide focused agent prompts in Step 2. This enables a three-skill chain: `/soda-research` → Research Summary → `/soda-propose` → Proposal Summary → `/soda-plan`. Domain Knowledge entries from user annotations in the Research Summary are treated as authoritative constraints.
+
 ## Typical Usage Patterns
 
 ```
@@ -64,6 +66,16 @@ Chained flow:
 → (AI provides detailed comparison with Impact Tracking)
 → User: "Aで進める"
 → (AI emits Proposal Summary)
+→ /soda-plan
+```
+
+With prior research:
+```
+/soda-research GraphQL スキーマの構造を調べて
+→ (AI investigates, user annotates, Research Summary emitted)
+→ /soda-propose 複数スキーマ対応のアプローチ
+→ (AI skips survey agent, uses Research Summary as Common Context)
+→ (AI proposes approaches, user selects)
 → /soda-plan
 ```
 
