@@ -67,6 +67,20 @@ Design choices:
 - **Key Decisions use "X not Y because Z" format**: This captures the decision boundary, not just the choice. When an autonomous agent encounters an ambiguity during implementation, it can check Key Decisions to see if the ambiguity was already resolved.
 - **Additive and non-breaking**: No existing consumer parses these sections. `soda-loop-setup` reads only `## Goals`. `soda-loop-status` reads only `## Purpose` and `## Goals`. The Discovery Protocol reads VISION.md holistically and benefits from richer content without any code changes.
 
+### Codebase investigation in requirements discovery
+
+Step 2 optionally invokes sub-agent investigation to ground the requirements dialogue in actual codebase state. This addresses a gap where VISION.md goals could be well-formed in isolation but disconnected from the existing code structure.
+
+Key design choices:
+- **Optional, not mandatory**: Investigation is offered at the checkpoint alongside continue/proceed options. Simple projects with clear scope may not need it. The user decides when (or whether) to investigate.
+- **Single sub-agent per invocation**: Unlike soda-research's multi-round survey+focused pattern, vision investigation uses a single agent per invocation. The investigation scope is narrow (informed by the current dialogue state), so a survey step is unnecessary. The user can invoke investigation multiple times across different checkpoint rounds if needed.
+- **Findings feed discovery, not output directly**: Investigation findings enrich the requirements dialogue context rather than appearing as a separate section in VISION.md. They influence goals, constraints, and the Technical Context section indirectly through the continued dialogue.
+- **Sub-agent constraints identical to soda-research**: The constraint block and output contract are the same as soda-research, soda-propose, and soda-plan. This maintains consistency and predictable sub-agent behavior across all skills.
+
+### Reference Implementation pattern
+
+The "参考実装を指定する" option allows the user to point at existing code as a model for the project. This is common in practice — "build X similar to how Y works." The reference analysis informs goal verifiability (e.g., "behaves like feature Y") and helps the agent understand conventions the user expects to follow.
+
 ### Relationship to soda-loop-setup
 
 ```
