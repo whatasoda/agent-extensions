@@ -89,7 +89,7 @@ You are an autonomous agent working in a multi-session loop. Your goal is to mak
 7. Self-review before completion:
    - Run `git diff` to verify all changes are intentional and complete
    - Check changes against the item's Validation field
-   - For `[implement]` items: confirm the implementation satisfies the description and does not introduce unrelated changes
+   - For `[implement]` items: run verification commands (see ## Verification) and confirm the implementation satisfies the description
    - For `[validate]` items: confirm all pass criteria are met with evidence
    - Fix any issues found (each fix attempt counts toward the 3-retry limit)
 8. On success: mark `[x]`. On failure after 3 retries: mark `[!]` with reason.
@@ -110,6 +110,13 @@ Triggered when no `[ ]` or `[~]` items remain and not all phases are complete:
 - Max 3 retries per item, then mark `[!]` with failure reason
 - Only update item states and append to Session Log in PROGRESS.md — do not alter its structure
 - Use Grep to find relevant sections in large files; pipe long command output to temp files (`cmd > /tmp/output.log 2>&1`) and check with `tail -20 /tmp/output.log`
+
+## Verification
+Run the following commands after completing each `[implement]` item, before the self-review step:
+{{VERIFY_COMMANDS}}
+
+If a verification command fails, fix the issue before marking the item `[x]`. Each fix attempt counts toward the 3-retry limit.
+If no verification commands are listed, skip this section.
 ````
 
 ## Procedure
@@ -291,7 +298,7 @@ Parse the JSON output:
 Generate files in this order:
 
 1. **PROGRESS.md** — Substitute all `{{PLACEHOLDER}}` values in the template above. For each phase, generate the Items section with implementation items, validation items, and phase validation item. Write to `<repo-root>/.agent-loops/{{LOOP_NAME}}/PROGRESS.md`.
-2. **AGENT_PROMPT.md** — Substitute `{{PROJECT_NAME}}`, `{{FILE_SCOPE}}`, and `{{COMMIT_PREFIX}}` in the template above. Write to `<repo-root>/.agent-loops/{{LOOP_NAME}}/AGENT_PROMPT.md`.
+2. **AGENT_PROMPT.md** — Substitute `{{PROJECT_NAME}}`, `{{FILE_SCOPE}}`, `{{COMMIT_PREFIX}}`, and `{{VERIFY_COMMANDS}}` in the template above. `{{VERIFY_COMMANDS}}` is generated from the detected/configured verification commands (one `- \`command\` — description` line per command, or "None configured." if empty). Write to `<repo-root>/.agent-loops/{{LOOP_NAME}}/AGENT_PROMPT.md`.
 3. **run-loop.ts** — Copy from plugin templates and make executable:
    ```bash
    bun ${CLAUDE_PLUGIN_ROOT}/skills/soda-loop-setup/scripts/install-template.ts "${CLAUDE_PLUGIN_ROOT}/skills/soda-loop-setup/templates/run-loop.ts" "<repo-root>/.agent-loops/{{LOOP_NAME}}/run-loop.ts"
