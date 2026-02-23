@@ -46,6 +46,13 @@ If consensus cannot be reached after 2 confirmation attempts, use AskUserQuestio
 > ### Open Questions
 > - question — what remains unclear from this investigation alone
 
+### Research Summary Detection
+
+Before launching sub-agents, check for a **Research Summary** block (produced by `/soda-research`) in the conversation.
+
+- **If found**: Use Key Findings and Architecture & Dependencies as the Common Context block (Step 1). Skip the survey sub-agent entirely. Proceed directly to Step 2 (Focused Investigation), using Open Questions from the Research Summary to guide focused agent prompts. Treat Domain Knowledge entries as authoritative constraints.
+- **If not found**: Proceed normally with Step 1 survey agent.
+
 ### Step 1: Common Context
 
 Launch a sub-agent (Task, subagent_type: Explore) with a prompt that includes the constraint block, then:

@@ -28,6 +28,11 @@ Investigate the codebase directly using Grep, Glob, and Read. Focus on:
 - Key dependencies and integration points
 - Existing conventions that affect the approach
 
+Before investigating, check for a **Research Summary** block (produced by `/soda-research`) in the conversation.
+
+- **If found**: Use Key Findings as pre-existing investigation context. Focus investigation on areas not covered by the Research Summary. Treat Domain Knowledge entries as authoritative.
+- **If not found**: Proceed normally.
+
 Perform a single-pass investigation — gather all needed context in one round of tool usage. Do NOT use sub-agents (Task tool).
 
 ## Phase 3: Proposal & Selection
