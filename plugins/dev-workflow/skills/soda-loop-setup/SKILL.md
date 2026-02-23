@@ -114,6 +114,36 @@ Triggered when no `[ ]` or `[~]` items remain and not all phases are complete:
 
 ## Procedure
 
+### Project Convention Detection
+
+Run automatically before Step 2 to inform default configuration values. Uses Glob and Read tools (no sub-agents needed).
+
+**Detection targets**:
+
+1. **Package manager** — Glob for lock files at repo root:
+   - `bun.lockb` → bun
+   - `pnpm-lock.yaml` → pnpm
+   - `yarn.lock` → yarn
+   - `package-lock.json` → npm
+   If none found, default to `npm`.
+
+2. **Verification commands** — Read `package.json` at repo root (if exists) and extract from `scripts`:
+   - `scripts.typecheck` or `scripts.tsc` → type check command (e.g., `bun run typecheck`)
+   - `scripts.lint` → lint command (e.g., `bun run lint`)
+   - `scripts.test` → test command (e.g., `bun test`)
+   Construct each command using the detected package manager: `{{PM}} run {{SCRIPT_NAME}}` (or `{{PM}} test` for test scripts using bun/npm).
+   If `package.json` does not exist, check for `Makefile` (extract `lint:`, `test:`, `check:` targets) or `pyproject.toml` (extract tool.pytest, tool.mypy, tool.ruff sections).
+
+3. **Commit convention** — Run `git log --oneline -20` and analyze patterns:
+   - If 70%+ of commits match `type: message` or `type(scope): message` → detect conventional commits, extract most common type as commit prefix
+   - Also Glob for `.commitlintrc*` or `commitlint.config.*` — if found, confirm conventional commits
+   - If no pattern detected, default to `feat`
+
+**Output**: Store detected values for use in Step 2 and Step 5:
+- `detected_pm`: package manager name
+- `detected_verify_cmds`: list of `{name, command}` pairs (e.g., `[{name: "typecheck", cmd: "bun run typecheck"}, {name: "lint", cmd: "bun run lint"}]`)
+- `detected_commit_prefix`: detected commit prefix
+
 ### Step 1: Vision Detection
 
 Determine the loop directory. Do NOT ask the user to type a path from scratch.
@@ -155,22 +185,30 @@ If the user chose "Run /soda-loop-vision first" or "Re-create vision with /soda-
 
 ### Step 2: Advanced Configuration (optional)
 
+**Present detected conventions** (from Project Convention Detection):
+
+> 検出されたプロジェクト規約:
+> - パッケージマネージャ: {{DETECTED_PM}}
+> - 検証コマンド: {{DETECTED_VERIFY_CMDS_SUMMARY}} (or "なし")
+> - コミット規約: {{DETECTED_COMMIT_PREFIX}}
+
 Use AskUserQuestion:
 
 **Question** — Would you like to customize advanced settings?
 
 Options:
-- Use defaults
-- Customize
+- デフォルトで進める（検出値を使用）
+- カスタマイズ
 
-If "Customize" is selected, ask a follow-up AskUserQuestion with these fields:
+If "カスタマイズ" is selected, ask a follow-up AskUserQuestion with these fields:
 - Model (`sonnet` / `opus` / `haiku`)
 - Max budget per session USD (default: `10`)
 - Max sessions (default: `10`)
 - Idle timeout seconds (default: `1800`)
 - Allowed tools (default: `Read,Write,Edit,Bash,Glob,Grep`)
 - File scope restriction (default: `.` — repo root)
-- Commit prefix (default: `feat`)
+- Commit prefix (default: `{{DETECTED_COMMIT_PREFIX}}` or `feat`)
+- Verification commands (default: `{{DETECTED_VERIFY_CMDS}}` — user can add/remove/modify)
 
 ### Step 3: Phase Proposal
 
@@ -228,6 +266,7 @@ Loop: .agent-loops/{{LOOP_NAME}}/
 Vision: VISION.md ({{GOAL_COUNT}} goals)
 Phases: {{PHASE_COUNT}} (auto-derived)
 Model: {{MODEL}} | Budget: ${{BUDGET}}/session | Max sessions: {{MAX_SESSIONS}}
+Verification: {{VERIFY_CMD_COUNT}} commands ({{VERIFY_CMD_NAMES}}) (or "none")
 ```
 
 Use AskUserQuestion:
