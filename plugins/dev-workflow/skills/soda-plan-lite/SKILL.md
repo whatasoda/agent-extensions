@@ -47,6 +47,7 @@ When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes preced
    - **Task summary and branch name**
    - **Investigation summary** — key findings, affected areas, relevant patterns discovered
    - **Steps** — each step must include:
+     - Progress marker: `- [ ]` prefix (updated to `- [x]` during implementation as each step completes)
      - Commit message (imperative mood)
      - File changes with full paths and rationale (`path/to/file` — what and why)
      - Validation criteria — how to verify this step is correct (test command, expected behavior, manual check)
@@ -63,6 +64,8 @@ When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes preced
 - The plan must be self-contained: include enough technical context (as code snippets and structured data, not prose) that implementation can proceed from the plan alone, even after context compaction.
 - Each step must define a commit with an imperative-mood message, explicit dependencies on prior steps, and validation criteria.
 - The plan must identify at least one risk and its mitigation.
+- When presenting the plan, note any areas of uncertainty that would benefit from user input. The user can provide corrections before approving — encourage this when relevant.
+- During implementation, update the plan's step markers from `- [ ]` to `- [x]` as each step's commit is completed. This provides at-a-glance progress visibility.
 
 ## Compact-Resilience Guidelines
 

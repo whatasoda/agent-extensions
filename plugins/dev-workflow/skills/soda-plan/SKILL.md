@@ -64,6 +64,7 @@ When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes preced
    - **Task summary and branch name**
    - **Investigation summary** — key findings, affected areas, relevant patterns discovered
    - **Steps** — each step must include:
+     - Progress marker: `- [ ]` prefix (updated to `- [x]` during implementation as each step completes)
      - Commit message (imperative mood)
      - File changes with full paths and rationale (`path/to/file` — what and why)
      - Validation criteria — how to verify this step is correct (test command, expected behavior, manual check)
@@ -99,6 +100,27 @@ When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes preced
      - File organization within an already-decided architecture
    - **Ambiguities** — if there are ambiguous requirements or missing information, note them as labeled callouts in the plan body rather than asking separately.
 
+## Plan Annotation Guidance
+
+After writing the plan, identify 1-3 **annotation points** — areas where user domain knowledge would most improve plan quality. Common annotation points:
+- Steps involving business logic or domain-specific behavior
+- Assumptions about existing code behavior that weren't fully verified
+- Design decisions where the user may have preferences not captured in investigation
+- Risk assessments that depend on deployment context
+
+Present these annotation points in the plan as a brief note:
+
+> **レビューポイント**: 以下の箇所はドメイン知識による補足があると計画の精度が向上します：
+> - Step N: {{annotation point description}}
+> - Step M: {{annotation point description}}
+
+The user may provide inline corrections or additional context. Incorporate their feedback and revise the affected plan sections. This annotation cycle can repeat multiple times before ExitPlanMode.
+
+When the user provides domain knowledge corrections, mark them in the plan as:
+> **User Context**: {{correction or additional information}}
+
+This ensures domain knowledge survives context compaction as a labeled callout.
+
 ## Constraints
 
 - Do NOT begin implementation until the user approves the plan.
@@ -108,6 +130,7 @@ When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes preced
 - Each step must define a commit with an imperative-mood message, explicit dependencies on prior steps, and validation criteria.
 - The plan must identify at least one risk and its mitigation.
 - Design decisions must be presented as labeled callouts in the plan body. The user confirms them when approving the plan via ExitPlanMode.
+- During implementation, update the plan's step markers from `- [ ]` to `- [x]` as each step's commit is completed. This provides at-a-glance progress visibility.
 
 ## Compact-Resilience Guidelines
 
