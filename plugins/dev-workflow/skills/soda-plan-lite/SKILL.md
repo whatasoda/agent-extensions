@@ -30,6 +30,8 @@ Also check for a **Research Summary** block (produced by `/soda-research`).
 - **If found**: Use Key Findings and Code References as investigation context. Skip redundant investigation of areas already covered. Treat Domain Knowledge entries as authoritative.
 - **If not found**: No change to normal flow.
 
+When both a Proposal Summary and Research Summary are present, the Proposal Summary takes precedence for approach selection; the Research Summary supplements with codebase understanding.
+
 ## Procedure
 
 1. **Investigate**: Explore the codebase directly using Grep, Glob, and Read to understand the scope, affected areas, and existing patterns. Do NOT use sub-agents (Task tool).
