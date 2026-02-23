@@ -10,7 +10,7 @@ Perform deep, structured codebase research on the given topic and produce a reus
 
 For quick research without sub-agents, use `/soda-research-lite`.
 
-Use English for internal reasoning (thinking). All user-facing output — topic framing, findings presentation, AskUserQuestion options, and Research Summary — must be in Japanese.
+Use English for internal reasoning (thinking). All user-facing output — topic framing, findings presentation, and AskUserQuestion options — must be in Japanese. The Research Summary block must use the exact English template format for downstream compatibility.
 
 If $ARGUMENTS is empty, ask the user what they want to research before proceeding.
 

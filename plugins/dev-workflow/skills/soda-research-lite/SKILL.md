@@ -10,7 +10,7 @@ Perform quick, structured codebase research on the given topic and produce a Res
 
 For deeper research with sub-agent investigation and iterative annotation, use `/soda-research`.
 
-Use English for internal reasoning (thinking). All user-facing output — topic framing, findings, AskUserQuestion options, and Research Summary — must be in Japanese.
+Use English for internal reasoning (thinking). All user-facing output — topic framing, findings, and AskUserQuestion options — must be in Japanese. The Research Summary block must use the exact English template format for downstream compatibility.
 
 If $ARGUMENTS is empty, ask the user what they want to research before proceeding.
 

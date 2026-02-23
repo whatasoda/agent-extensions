@@ -8,7 +8,7 @@ allowed-tools: Bash(git *), Read, Grep, Glob, Task, AskUserQuestion
 
 Investigate and propose multiple approaches for the given problem or goal.
 
-Use English for internal reasoning (thinking). All user-facing output — problem restatement, proposals, comparisons, AskUserQuestion options, and Proposal Summary — must be in Japanese.
+Use English for internal reasoning (thinking). All user-facing output — problem restatement, proposals, comparisons, and AskUserQuestion options — must be in Japanese. The Proposal Summary block must use the exact English template format for downstream compatibility.
 
 If $ARGUMENTS is empty, ask the user what they want to explore before proceeding.
 

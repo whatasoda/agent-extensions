@@ -357,7 +357,7 @@ Next:
   /soda-loop-setup — Generate loop harness from this vision
 ```
 
-**If PROGRESS.md exists and was modified**:
+**If both VISION.md and PROGRESS.md were modified**:
 ```
 Loop artifacts refined:
 - .agent-loops/{{LOOP_NAME}}/VISION.md — {{GOAL_COUNT}} verifiable goals ({{CHANGES_SUMMARY}})
@@ -366,6 +366,15 @@ Loop artifacts refined:
 Next:
   /soda-loop-setup — Regenerate loop harness (if vision changes require new phases)
   Resume loop execution — if only progress was adjusted
+```
+
+**If PROGRESS.md was modified but VISION.md was not**:
+```
+Progress adjusted:
+- .agent-loops/{{LOOP_NAME}}/PROGRESS.md — updated ({{PROGRESS_CHANGES_SUMMARY}})
+
+Next:
+  Resume loop execution — progress adjustments applied
 ```
 
 **If PROGRESS.md exists but was not modified**:

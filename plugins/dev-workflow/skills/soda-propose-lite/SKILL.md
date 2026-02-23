@@ -10,7 +10,7 @@ Investigate and propose multiple approaches for the given problem or goal. This 
 
 For deeper investigation with sub-agent exploration and detailed comparison, use `/soda-propose`.
 
-Use English for internal reasoning (thinking). All user-facing output — problem restatement, proposals, AskUserQuestion options, and Proposal Summary — must be in Japanese.
+Use English for internal reasoning (thinking). All user-facing output — problem restatement, proposals, and AskUserQuestion options — must be in Japanese. The Proposal Summary block must use the exact English template format for downstream compatibility.
 
 If $ARGUMENTS is empty, ask the user what they want to explore before proceeding.
 
