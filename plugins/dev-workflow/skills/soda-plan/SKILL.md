@@ -24,6 +24,17 @@ Before starting, check the conversation for a **Proposal Summary** block (produc
 
 When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes precedence for the task description, but the Proposal Summary provides investigation context.
 
+Also check for a **Research Summary** block (produced by `/soda-research`).
+
+- **If found**: Use it as supplementary investigation context.
+  - **Investigate**: Extract key findings, architecture insights, and code references. Use these as the starting point for investigation — skip survey-level sub-agent work and focus only on gaps not covered by the Research Summary. If the Research Summary includes Domain Knowledge, treat these as authoritative user-provided corrections.
+  - **Plan**: Reference specific file paths and code references from the Research Summary in step breakdowns. Use Open Questions as input for plan ambiguities.
+- **If not found**: No change to normal flow.
+
+When both a Proposal Summary and Research Summary are present, the Proposal Summary takes precedence for approach selection context. The Research Summary provides deeper codebase understanding that supplements both.
+
+Priority order: Proposal Summary (approach decision) > Research Summary (codebase understanding) > $ARGUMENTS (task description)
+
 ## Procedure
 
 1. **Investigate**: Explore the codebase to understand the scope, affected areas, and existing patterns.
