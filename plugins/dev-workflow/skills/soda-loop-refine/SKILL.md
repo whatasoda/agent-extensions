@@ -233,7 +233,8 @@ Execute the Codebase Investigation sub-procedure again with updated context (inc
 
 **If "完了（ファイルに書き出す）"**:
 
-Proceed to Step 6.
+If "ビジョンと進捗の両方を改善" was selected in Step 3, proceed to Step 5.
+Otherwise, proceed to Step 6.
 
 ## Step 5: Progress Adjustment
 

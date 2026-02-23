@@ -112,7 +112,7 @@ Triggered when no `[ ]` or `[~]` items remain and not all phases are complete:
 - Use Grep to find relevant sections in large files; pipe long command output to temp files (`cmd > /tmp/output.log 2>&1`) and check with `tail -20 /tmp/output.log`
 
 ## Verification
-Run the following commands after completing each `[implement]` item, before the self-review step:
+Run the following commands for each `[implement]` item as part of the self-review step (Step 7):
 {{VERIFY_COMMANDS}}
 
 If a verification command fails, fix the issue before marking the item `[x]`. Each fix attempt counts toward the 3-retry limit.
