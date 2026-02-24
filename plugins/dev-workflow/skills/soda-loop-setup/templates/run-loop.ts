@@ -383,21 +383,24 @@ async function runSummarySession(loopStartSha: string): Promise<void> {
   if (loopStartSha) {
     try {
       const statProc = Bun.spawnSync(
-        ["git", "diff", loopStartSha, "HEAD", "--stat", "--no-color"],
+        ["git", "diff", loopStartSha, "--stat", "--no-color"],
         { cwd: process.cwd() },
       );
       if (statProc.exitCode === 0) {
         gitDiff = statProc.stdout.toString().trim();
       }
       const fullDiffProc = Bun.spawnSync(
-        ["git", "diff", loopStartSha, "HEAD", "--no-color"],
+        ["git", "diff", loopStartSha, "--no-color"],
         { cwd: process.cwd() },
       );
       if (fullDiffProc.exitCode === 0) {
         const fullDiff = fullDiffProc.stdout.toString();
         const diffLines = fullDiff.split("\n").slice(0, 200);
         if (fullDiff.split("\n").length > 200) diffLines.push("... (truncated)");
-        gitDiff += "\n\n" + diffLines.join("\n");
+        const diffContent = diffLines.join("\n").trim();
+        if (diffContent) {
+          gitDiff += "\n\n" + diffLines.join("\n");
+        }
       }
     } catch {
       gitDiff = "(git diff unavailable)";
@@ -441,7 +444,7 @@ async function runSummarySession(loopStartSha: string): Promise<void> {
     {
       cwd: process.cwd(),
       stdout: "inherit",
-      stderr: "pipe",
+      stderr: "inherit",
       env: { ...process.env, CLAUDECODE: undefined },
     },
   );
