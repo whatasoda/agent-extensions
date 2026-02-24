@@ -164,6 +164,9 @@ function formatSessionSummary(activity: SessionActivityData): string {
         : activity.resultText;
     lines.push(`  Result: ${t}`);
   }
+  if (activity.costUsd !== null) {
+    lines.push(`  Cost: $${activity.costUsd.toFixed(4)}`);
+  }
   return lines.length > 0 ? lines.join("\n") : "  (no activity recorded)";
 }
 
@@ -448,8 +451,10 @@ async function runSummarySession(loopStartSha: string): Promise<void> {
       env: { ...process.env, CLAUDECODE: undefined },
     },
   );
+  activeProcess = proc;
 
   const exitCode = await proc.exited;
+  activeProcess = null;
   if (exitCode !== 0) {
     log("WARNING: Summary session exited with non-zero code");
   }
@@ -559,8 +564,8 @@ async function main(): Promise<void> {
   );
   log(`Logs: ${LOG_DIR}/`);
 
-  // Run optional loop summary session
-  if (sessionCount > 0) {
+  // Run optional loop summary session (skip if user requested stop)
+  if (sessionCount > 0 && stopState === "running") {
     await runSummarySession(loopStartSha);
   }
 }
