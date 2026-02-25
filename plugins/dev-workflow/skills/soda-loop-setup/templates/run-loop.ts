@@ -277,36 +277,25 @@ async function runQualityGate(commands: string[]): Promise<boolean> {
   return true;
 }
 
-async function appendSessionLog(
-  sessionNum: number,
-  exitReason: string,
-  sessionId: string | null,
-  costUsd: number | null,
-  preSnapshot: ProgressSnapshot | null,
-): Promise<void> {
-  const ts = new Date().toISOString().slice(0, 16).replace("T", " ");
-  const content = await Bun.file(PROGRESS_FILE).text();
+interface SessionDelta {
+  postSnapshot: ProgressSnapshot;
+  completedItems: string[];
+  blockedItems: string[];
+  changedFiles: string[];
+}
 
-  const inProgressItems = content
-    .split("\n")
-    .filter((l) => l.startsWith("- [~]"))
-    .map((l) => l.replace(/^- \[~\] /, "  - "));
-
-  // Compute completed and blocked items this session
+async function computeSessionDelta(preSnapshot: ProgressSnapshot): Promise<SessionDelta> {
+  const postSnapshot = await captureSnapshot();
   const completedItems: string[] = [];
   const blockedItems: string[] = [];
-  if (preSnapshot) {
-    const postSnapshot = await captureSnapshot();
-    for (const [id, postState] of postSnapshot.itemStates) {
-      const preState = preSnapshot.itemStates.get(id);
-      if (postState === "done" && preState !== "done") completedItems.push(id);
-      if (postState === "blocked" && preState !== "blocked") blockedItems.push(id);
-    }
+  for (const [id, postState] of postSnapshot.itemStates) {
+    const preState = preSnapshot.itemStates.get(id);
+    if (postState === "done" && preState !== "done") completedItems.push(id);
+    if (postState === "blocked" && preState !== "blocked") blockedItems.push(id);
   }
 
-  // Compute changed files
   let changedFiles: string[] = [];
-  if (preSnapshot?.headSha) {
+  if (preSnapshot.headSha) {
     try {
       const p = Bun.spawnSync(
         ["git", "diff", "--name-only", preSnapshot.headSha, "HEAD"],
@@ -321,6 +310,28 @@ async function appendSessionLog(
       }
     } catch {}
   }
+
+  return { postSnapshot, completedItems, blockedItems, changedFiles };
+}
+
+async function appendSessionLog(
+  sessionNum: number,
+  exitReason: string,
+  sessionId: string | null,
+  costUsd: number | null,
+  delta: SessionDelta | null,
+): Promise<void> {
+  const ts = new Date().toISOString().slice(0, 16).replace("T", " ");
+  const content = await Bun.file(PROGRESS_FILE).text();
+
+  const inProgressItems = content
+    .split("\n")
+    .filter((l) => l.startsWith("- [~]"))
+    .map((l) => l.replace(/^- \[~\] /, "  - "));
+
+  const completedItems = delta?.completedItems ?? [];
+  const blockedItems = delta?.blockedItems ?? [];
+  const changedFiles = delta?.changedFiles ?? [];
 
   const costStr = costUsd !== null ? ` [cost: $${costUsd.toFixed(4)}]` : "";
   const entry = [
@@ -352,34 +363,10 @@ const LEARNINGS_MAX_LINES = 100;
 
 async function generateSessionHandoff(
   sessionNum: number,
-  preSnapshot: ProgressSnapshot,
+  delta: SessionDelta,
 ): Promise<void> {
-  const postSnapshot = await captureSnapshot();
-
-  // Completed items
-  const completed: string[] = [];
-  for (const [id, postState] of postSnapshot.itemStates) {
-    const preState = preSnapshot.itemStates.get(id);
-    if (postState === "done" && preState !== "done") completed.push(id);
-  }
-
-  // Changed files
-  let changedFiles: string[] = [];
-  if (preSnapshot.headSha) {
-    try {
-      const p = Bun.spawnSync(
-        ["git", "diff", "--name-only", preSnapshot.headSha, "HEAD"],
-        { cwd: process.cwd() },
-      );
-      if (p.exitCode === 0) {
-        changedFiles = p.stdout
-          .toString()
-          .trim()
-          .split("\n")
-          .filter((f) => f.trim());
-      }
-    } catch {}
-  }
+  const completed = delta.completedItems;
+  const changedFiles = delta.changedFiles;
 
   // Suggested next priority: first pending items whose deps are done
   const nextPending: string[] = [];
@@ -408,21 +395,22 @@ async function generateSessionHandoff(
   await Bun.write(SESSION_HANDOFF_FILE, lines.join("\n"));
 }
 
+const LEARNINGS_TEMPLATE_LINES = [
+  `# Loop Learnings`,
+  ``,
+  `Append discoveries here. Read at session start, append before exiting.`,
+  ``,
+  `## Environment`,
+  ``,
+  `## Patterns`,
+  ``,
+  `## Pitfalls`,
+  ``,
+];
+
 async function initLearnings(): Promise<void> {
   if (existsSync(LEARNINGS_FILE)) return;
-  const template = [
-    `# Loop Learnings`,
-    ``,
-    `Append discoveries here. Read at session start, append before exiting.`,
-    ``,
-    `## Environment`,
-    ``,
-    `## Patterns`,
-    ``,
-    `## Pitfalls`,
-    ``,
-  ].join("\n");
-  await Bun.write(LEARNINGS_FILE, template);
+  await Bun.write(LEARNINGS_FILE, LEARNINGS_TEMPLATE_LINES.join("\n"));
 }
 
 async function truncateLearnings(): Promise<void> {
@@ -432,9 +420,9 @@ async function truncateLearnings(): Promise<void> {
     const lines = content.split("\n");
     if (lines.length <= LEARNINGS_MAX_LINES) return;
 
-    // Keep header (first 6 lines) + most recent content
-    const header = lines.slice(0, 6);
-    const body = lines.slice(6);
+    // Keep header (template structure) + most recent content
+    const header = lines.slice(0, LEARNINGS_TEMPLATE_LINES.length);
+    const body = lines.slice(LEARNINGS_TEMPLATE_LINES.length);
     const keepCount = LEARNINGS_MAX_LINES - header.length;
     const truncatedBody = body.slice(-keepCount);
 
@@ -783,9 +771,9 @@ async function main(): Promise<void> {
 
     if (progress.pending === 0 && progress.inProgress === 0) {
       // Distinguish all-done from all-blocked
-      if (progress.blocked > 0 && progress.done === 0 && zeroItemRuns === 0) {
+      if (progress.blocked > 0) {
         log(
-          `All remaining items are blocked (${progress.blocked} blocked). Halting loop.`,
+          `Remaining items are blocked (${progress.done} done, ${progress.blocked} blocked). Halting loop.`,
         );
         break;
       }
@@ -821,13 +809,14 @@ async function main(): Promise<void> {
     console.log(formatSessionSummary(result.activity));
     log("---");
 
+    const delta = await computeSessionDelta(preSnapshot);
     await appendSessionLog(
       sessionCount, result.exitReason, result.sessionId,
-      result.activity.costUsd, preSnapshot,
+      result.activity.costUsd, delta,
     );
 
     // Generate cross-session intelligence files
-    await generateSessionHandoff(sessionCount, preSnapshot);
+    await generateSessionHandoff(sessionCount, delta);
     await truncateLearnings();
 
     // Run between-session quality gate
