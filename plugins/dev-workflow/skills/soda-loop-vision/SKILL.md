@@ -127,8 +127,15 @@ Present a brief summary of the reference implementation analysis in Japanese bef
 
 Using the enriched understanding from Requirements Discovery, decompose the project into 3-10 verifiable goals. If no $ARGUMENTS was provided, use the understanding built through the discovery dialogue. Each goal must be:
 - **Concrete**: Describes a specific outcome, not a vague aspiration
-- **Verifiable**: Has a clear pass/fail condition (e.g., "X command exits 0", "file Y exists with Z content", "API endpoint returns 200")
+- **Verifiable**: Has a clear pass/fail condition expressed in the Acceptance sub-field
 - **Independent**: Can be evaluated without reference to other goals (though implementation may have dependencies)
+
+Each goal uses this format:
+- [ ] {{GOAL_STATEMENT}}
+  - Acceptance: {{PASS_FAIL_CONDITION}} (e.g., "`bun test` exits 0", "file `src/config.ts` exports a `Config` type")
+  - Context: {{RELEVANT_FILE_PATHS_OR_APIS}} (optional — omit if goal is self-contained)
+
+The Acceptance field must be a concrete, machine- or human-verifiable condition — not a restatement of the goal.
 
 Present the draft goal list to the user. Use AskUserQuestion:
 - "このゴールリストで進める"
@@ -146,7 +153,7 @@ If the user selects "個別ゴールを深掘り":
 
 1. Present the numbered goal list. Use AskUserQuestion to ask which goal to examine — list each goal by number as a separate option, plus "全ゴールを順に確認".
 2. For the selected goal, ask probing questions about:
-   - **Acceptance criteria**: What exactly constitutes pass/fail? Is the current verification condition sufficient?
+   - **Acceptance criteria**: What exactly constitutes pass/fail? Is the current verification condition sufficient? During deep-dive, ensure the Acceptance sub-field is concrete and testable.
    - **Edge cases**: What boundary conditions or error scenarios should the goal account for?
    - **Technical details**: Are there specific implementation constraints or approaches the goal should reflect?
 3. Refine the goal wording and its verifiability condition based on answers. Present the updated goal to the user for confirmation.
@@ -245,9 +252,14 @@ Write VISION.md to the loop directory using this format:
 
 ## Goals
 - [ ] {{VERIFIABLE_GOAL_1}}
+  - Acceptance: {{PASS_FAIL_CONDITION_1}}
+  - Context: {{FILE_PATHS_1}}
 - [ ] {{VERIFIABLE_GOAL_2}}
+  - Acceptance: {{PASS_FAIL_CONDITION_2}}
 - [ ] {{VERIFIABLE_GOAL_3}}
+  - Acceptance: {{PASS_FAIL_CONDITION_3}}
 ...
+Omit the `Context:` sub-field if the goal is self-contained.
 
 ## Constraints
 - {{CONSTRAINT_1}}
@@ -305,7 +317,9 @@ After writing the file, emit a **Vision Blueprint** block in the conversation. T
 
 ### Goals
 - {{GOAL_1}}
+  - Acceptance: {{CONDITION_1}}
 - {{GOAL_2}}
+  - Acceptance: {{CONDITION_2}}
 ...
 
 ### Constraints
