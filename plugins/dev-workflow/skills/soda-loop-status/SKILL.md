@@ -28,8 +28,10 @@ The above JSON provides the full loop status. See the schema description below f
 - `discoveredItems` — Items added by agent discovery protocol (D-* prefix)
 - `blockedItems[]` — Items in blocked state with `id` and `title`
 - `inProgressItems[]` — Items in in-progress state with `id` and `title`
-- `sessions` — Session history: `count`, `entries[]` with `number`, `timestamp`, `exitReason`, `sessionId`, `costUsd`, and `totalCostUsd`
+- `sessions` — Session history: `count`, `entries[]` with `number`, `timestamp`, `exitReason`, `sessionId`, `costUsd`, `completedItems`, `changedFiles`, and `totalCostUsd`
 - `vision` — VISION.md data: `purpose`, `goalCount`, `goals[]` with `text` and `status`
+- `learnings` — LEARNINGS.md status: `exists`, `lineCount` (null if file doesn't exist)
+- `sessionHandoff` — SESSION_HANDOFF.md status: `exists` (null if file doesn't exist)
 - `multipleLoops` — Present when multiple loops are found in `.agent-loops/`. Contains `available` (loop name list) and `agentLoopsDir` (path)
 - `error` — Present when a fatal error occurred (e.g., no PROGRESS.md found)
 - `warnings[]` — Non-fatal issues (e.g., missing .loop-logs)
@@ -119,6 +121,8 @@ Use AskUserQuestion with options selected based on context. Always include "終�
 - "ブロック項目を詳しく見る" — investigate blocked items in PROGRESS.md (include if `blockedItems.length > 0`)
 - "ビジョンの達成状況を確認" — show vision goals vs progress (include if `vision` is not null)
 - "特定のフェーズを詳しく見る" — expand a phase with full item details (include if `phases.length > 0`)
+- "LEARNINGS.md を見る" — show accumulated cross-session knowledge (include if `learnings` is not null and `learnings.exists`)
+- "セッション引き継ぎを見る" — show SESSION_HANDOFF.md content (include if `sessionHandoff` is not null and `sessionHandoff.exists`)
 - "PROGRESS.md を直接見る" — read the raw file
 - "最新セッションのログを見る" — read the most recent .loop-logs/session-N.log (include if `sessions.count > 0`)
 - "終了" — end the skill
@@ -130,9 +134,9 @@ Provide the selected detail view, then return to Step 3 for further follow-up.
 **セッション履歴を見る:**
 Present a table from `sessions.entries`:
 ```
-| # | 日時 | 終了理由 | セッションID | コスト |
-|---|------|----------|-------------|--------|
-| {{number}} | {{timestamp}} | {{exitReason}} | {{sessionId ?? "N/A"}} | ${{costUsd ?? "N/A"}} |
+| # | 日時 | 終了理由 | 完了項目 | コスト |
+|---|------|----------|----------|--------|
+| {{number}} | {{timestamp}} | {{exitReason}} | {{completedItems.join(", ") || "—"}} | ${{costUsd ?? "N/A"}} |
 ```
 Add a summary line: total sessions, total cost, breakdown by exit reason (e.g., "normal: 5, budget-exceeded: 2, timeout: 1").
 
@@ -158,6 +162,12 @@ Add summary: {{goalsCompleted}}/{{goalCount}} goals achieved. If phases map clea
 
 **特定のフェーズを詳しく見る:**
 Use AskUserQuestion to ask which phase (list phase names as options). Then use Grep to find all items in that phase section of PROGRESS.md. Present every item with full details (description, files, validation, deps).
+
+**LEARNINGS.md を見る:**
+Use Read tool to display the file at `{{loopDir}}/LEARNINGS.md`. Present the content with section headers highlighted.
+
+**セッション引き継ぎを見る:**
+Use Read tool to display the file at `{{loopDir}}/SESSION_HANDOFF.md`. Present the handoff information: completed items, changed files, and suggested next priorities.
 
 **PROGRESS.md を直接見る:**
 Use Read tool to display the file at `{{loopDir}}/PROGRESS.md`.

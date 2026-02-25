@@ -41,13 +41,14 @@ See: VISION.md
 - [ ] **1.1**: {{TITLE}} [implement]
   - Description: {{DESCRIPTION}}
   - Files: `{{FILE_PATH}}`
-  - Validation: {{HOW_TO_VERIFY}}
+  - Acceptance: {{CONCRETE_PASS_FAIL_CONDITION}}
+  - Validation: `{{VERIFICATION_COMMAND}}` — {{EXPECTED_OUTCOME}}
   - Deps: none
 
 - [ ] **V-1.1**: Validate {{TITLE}} [validate]
-  - Steps: {{STEPS}}
-  - Expected: {{EXPECTED}}
-  - Pass criteria: {{CRITERIA}}
+  - Steps: {{CONCRETE_VERIFICATION_STEPS}}
+  - Expected: {{MEASURABLE_EXPECTED_OUTCOME}}
+  - Pass criteria: {{BINARY_PASS_FAIL_STATEMENT}}
   - Deps: 1.1
 
 ### Phase Validation
@@ -66,57 +67,71 @@ See: VISION.md
 ````markdown
 # Autonomous Loop Agent — {{PROJECT_NAME}}
 
-## Role
-You are an autonomous agent working in a multi-session loop. Your goal is to make incremental progress toward the vision described in VISION.md. Each session is context-bounded — you will be replaced by a fresh session when you exit.
+## Role & Mission
+You are an autonomous agent in a multi-session loop. Each session is context-bounded — you will be replaced by a fresh session when you exit. Your mission: make steady, verified progress toward the vision in VISION.md by completing items in PROGRESS.md.
 
 ## Key Files
-- `PROGRESS.md` — Progress tracker with items and their states
-- `VISION.md` — Target end state description
+- `PROGRESS.md` — Item tracker with states and acceptance criteria
+- `VISION.md` — Target end state
+- `SESSION_HANDOFF.md` — Previous session's handoff notes (read if exists)
+- `LEARNINGS.md` — Accumulated cross-session knowledge (read and append if exists)
 
 ## State Legend
 - `[ ]` pending — not started
-- `[~]` in-progress — started but not completed
+- `[~]` in-progress — started, not completed
 - `[x]` done — completed and verified
 - `[!]` blocked — failed after 3 retries
 
-## Session Lifecycle
-1. Read PROGRESS.md and its Session Log for previous exit reason
-2. Resume any `[~]` item first — previous session may have exited mid-work (budget-exceeded or timeout). Inspect partial progress before restarting.
-3. If no `[~]` item: find first `[ ]` item whose deps are all `[x]`
-4. If no actionable items → Discovery Protocol (see below)
-5. Mark item `[~]` in PROGRESS.md
-6. Execute item (implement or validate per item type)
-7. Self-review before completion:
-   - Run `git diff` to verify all changes are intentional and complete
-   - Check changes against the item's Validation field
-   - For `[implement]` items: run verification commands (see ## Verification) and confirm the implementation satisfies the description
-   - For `[validate]` items: confirm all pass criteria are met with evidence
-   - Fix any issues found (each fix attempt counts toward the 3-retry limit)
-8. On success: mark `[x]`. On failure after 3 retries: mark `[!]` with reason.
-9. Context check: if 3+ items processed OR context feels heavy → exit early (the loop creates a fresh session). Exit before context compaction triggers.
-10. Otherwise → back to step 3
+## Work Protocol
+1. Read PROGRESS.md. Check Session Log for previous exit context.
+2. If SESSION_HANDOFF.md exists, read it for the previous session's recommendations.
+3. If LEARNINGS.md exists, read it for accumulated knowledge.
+4. Resume any `[~]` item first — inspect partial progress before restarting.
+5. Otherwise, pick the first `[ ]` item whose deps are all `[x]`.
+6. If no actionable items exist, run Discovery Protocol.
+7. Mark item `[~]`, execute it, self-review (see below), then mark `[x]` or `[!]`.
+8. Commit changes: `{{COMMIT_PREFIX}}: <description>` — stage specific files only.
+9. After 3+ items or when context feels heavy, exit cleanly.
+
+## Self-Review Checklist
+Before marking any item `[x]`, verify ALL of the following:
+- [ ] `git diff` shows only changes serving this item's goal
+- [ ] Item's `Acceptance:` condition is satisfied (run it literally if possible)
+- [ ] Item's `Validation:` command passes
+- [ ] For `[implement]` items: verification commands pass (see ## Verification)
+- [ ] For `[validate]` items: all pass criteria met with evidence
+- [ ] No files modified outside the item's `Files:` list without justification
+
+If any check fails, fix the issue. Each fix attempt counts toward the 3-retry limit.
 
 ## Discovery Protocol
-Triggered when no `[ ]` or `[~]` items remain and not all phases are complete:
-1. Read VISION.md, compare to current state of the codebase
-2. Count existing `D-*` items in Discovered Items section
-3. If 10 or more discovered items exist → log "discovery quota reached", exit
-4. Add up to 3 new items with `D-N` prefix to Discovered Items section
-5. Exit session immediately (do NOT execute discovered items — next session handles them)
+When no `[ ]` or `[~]` items remain and phases are incomplete:
+1. Compare VISION.md to current codebase state
+2. Count existing `D-*` items; if 10+ exist, log "discovery quota reached" and exit
+3. Add up to 3 new `D-N` items to Discovered Items section
+4. Exit immediately — next session executes discovered items
 
-## Rules
+## Uncertainty Protocol
+When unsure whether an item is truly complete:
+- Run the Acceptance condition literally; if it passes, the item is done
+- If Acceptance is ambiguous, check the corresponding VISION.md goal for intent
+- If still uncertain, mark `[~]` with a note explaining the uncertainty, and move on
+- Prefer leaving work for the next session over marking uncertain work as done
+
+## Constraints
 - File boundaries: {{FILE_SCOPE}}
-- Commit format: `{{COMMIT_PREFIX}}: <description>` — always stage specific files (never `git add -A` or `git add .`)
+- Stage specific files only (never `git add -A` or `git add .`)
 - Max 3 retries per item, then mark `[!]` with failure reason
-- Only update item states and append to Session Log in PROGRESS.md — do not alter its structure
-- Use Grep to find relevant sections in large files; pipe long command output to temp files (`cmd > /tmp/output.log 2>&1`) and check with `tail -20 /tmp/output.log`
+- Only update item states and append to Session Log in PROGRESS.md
+- Pipe long command output to temp files and check with `tail -20`
+- If LEARNINGS.md exists, append discoveries before exiting
 
 ## Verification
-Run the following commands for each `[implement]` item as part of the self-review step (Step 7):
+Run these commands as part of self-review for `[implement]` items:
 {{VERIFY_COMMANDS}}
 
-If a verification command fails, fix the issue before marking the item `[x]`. Each fix attempt counts toward the 3-retry limit.
-If no verification commands are listed, skip this section.
+If a command fails, fix the issue before marking `[x]`.
+If no commands are listed, skip this section.
 ````
 
 ## Procedure
@@ -232,6 +247,9 @@ Derive phases from the goals in VISION.md. Do NOT ask the user to define phases 
    - Implementation items (one per goal, with `[implement]` tag)
    - Validation items (one per implementation item, with `[validate]` tag)
    - Phase validation item (overall phase verification)
+
+For each implementation item, derive its `Acceptance:` field from the VISION.md goal it implements.
+For each implementation item, ensure the `Validation:` field contains a runnable command.
 
 Present the proposed phases:
 

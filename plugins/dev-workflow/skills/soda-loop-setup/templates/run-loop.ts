@@ -14,6 +14,7 @@ const config = {
   allowedTools: process.env.ALLOWED_TOOLS ?? "Read,Write,Edit,Bash,Glob,Grep",
   summaryEnabled: process.env.LOOP_SUMMARY !== "0",
   summaryBudgetUsd: parseFloat(process.env.SUMMARY_BUDGET_USD ?? "1"),
+  qualityGate: process.env.QUALITY_GATE !== "0",
 };
 
 const PROGRESS_FILE = resolve(config.loopDir, "PROGRESS.md");
@@ -177,6 +178,14 @@ interface ProgressCounts {
   blocked: number;
 }
 
+interface ProgressSnapshot {
+  counts: ProgressCounts;
+  itemStates: Map<string, string>;
+  headSha: string;
+}
+
+const ITEM_RE = /^- \[( |~|x|!)\] \*\*(.+?)\*\*/;
+
 async function parseProgress(): Promise<ProgressCounts> {
   const content = await Bun.file(PROGRESS_FILE).text();
   const counts: ProgressCounts = {
@@ -194,10 +203,86 @@ async function parseProgress(): Promise<ProgressCounts> {
   return counts;
 }
 
+async function captureSnapshot(): Promise<ProgressSnapshot> {
+  const content = await Bun.file(PROGRESS_FILE).text();
+  const counts: ProgressCounts = { pending: 0, inProgress: 0, done: 0, blocked: 0 };
+  const itemStates = new Map<string, string>();
+  for (const line of content.split("\n")) {
+    if (line.startsWith("- [ ]")) counts.pending++;
+    else if (line.startsWith("- [~]")) counts.inProgress++;
+    else if (line.startsWith("- [x]")) counts.done++;
+    else if (line.startsWith("- [!]")) counts.blocked++;
+    const m = line.match(ITEM_RE);
+    if (m) {
+      itemStates.set(
+        m[2],
+        m[1] === " " ? "pending" : m[1] === "~" ? "in-progress" : m[1] === "x" ? "done" : "blocked",
+      );
+    }
+  }
+  let headSha = "";
+  try {
+    const p = Bun.spawnSync(["git", "rev-parse", "HEAD"], { cwd: process.cwd() });
+    if (p.exitCode === 0) headSha = p.stdout.toString().trim();
+  } catch {}
+  return { counts, itemStates, headSha };
+}
+
+async function parseVerifyCommands(): Promise<string[]> {
+  try {
+    const content = await Bun.file(PROMPT_FILE).text();
+    const lines = content.split("\n");
+    let inVerification = false;
+    const commands: string[] = [];
+    for (const line of lines) {
+      if (line.startsWith("## Verification")) {
+        inVerification = true;
+        continue;
+      }
+      if (inVerification && line.startsWith("##")) break;
+      if (inVerification) {
+        const match = line.match(/^- `(.+?)`/);
+        if (match) commands.push(match[1]);
+      }
+    }
+    return commands;
+  } catch {
+    return [];
+  }
+}
+
+async function runQualityGate(commands: string[]): Promise<boolean> {
+  if (commands.length === 0) return true;
+  log("Running quality gate...");
+  for (const cmd of commands) {
+    try {
+      const p = Bun.spawnSync(["sh", "-c", cmd], {
+        cwd: process.cwd(),
+        stdout: "pipe",
+        stderr: "pipe",
+      });
+      if (p.exitCode === 0) {
+        log(`  PASS: ${cmd}`);
+      } else {
+        const stderr = p.stderr.toString().trim().slice(0, 200);
+        log(`  FAIL: ${cmd} (exit ${p.exitCode})${stderr ? ` — ${stderr}` : ""}`);
+        return false;
+      }
+    } catch (e) {
+      log(`  FAIL: ${cmd} (error: ${e instanceof Error ? e.message : String(e)})`);
+      return false;
+    }
+  }
+  log("Quality gate passed.");
+  return true;
+}
+
 async function appendSessionLog(
   sessionNum: number,
   exitReason: string,
   sessionId: string | null,
+  costUsd: number | null,
+  preSnapshot: ProgressSnapshot | null,
 ): Promise<void> {
   const ts = new Date().toISOString().slice(0, 16).replace("T", " ");
   const content = await Bun.file(PROGRESS_FILE).text();
@@ -207,17 +292,164 @@ async function appendSessionLog(
     .filter((l) => l.startsWith("- [~]"))
     .map((l) => l.replace(/^- \[~\] /, "  - "));
 
+  // Compute completed and blocked items this session
+  const completedItems: string[] = [];
+  const blockedItems: string[] = [];
+  if (preSnapshot) {
+    const postSnapshot = await captureSnapshot();
+    for (const [id, postState] of postSnapshot.itemStates) {
+      const preState = preSnapshot.itemStates.get(id);
+      if (postState === "done" && preState !== "done") completedItems.push(id);
+      if (postState === "blocked" && preState !== "blocked") blockedItems.push(id);
+    }
+  }
+
+  // Compute changed files
+  let changedFiles: string[] = [];
+  if (preSnapshot?.headSha) {
+    try {
+      const p = Bun.spawnSync(
+        ["git", "diff", "--name-only", preSnapshot.headSha, "HEAD"],
+        { cwd: process.cwd() },
+      );
+      if (p.exitCode === 0) {
+        changedFiles = p.stdout
+          .toString()
+          .trim()
+          .split("\n")
+          .filter((f) => f.trim());
+      }
+    } catch {}
+  }
+
+  const costStr = costUsd !== null ? ` [cost: $${costUsd.toFixed(4)}]` : "";
   const entry = [
     "",
-    `### Session ${sessionNum} (${ts}) [exit: ${exitReason}]${sessionId ? ` [session: ${sessionId}]` : ""}`,
+    `### Session ${sessionNum} (${ts}) [exit: ${exitReason}]${sessionId ? ` [session: ${sessionId}]` : ""}${costStr}`,
+    ...(completedItems.length > 0 ? [`- Completed: ${completedItems.join(", ")}`] : []),
+    ...(blockedItems.length > 0 ? [`- Blocked: ${blockedItems.join(", ")}`] : []),
     ...(inProgressItems.length > 0
       ? ["- Items in progress:", ...inProgressItems]
+      : []),
+    ...(changedFiles.length > 0
+      ? [
+          changedFiles.length <= 5
+            ? `- Changed files: ${changedFiles.join(", ")}`
+            : `- Changed files: ${changedFiles.slice(0, 5).join(", ")} (+${changedFiles.length - 5} more)`,
+        ]
       : []),
     `- Exit reason: ${exitReason}`,
     "",
   ].join("\n");
 
   await Bun.write(PROGRESS_FILE, content + entry);
+}
+
+// === Cross-Session Intelligence ===
+const SESSION_HANDOFF_FILE = resolve(config.loopDir, "SESSION_HANDOFF.md");
+const LEARNINGS_FILE = resolve(config.loopDir, "LEARNINGS.md");
+const LEARNINGS_MAX_LINES = 100;
+
+async function generateSessionHandoff(
+  sessionNum: number,
+  preSnapshot: ProgressSnapshot,
+): Promise<void> {
+  const postSnapshot = await captureSnapshot();
+
+  // Completed items
+  const completed: string[] = [];
+  for (const [id, postState] of postSnapshot.itemStates) {
+    const preState = preSnapshot.itemStates.get(id);
+    if (postState === "done" && preState !== "done") completed.push(id);
+  }
+
+  // Changed files
+  let changedFiles: string[] = [];
+  if (preSnapshot.headSha) {
+    try {
+      const p = Bun.spawnSync(
+        ["git", "diff", "--name-only", preSnapshot.headSha, "HEAD"],
+        { cwd: process.cwd() },
+      );
+      if (p.exitCode === 0) {
+        changedFiles = p.stdout
+          .toString()
+          .trim()
+          .split("\n")
+          .filter((f) => f.trim());
+      }
+    } catch {}
+  }
+
+  // Suggested next priority: first pending items whose deps are done
+  const nextPending: string[] = [];
+  const content = await Bun.file(PROGRESS_FILE).text();
+  for (const line of content.split("\n")) {
+    if (line.startsWith("- [ ]")) {
+      const m = line.match(ITEM_RE);
+      if (m && nextPending.length < 3) nextPending.push(m[2]);
+    }
+  }
+
+  const lines = [
+    `# Session ${sessionNum} Handoff`,
+    ``,
+    `## Completed This Session`,
+    ...(completed.length > 0 ? completed.map((id) => `- ${id}`) : ["- (none)"]),
+    ``,
+    `## Key Files Changed`,
+    ...(changedFiles.length > 0 ? changedFiles.map((f) => `- ${f}`) : ["- (none)"]),
+    ``,
+    `## Suggested Next Priority`,
+    ...(nextPending.length > 0 ? nextPending.map((id) => `- ${id}`) : ["- (none remaining)"]),
+    ``,
+  ];
+
+  await Bun.write(SESSION_HANDOFF_FILE, lines.join("\n"));
+}
+
+async function initLearnings(): Promise<void> {
+  if (existsSync(LEARNINGS_FILE)) return;
+  const template = [
+    `# Loop Learnings`,
+    ``,
+    `Append discoveries here. Read at session start, append before exiting.`,
+    ``,
+    `## Environment`,
+    ``,
+    `## Patterns`,
+    ``,
+    `## Pitfalls`,
+    ``,
+  ].join("\n");
+  await Bun.write(LEARNINGS_FILE, template);
+}
+
+async function truncateLearnings(): Promise<void> {
+  if (!existsSync(LEARNINGS_FILE)) return;
+  try {
+    const content = await Bun.file(LEARNINGS_FILE).text();
+    const lines = content.split("\n");
+    if (lines.length <= LEARNINGS_MAX_LINES) return;
+
+    // Keep header (first 6 lines) + most recent content
+    const header = lines.slice(0, 6);
+    const body = lines.slice(6);
+    const keepCount = LEARNINGS_MAX_LINES - header.length;
+    const truncatedBody = body.slice(-keepCount);
+
+    // Find first section boundary for clean cut
+    let cutIdx = 0;
+    for (let i = 0; i < truncatedBody.length; i++) {
+      if (truncatedBody[i].startsWith("## ")) {
+        cutIdx = i;
+        break;
+      }
+    }
+
+    const result = [...header, ...truncatedBody.slice(cutIdx)];
+    await Bun.write(LEARNINGS_FILE, result.join("\n"));
+  } catch {}
 }
 
 // === Session Runner ===
@@ -235,12 +467,36 @@ async function runSession(sessionNum: number): Promise<SessionResult> {
 
   // Inject loop file paths so the agent can find them from any cwd
   const loopDirAbsolute = resolve(config.loopDir);
+
+  const firstSessionBlock =
+    sessionNum === 1
+      ? [
+          `## First Session`,
+          `This is the first session. Before starting items:`,
+          `1. Run verification commands to confirm the environment works.`,
+          `2. Briefly explore the codebase structure relevant to VISION.md goals.`,
+          `3. Then proceed to the first item.`,
+          ``,
+        ]
+      : [];
+
+  let handoffBlock: string[] = [];
+  const handoffFile = resolve(loopDirAbsolute, "SESSION_HANDOFF.md");
+  if (existsSync(handoffFile)) {
+    try {
+      const c = await Bun.file(handoffFile).text();
+      if (c.trim()) handoffBlock = [`## Previous Session Handoff`, c.trim(), ``];
+    } catch {}
+  }
+
   const enrichedPrompt = [
     `## Loop Files`,
     `- PROGRESS.md: ${resolve(loopDirAbsolute, "PROGRESS.md")}`,
     `- VISION.md: ${resolve(loopDirAbsolute, "VISION.md")}`,
     `- Working directory: ${process.cwd()}`,
     ``,
+    ...firstSessionBlock,
+    ...handoffBlock,
     promptContent,
   ].join("\n");
 
@@ -500,6 +756,11 @@ async function main(): Promise<void> {
 
   let sessionCount = 0;
   let zeroItemRuns = 0;
+  let preGraceTotal = 0;
+  let consecutiveQualityFailures = 0;
+  const verifyCommands = config.qualityGate ? await parseVerifyCommands() : [];
+
+  await initLearnings();
 
   while (true) {
     if (stopState !== "running") {
@@ -521,11 +782,22 @@ async function main(): Promise<void> {
     );
 
     if (progress.pending === 0 && progress.inProgress === 0) {
+      // Distinguish all-done from all-blocked
+      if (progress.blocked > 0 && progress.done === 0 && zeroItemRuns === 0) {
+        log(
+          `All remaining items are blocked (${progress.blocked} blocked). Halting loop.`,
+        );
+        break;
+      }
+
+      // Grace session for discovery
       zeroItemRuns++;
       if (zeroItemRuns >= 2) {
         log("No pending or in-progress items after grace session. Loop complete.");
         break;
       }
+      preGraceTotal =
+        progress.pending + progress.inProgress + progress.done + progress.blocked;
       log("No pending or in-progress items. Running grace session for discovery...");
     } else {
       zeroItemRuns = 0;
@@ -537,6 +809,7 @@ async function main(): Promise<void> {
     }
 
     sessionCount++;
+    const preSnapshot = await captureSnapshot();
     const result = await runSession(sessionCount);
 
     log(
@@ -548,7 +821,40 @@ async function main(): Promise<void> {
     console.log(formatSessionSummary(result.activity));
     log("---");
 
-    await appendSessionLog(sessionCount, result.exitReason, result.sessionId);
+    await appendSessionLog(
+      sessionCount, result.exitReason, result.sessionId,
+      result.activity.costUsd, preSnapshot,
+    );
+
+    // Generate cross-session intelligence files
+    await generateSessionHandoff(sessionCount, preSnapshot);
+    await truncateLearnings();
+
+    // Run between-session quality gate
+    if (verifyCommands.length > 0) {
+      const passed = await runQualityGate(verifyCommands);
+      if (passed) {
+        consecutiveQualityFailures = 0;
+      } else {
+        consecutiveQualityFailures++;
+        if (consecutiveQualityFailures >= 2) {
+          log("Quality gate failed 2 consecutive times. Halting loop.");
+          break;
+        }
+        log(`Quality gate failed (${consecutiveQualityFailures}/2 consecutive). Continuing...`);
+      }
+    }
+
+    // Check if grace session produced new items
+    if (zeroItemRuns === 1) {
+      const postGrace = await parseProgress();
+      const postGraceTotal =
+        postGrace.pending + postGrace.inProgress + postGrace.done + postGrace.blocked;
+      if (postGraceTotal <= preGraceTotal) {
+        log("Grace session produced no new items. Halting loop immediately.");
+        break;
+      }
+    }
 
     if (config.cooldownSecs > 0) {
       log(`Cooling down for ${config.cooldownSecs}s...`);

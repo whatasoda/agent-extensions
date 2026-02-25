@@ -27,6 +27,8 @@ interface SessionEntry {
   exitReason: string;
   sessionId: string | null;
   costUsd: number | null;
+  completedItems: string[];
+  changedFiles: string[];
 }
 
 interface VisionInfo {
@@ -62,6 +64,8 @@ interface LoopStatusOutput {
     totalCostUsd: number | null;
   };
   vision: VisionInfo | null;
+  learnings: { exists: boolean; lineCount: number } | null;
+  sessionHandoff: { exists: boolean } | null;
   error?: string;
   warnings: string[];
 }
@@ -71,7 +75,7 @@ interface LoopStatusOutput {
 const ITEM_RE = /^- \[( |~|x|!)\] \*\*(.+?)\*\*:?\s*(.+)?/;
 const PHASE_RE = /^## Phase (\d+): (.+)/;
 const SESSION_LOG_RE =
-  /^### Session (\d+) \((.+?)\) \[exit: (.+?)\](?:\s*\[session: (.+?)\])?/;
+  /^### Session (\d+) \((.+?)\) \[exit: (.+?)\](?:\s*\[session: (.+?)\])?(?:\s*\[cost: \$(.+?)\])?/;
 
 function parseItemStatus(marker: string): ItemInfo["status"] {
   switch (marker) {
@@ -99,6 +103,9 @@ function parseProgressFile(content: string): {
     timestamp: string;
     exitReason: string;
     sessionId: string | null;
+    costUsd: number | null;
+    completedItems: string[];
+    changedFiles: string[];
   }>;
   counts: { pending: number; inProgress: number; done: number; blocked: number };
 } {
@@ -133,6 +140,9 @@ function parseProgressFile(content: string): {
     timestamp: string;
     exitReason: string;
     sessionId: string | null;
+    costUsd: number | null;
+    completedItems: string[];
+    changedFiles: string[];
   }> = [];
 
   for (const line of lines) {
@@ -211,7 +221,23 @@ function parseProgressFile(content: string): {
           timestamp: sessionMatch[2],
           exitReason: sessionMatch[3],
           sessionId: sessionMatch[4] ?? null,
+          costUsd: sessionMatch[5] ? parseFloat(sessionMatch[5]) : null,
+          completedItems: [],
+          changedFiles: [],
         });
+      } else if (sessionLogEntries.length > 0) {
+        const lastEntry = sessionLogEntries[sessionLogEntries.length - 1];
+        const completedMatch = line.match(/^- Completed: (.+)/);
+        if (completedMatch) {
+          lastEntry.completedItems = completedMatch[1].split(",").map((s) => s.trim());
+        }
+        const changedMatch = line.match(/^- Changed files: (.+)/);
+        if (changedMatch) {
+          lastEntry.changedFiles = changedMatch[1]
+            .replace(/\s*\(\+\d+ more\)/, "")
+            .split(",")
+            .map((s) => s.trim());
+        }
       }
     }
   }
@@ -257,6 +283,9 @@ function parseSessionLogs(
     timestamp: string;
     exitReason: string;
     sessionId: string | null;
+    costUsd: number | null;
+    completedItems: string[];
+    changedFiles: string[];
   }>,
 ): { entries: SessionEntry[]; totalCostUsd: number | null } {
   if (!existsSync(logDir)) {
@@ -264,7 +293,7 @@ function parseSessionLogs(
     return {
       entries: sessionLogEntries.map((e) => ({
         ...e,
-        costUsd: null,
+        costUsd: e.costUsd ?? null,
       })),
       totalCostUsd: null,
     };
@@ -322,7 +351,9 @@ function parseSessionLogs(
       timestamp: entry.timestamp,
       exitReason: entry.exitReason,
       sessionId: logInfo?.sessionId ?? entry.sessionId,
-      costUsd: logInfo?.costUsd ?? null,
+      costUsd: logInfo?.costUsd ?? entry.costUsd ?? null,
+      completedItems: entry.completedItems,
+      changedFiles: entry.changedFiles,
     });
   }
 
@@ -335,6 +366,8 @@ function parseSessionLogs(
         exitReason: "unknown",
         sessionId: info.sessionId,
         costUsd: info.costUsd,
+        completedItems: [],
+        changedFiles: [],
       });
     }
   }
@@ -504,6 +537,23 @@ function main(): void {
       !isStopped &&
       (progress.counts.pending > 0 || progress.counts.inProgress > 0);
 
+    // Detect cross-session intelligence files
+    const learningsPath = resolve(loopDir, "LEARNINGS.md");
+    let learnings: { exists: boolean; lineCount: number } | null = null;
+    if (existsSync(learningsPath)) {
+      try {
+        const lc = readFileSync(learningsPath, "utf-8").split("\n").length;
+        learnings = { exists: true, lineCount: lc };
+      } catch {
+        learnings = { exists: true, lineCount: 0 };
+      }
+    }
+
+    const handoffPath = resolve(loopDir, "SESSION_HANDOFF.md");
+    const sessionHandoff = existsSync(handoffPath)
+      ? { exists: true }
+      : null;
+
     const output: LoopStatusOutput = {
       loopDir,
       projectName: progress.projectName,
@@ -523,6 +573,8 @@ function main(): void {
         ...sessions,
       },
       vision,
+      learnings,
+      sessionHandoff,
       warnings,
     };
 
