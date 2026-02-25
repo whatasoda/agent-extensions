@@ -208,8 +208,8 @@ Options:
 - カスタマイズ
 
 If "カスタマイズ" is selected, ask a follow-up AskUserQuestion with these fields:
-- Model (`sonnet` / `opus` / `haiku`)
-- Max budget per session USD (default: `10`)
+- Model (`opus` / `sonnet` / `haiku`)
+- Max budget per session USD (default: `20`)
 - Max sessions (default: `10`)
 - Idle timeout seconds (default: `1800`)
 - Allowed tools (default: `Read,Write,Edit,Bash,Glob,Grep`)
