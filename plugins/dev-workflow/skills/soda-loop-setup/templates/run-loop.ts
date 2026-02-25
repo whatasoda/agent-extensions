@@ -12,6 +12,8 @@ const config = {
   idleTimeout: parseInt(process.env.IDLE_TIMEOUT ?? "1800", 10),
   dryRun: process.env.DRY_RUN === "1",
   allowedTools: process.env.ALLOWED_TOOLS ?? "Read,Write,Edit,Bash,Glob,Grep",
+  summaryEnabled: process.env.LOOP_SUMMARY !== "0",
+  summaryBudgetUsd: parseFloat(process.env.SUMMARY_BUDGET_USD ?? "1"),
 };
 
 const PROGRESS_FILE = resolve(config.loopDir, "PROGRESS.md");
@@ -20,18 +22,53 @@ const STOP_FILE = resolve(config.loopDir, "STOP");
 const LOG_DIR = resolve(config.loopDir, ".loop-logs");
 
 // === Stream-JSON Event Types ===
+// Handle both legacy CLI format (type:"init") and SDK format (type:"system", subtype:"init")
 interface StreamEventInit {
   type: "init";
   session_id: string;
 }
+interface StreamEventSystem {
+  type: "system";
+  subtype: string;
+  session_id?: string;
+}
+interface ContentBlockText {
+  type: "text";
+  text: string;
+}
+interface ContentBlockToolUse {
+  type: "tool_use";
+  id: string;
+  name: string;
+  input: unknown;
+}
+type ContentBlock = ContentBlockText | ContentBlockToolUse;
+interface StreamEventAssistant {
+  type: "assistant";
+  message: { role: "assistant"; content: ContentBlock[] };
+  session_id?: string;
+}
+interface StreamEventUser {
+  type: "user";
+  message: { role: "user"; content: unknown[] };
+}
 interface StreamEventResult {
   type: "result";
+  subtype?: string;
+  result?: string;
   cost_usd?: number;
+  total_cost_usd?: number;
+  session_id?: string;
+  num_turns?: number;
+  duration_ms?: number;
+  is_error?: boolean;
 }
-interface StreamEventOther {
-  type: "message" | "tool_use" | "tool_result";
-}
-type StreamEvent = StreamEventInit | StreamEventResult | StreamEventOther;
+type StreamEvent =
+  | StreamEventInit
+  | StreamEventSystem
+  | StreamEventAssistant
+  | StreamEventUser
+  | StreamEventResult;
 
 // === SIGINT Handling ===
 type StopState = "running" | "stopping" | "force-killing";
@@ -96,6 +133,43 @@ async function* parseNDJSON(
   }
 }
 
+// === Session Activity ===
+interface SessionActivityData {
+  toolUses: string[];
+  textSnippets: string[];
+  resultText: string | null;
+  costUsd: number | null;
+}
+
+function formatSessionSummary(activity: SessionActivityData): string {
+  const lines: string[] = [];
+  if (activity.toolUses.length > 0) {
+    const counts = new Map<string, number>();
+    for (const t of activity.toolUses)
+      counts.set(t, (counts.get(t) ?? 0) + 1);
+    const summary = Array.from(counts.entries())
+      .map(([name, c]) => (c > 1 ? `${name}(x${c})` : name))
+      .join(", ");
+    lines.push(`  Tools: ${summary}`);
+  }
+  if (activity.textSnippets.length > 0) {
+    const last = activity.textSnippets[activity.textSnippets.length - 1];
+    const display = last.length >= 120 ? last.slice(0, 120) + "…" : last;
+    lines.push(`  Last message: "${display}"`);
+  }
+  if (activity.resultText) {
+    const t =
+      activity.resultText.length > 300
+        ? activity.resultText.slice(0, 300) + "…"
+        : activity.resultText;
+    lines.push(`  Result: ${t}`);
+  }
+  if (activity.costUsd !== null) {
+    lines.push(`  Cost: $${activity.costUsd.toFixed(4)}`);
+  }
+  return lines.length > 0 ? lines.join("\n") : "  (no activity recorded)";
+}
+
 interface ProgressCounts {
   pending: number;
   inProgress: number;
@@ -150,6 +224,7 @@ async function appendSessionLog(
 interface SessionResult {
   exitReason: string;
   sessionId: string | null;
+  activity: SessionActivityData;
 }
 
 async function runSession(sessionNum: number): Promise<SessionResult> {
@@ -230,18 +305,48 @@ async function runSession(sessionNum: number): Promise<SessionResult> {
 
   // Process NDJSON events from stdout
   const eventLines: string[] = [];
+  const activity: SessionActivityData = {
+    toolUses: [],
+    textSnippets: [],
+    resultText: null,
+    costUsd: null,
+  };
+
   if (proc.stdout) {
     for await (const event of parseNDJSON(proc.stdout)) {
       lastActivityTime = Date.now();
       eventLines.push(JSON.stringify(event));
 
+      // Session ID: handle both legacy "init" and SDK "system"+"init"
       if (event.type === "init") {
         sessionId = (event as StreamEventInit).session_id;
         log(`  Session ID: ${sessionId}`);
+      } else if (
+        event.type === "system" &&
+        (event as StreamEventSystem).subtype === "init"
+      ) {
+        sessionId = (event as StreamEventSystem).session_id ?? null;
+        if (sessionId) log(`  Session ID: ${sessionId}`);
+      } else if (event.type === "assistant") {
+        const msg = (event as StreamEventAssistant).message;
+        if (msg?.content) {
+          for (const block of msg.content) {
+            if (block.type === "tool_use") {
+              activity.toolUses.push(block.name);
+            } else if (block.type === "text" && block.text?.trim()) {
+              activity.textSnippets.push(block.text.trim().slice(0, 120));
+            }
+          }
+        }
       } else if (event.type === "result") {
-        const cost = (event as StreamEventResult).cost_usd;
+        const r = event as StreamEventResult;
+        const cost = r.cost_usd ?? r.total_cost_usd;
         if (cost !== undefined) {
-          log(`  Session cost: $${cost.toFixed(2)}`);
+          activity.costUsd = cost;
+          log(`  Session cost: $${cost.toFixed(4)}`);
+        }
+        if (r.result) {
+          activity.resultText = r.result;
         }
       }
     }
@@ -267,7 +372,92 @@ async function runSession(sessionNum: number): Promise<SessionResult> {
     }
   }
 
-  return { exitReason, sessionId };
+  return { exitReason, sessionId, activity };
+}
+
+// === Loop Summary ===
+async function runSummarySession(loopStartSha: string): Promise<void> {
+  if (!config.summaryEnabled) return;
+
+  log("=== Running Loop Summary Session ===");
+
+  // Capture git diff from loop start
+  let gitDiff = "";
+  if (loopStartSha) {
+    try {
+      const statProc = Bun.spawnSync(
+        ["git", "diff", loopStartSha, "--stat", "--no-color"],
+        { cwd: process.cwd() },
+      );
+      if (statProc.exitCode === 0) {
+        gitDiff = statProc.stdout.toString().trim();
+      }
+      const fullDiffProc = Bun.spawnSync(
+        ["git", "diff", loopStartSha, "--no-color"],
+        { cwd: process.cwd() },
+      );
+      if (fullDiffProc.exitCode === 0) {
+        const fullDiff = fullDiffProc.stdout.toString();
+        const diffLines = fullDiff.split("\n").slice(0, 200);
+        if (fullDiff.split("\n").length > 200) diffLines.push("... (truncated)");
+        const diffContent = diffLines.join("\n").trim();
+        if (diffContent) {
+          gitDiff += "\n\n" + diffLines.join("\n");
+        }
+      }
+    } catch {
+      gitDiff = "(git diff unavailable)";
+    }
+  }
+
+  // Read final PROGRESS.md
+  let progressContent = "";
+  try {
+    progressContent = await Bun.file(PROGRESS_FILE).text();
+  } catch {
+    progressContent = "(PROGRESS.md unavailable)";
+  }
+
+  const summaryPrompt = [
+    "You are summarizing the results of an autonomous coding loop that just finished.",
+    "Provide a concise summary (3-10 bullet points) covering:",
+    "- What was accomplished (completed items from PROGRESS.md)",
+    "- What was left unfinished or blocked",
+    "- Key files/code changed (from git diff)",
+    "- Any notable patterns or issues observed",
+    "",
+    "## Final PROGRESS.md",
+    progressContent.slice(0, 3000),
+    ...(progressContent.length > 3000 ? ["... (truncated)"] : []),
+    "",
+    "## Git Diff Summary (since loop start)",
+    gitDiff || "(no changes detected)",
+  ].join("\n");
+
+  const proc = Bun.spawn(
+    [
+      "claude",
+      "-p",
+      summaryPrompt,
+      "--model",
+      config.claudeModel,
+      "--max-budget-usd",
+      String(config.summaryBudgetUsd),
+    ],
+    {
+      cwd: process.cwd(),
+      stdout: "inherit",
+      stderr: "inherit",
+      env: { ...process.env, CLAUDECODE: undefined },
+    },
+  );
+  activeProcess = proc;
+
+  const exitCode = await proc.exited;
+  activeProcess = null;
+  if (exitCode !== 0) {
+    log("WARNING: Summary session exited with non-zero code");
+  }
 }
 
 // === Main ===
@@ -286,6 +476,19 @@ async function main(): Promise<void> {
     process.exit(1);
   }
   mkdirSync(LOG_DIR, { recursive: true });
+
+  // Capture HEAD SHA before loop starts (for summary diff)
+  let loopStartSha = "";
+  try {
+    const shaProc = Bun.spawnSync(["git", "rev-parse", "HEAD"], {
+      cwd: process.cwd(),
+    });
+    if (shaProc.exitCode === 0) {
+      loopStartSha = shaProc.stdout.toString().trim();
+    }
+  } catch {
+    // not a git repo — summary will skip git diff
+  }
 
   log("=== Loop Harness Starting ===");
   log(
@@ -340,14 +543,10 @@ async function main(): Promise<void> {
       `Session ${sessionCount} exited [${result.exitReason}]${result.sessionId ? ` (session: ${result.sessionId})` : ""}`,
     );
 
-    // Show tail of session log
-    const logPath = resolve(LOG_DIR, `session-${sessionCount}.log`);
-    if (existsSync(logPath)) {
-      const lines = (await Bun.file(logPath).text()).trim().split("\n");
-      log("--- Last 5 lines of session log ---");
-      console.log(lines.slice(-5).join("\n"));
-      log("---");
-    }
+    // Show human-readable session summary
+    log("--- Session Summary ---");
+    console.log(formatSessionSummary(result.activity));
+    log("---");
 
     await appendSessionLog(sessionCount, result.exitReason, result.sessionId);
 
@@ -364,6 +563,11 @@ async function main(): Promise<void> {
     `Sessions: ${sessionCount} | Done: ${final.done} | Blocked: ${final.blocked} | Pending: ${final.pending}`,
   );
   log(`Logs: ${LOG_DIR}/`);
+
+  // Run optional loop summary session (skip if user requested stop)
+  if (sessionCount > 0 && stopState === "running") {
+    await runSummarySession(loopStartSha);
+  }
 }
 
 main().catch((e) => {

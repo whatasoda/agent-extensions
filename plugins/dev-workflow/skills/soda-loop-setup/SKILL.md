@@ -326,6 +326,12 @@ Start (from repo root):
 Customize with env vars:
   CLAUDE_MODEL=opus MAX_BUDGET_USD=20 .agent-loops/{{LOOP_NAME}}/run-loop.ts
 
+Disable loop-end summary (enabled by default):
+  LOOP_SUMMARY=0 .agent-loops/{{LOOP_NAME}}/run-loop.ts
+
+Customize summary budget:
+  SUMMARY_BUDGET_USD=2 .agent-loops/{{LOOP_NAME}}/run-loop.ts
+
 Stop:
   touch .agent-loops/{{LOOP_NAME}}/STOP
 
