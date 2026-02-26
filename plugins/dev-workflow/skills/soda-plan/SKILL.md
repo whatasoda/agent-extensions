@@ -17,7 +17,7 @@ If $ARGUMENTS is empty and no Proposal Summary exists in the conversation, ask t
 Before starting, check the conversation for a **Proposal Summary** block (produced by `/soda-propose`).
 
 - **If found**: Use it as the starting context.
-  - **Investigate**: Extract key findings and affected areas. Verify they are still current — if the Proposal Summary references specific files or patterns, spot-check that they still exist and haven't changed significantly. If key findings are outdated, note the discrepancies and investigate the gaps using sub-agents. Skip sub-agent investigation if the Proposal Summary covers the scope adequately.
+  - **Investigate**: Extract key findings and affected areas. Delegate verification to a sub-agent (Task, subagent_type: Explore, model: haiku) with the Verification output contract (defined in Procedure Step 1). The sub-agent receives the Proposal Summary's Key Findings and Affected Areas and checks whether referenced files still exist and patterns haven't changed significantly. If the sub-agent reports discrepancies, investigate the gaps using focused sub-agents. Skip further investigation if no discrepancies are found.
   - **Plan**: Incorporate Expected Impact (gains, losses, UX changes) and Risks into the plan's risk assessment. Use Affected Areas as the starting point for step breakdown. Leverage Rejected Alternatives context to avoid re-exploring ruled-out directions. If Implementation Hints are provided, use them to inform step ordering and architectural decisions. If a Scope Boundary is provided, constrain the plan to the defined scope and note deferred items.
   - **Clarify**: Do not re-ask about approach selection (already decided). Clarify implementation-level ambiguities. Design decisions are handled as labeled callouts in the plan body.
 - **If not found**: Proceed normally using $ARGUMENTS as the task description.
@@ -51,6 +51,14 @@ Priority order: Proposal Summary (approach decision) > Research Summary (codebas
        > - dependency — how it affects the task
        > ### Open Questions
        > - question — what remains unclear from this investigation alone
+     - **Verification output contract**: When delegating Proposal Summary verification, the sub-agent prompt MUST end with the following output format:
+       > Return findings in this exact format:
+       > ### Verified
+       > - `path/to/file` — status (current | changed — description)
+       > ### Discrepancies
+       > - finding — what changed and how it affects the plan
+       > ### Current State
+       > - (brief summary of current state of affected areas)
      - Launch a sub-agent (Task, subagent_type: Explore) to survey project structure, dependencies, and conventions relevant to the task.
      - Summarize the agent's findings into a Common Context block.
      - Based on findings, optionally launch 1-2 focused sub-agents in parallel. Each prompt must include the Common Context block (summarized, not raw output), the specific investigation question, and both the constraint block and output contract above.
@@ -69,7 +77,29 @@ Priority order: Proposal Summary (approach decision) > Research Summary (codebas
    If the user chooses a new branch, derive the branch name from the task description.
    If the user wants to adjust, incorporate their feedback and re-present. If they choose /soda-propose, stop planning and suggest the user invoke it.
    Do NOT proceed to Step 3 until the user confirms.
-3. **Plan**: Use the EnterPlanMode tool to enter plan mode, then formulate the plan. Include the following elements. Do not follow a fixed template — organize and format them as best fits the task. Follow the Compact-Resilience Guidelines below when authoring plan content.
+3. **Plan**:
+
+   **Technical Pre-Gathering (M/L tasks only)**: After task scale classification, if the task is scale M or L, pre-gather technical details before entering plan mode:
+   - Identify rough step areas from investigation findings (affected areas, key files, functional groupings)
+   - For each area (up to 3), launch a sub-agent (Task, subagent_type: Explore, model: sonnet) in parallel with the Step Detail Template below
+   - Sub-agent prompts must include the constraint block, the specific area to investigate, and the Step Detail Template
+   - Use gathered details to write the plan with concrete technical context (type signatures, API contracts, test patterns) rather than re-investigating during plan writing
+   - If a Proposal Summary exists, use its Affected Areas to scope the pre-gathering areas
+
+   **Step Detail Template**: When pre-gathering technical details for M/L tasks, each sub-agent prompt MUST end with the following output format:
+   > Return findings in this exact format:
+   > ### File State
+   > - `path/to/file` — current exports, key functions, line count
+   > ### Type Signatures
+   > - `TypeName` — definition (from source)
+   > ### API Contracts
+   > - endpoint/function — signature and behavior
+   > ### Test Patterns
+   > - test file — existing test patterns, coverage gaps
+   > ### Validation Approaches
+   > - (how to verify changes in this area)
+
+   Use the EnterPlanMode tool to enter plan mode, then formulate the plan. Include the following elements. Do not follow a fixed template — organize and format them as best fits the task. Follow the Compact-Resilience Guidelines below when authoring plan content.
 
    **Required elements:**
    - **Task summary and branch name**
