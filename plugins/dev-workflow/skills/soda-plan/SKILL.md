@@ -51,17 +51,17 @@ Priority order: Proposal Summary (approach decision) > Research Summary (codebas
        > - dependency — how it affects the task
        > ### Open Questions
        > - question — what remains unclear from this investigation alone
-     - **Verification output contract**: When delegating Proposal Summary verification, the sub-agent prompt MUST end with the following output format:
-       > Return findings in this exact format:
-       > ### Verified
-       > - `path/to/file` — status (current | changed — description)
-       > ### Discrepancies
-       > - finding — what changed and how it affects the plan
-       > ### Current State
-       > - (brief summary of current state of affected areas)
      - Launch a sub-agent (Task, subagent_type: Explore) to survey project structure, dependencies, and conventions relevant to the task.
      - Summarize the agent's findings into a Common Context block.
      - Based on findings, optionally launch 1-2 focused sub-agents in parallel. Each prompt must include the Common Context block (summarized, not raw output), the specific investigation question, and both the constraint block and output contract above.
+   - **Verification output contract**: When delegating Proposal Summary verification, the sub-agent prompt MUST end with the following output format:
+     > Return findings in this exact format:
+     > ### Verified
+     > - `path/to/file` — status (current | changed — description)
+     > ### Discrepancies
+     > - finding — what changed and how it affects the plan
+     > ### Current State
+     > - (brief summary of current state of affected areas)
    - Summarize investigation results before proceeding.
    - If investigation reveals multiple fundamentally different approaches, use AskUserQuestion to let the user decide: "Run /soda-propose to compare approaches" / "Continue — I'll specify the approach". Do not choose an approach autonomously.
 2. **Strategy Confirmation + Branch Strategy**: Present the investigation findings and the intended implementation direction to the user. Use a single AskUserQuestion with these options:
