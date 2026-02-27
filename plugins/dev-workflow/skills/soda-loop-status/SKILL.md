@@ -30,6 +30,7 @@ The above JSON provides the full loop status. See the schema description below f
 - `inProgressItems[]` — Items in in-progress state with `id` and `title`
 - `sessions` — Session history: `count`, `entries[]` with `number`, `timestamp`, `exitReason`, `sessionId`, `costUsd`, `completedItems`, `changedFiles`, and `totalCostUsd`
 - `vision` — VISION.md data: `purpose`, `goalCount`, `goals[]` with `text` and `status`
+- `plans` — PLAN-*.md data: `count`, `files[]` with `filename`, `name`, `goalsCovered`, `stepCount`, `created`; `coveredGoalCount`, `totalGoalCount` (null if no plan files exist)
 - `learnings` — LEARNINGS.md status: `exists`, `lineCount` (null if file doesn't exist)
 - `sessionHandoff` — SESSION_HANDOFF.md status: `exists` (null if file doesn't exist)
 - `multipleLoops` — Present when multiple loops are found in `.agent-loops/`. Contains `available` (loop name list) and `agentLoopsDir` (path)
@@ -111,6 +112,16 @@ Present a dashboard using the parsed JSON data. Format in Japanese:
 - **{{id}}**: {{title}}
 ```
 
+**Plans** (if `plans` is not null and `plans.count > 0`):
+```
+## 計画ファイル ({{plans.count}})
+
+| プラン | ステップ数 | カバーゴール | 作成日 |
+|--------|-----------|-------------|--------|
+| {{filename}} | {{stepCount}} | {{goalsCovered.length}} | {{created ?? "N/A"}} |
+```
+Add coverage summary: `ゴールカバレッジ: {{coveredGoalCount}}/{{totalGoalCount}} ({{percentage}}%)`
+
 **Warnings** (if any): Show briefly at the bottom.
 
 ### Step 3: Follow-up
@@ -123,6 +134,7 @@ Use AskUserQuestion with options selected based on context. Always include "終�
 - "特定のフェーズを詳しく見る" — expand a phase with full item details (include if `phases.length > 0`)
 - "LEARNINGS.md を見る" — show accumulated cross-session knowledge (include if `learnings` is not null and `learnings.exists`)
 - "セッション引き継ぎを見る" — show SESSION_HANDOFF.md content (include if `sessionHandoff` is not null and `sessionHandoff.exists`)
+- "計画ファイルの詳細を見る" — show plan files with goals covered and step details (include if `plans` is not null and `plans.count > 0`)
 - "PROGRESS.md を直接見る" — read the raw file
 - "最新セッションのログを見る" — read the most recent .loop-logs/session-N.log (include if `sessions.count > 0`)
 - "終了" — end the skill
@@ -168,6 +180,20 @@ Use Read tool to display the file at `{{loopDir}}/LEARNINGS.md`. Present the con
 
 **セッション引き継ぎを見る:**
 Use Read tool to display the file at `{{loopDir}}/SESSION_HANDOFF.md`. Present the handoff information: completed items, changed files, and suggested next priorities.
+
+**計画ファイルの詳細を見る:**
+For each plan file in `plans.files`, present:
+```
+### {{filename}}
+名前: {{name}}
+作成日: {{created ?? "N/A"}}
+ステップ数: {{stepCount}}
+
+カバーゴール:
+- {{goal text 1}}
+- {{goal text 2}}
+```
+Use Read tool to read each `PLAN-*.md` file at `{{loopDir}}/{{filename}}` for full step details if the user requests deeper inspection.
 
 **PROGRESS.md を直接見る:**
 Use Read tool to display the file at `{{loopDir}}/PROGRESS.md`.

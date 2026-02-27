@@ -38,6 +38,21 @@ interface VisionInfo {
   goals: Array<{ text: string; status: "pending" | "done" }>;
 }
 
+interface PlanInfo {
+  filename: string;
+  name: string;
+  goalsCovered: string[];
+  stepCount: number;
+  created: string | null;
+}
+
+interface PlansStatus {
+  count: number;
+  files: PlanInfo[];
+  coveredGoalCount: number;
+  totalGoalCount: number;
+}
+
 interface LoopStatusOutput {
   loopDir: string;
   projectName: string;
@@ -64,6 +79,7 @@ interface LoopStatusOutput {
     totalCostUsd: number | null;
   };
   vision: VisionInfo | null;
+  plans: PlansStatus | null;
   learnings: { exists: boolean; lineCount: number } | null;
   sessionHandoff: { exists: boolean } | null;
   error?: string;
@@ -433,6 +449,78 @@ function parseVision(visionPath: string): VisionInfo | null {
   }
 }
 
+function parsePlans(loopDir: string, totalGoalCount: number): PlansStatus | null {
+  const glob = new Bun.Glob("PLAN-*.md");
+  const planFiles = Array.from(glob.scanSync({ cwd: loopDir, absolute: false })).sort();
+
+  if (planFiles.length === 0) return null;
+
+  const allCoveredGoals = new Set<string>();
+  const files: PlanInfo[] = [];
+
+  for (const filename of planFiles) {
+    const filePath = resolve(loopDir, filename);
+    try {
+      const content = readFileSync(filePath, "utf-8");
+      const lines = content.split("\n");
+
+      // Extract plan name from heading
+      let name = filename;
+      const headingMatch = lines[0]?.match(/^# Plan: (.+)/);
+      if (headingMatch) {
+        name = headingMatch[1];
+      }
+
+      // Extract created date
+      let created: string | null = null;
+      for (const line of lines) {
+        const createdMatch = line.match(/^\*\*Created\*\*:\s*(.+)/);
+        if (createdMatch) {
+          created = createdMatch[1].trim();
+          break;
+        }
+      }
+
+      // Extract Goals Covered
+      const goalsCovered: string[] = [];
+      let inGoalsCovered = false;
+      for (const line of lines) {
+        if (line.startsWith("## Goals Covered")) {
+          inGoalsCovered = true;
+          continue;
+        }
+        if (inGoalsCovered && line.startsWith("##")) break;
+        if (inGoalsCovered) {
+          const goalMatch = line.match(/^- (.+)/);
+          if (goalMatch) {
+            goalsCovered.push(goalMatch[1].trim());
+            allCoveredGoals.add(goalMatch[1].trim());
+          }
+        }
+      }
+
+      // Count steps
+      let stepCount = 0;
+      for (const line of lines) {
+        if (line.match(/^### Step: /)) {
+          stepCount++;
+        }
+      }
+
+      files.push({ filename, name, goalsCovered, stepCount, created });
+    } catch {
+      // Skip unreadable plan files
+    }
+  }
+
+  return {
+    count: files.length,
+    files,
+    coveredGoalCount: allCoveredGoals.size,
+    totalGoalCount,
+  };
+}
+
 // === Auto-Discovery ===
 
 function findRepoRoot(): string | null {
@@ -521,6 +609,7 @@ function main(): void {
 
     const visionPath = resolve(loopDir, "VISION.md");
     const vision = parseVision(visionPath);
+    const plans = parsePlans(loopDir, vision?.goalCount ?? 0);
     if (!vision) {
       warnings.push("No VISION.md found");
     }
@@ -573,6 +662,7 @@ function main(): void {
         ...sessions,
       },
       vision,
+      plans,
       learnings,
       sessionHandoff,
       warnings,
