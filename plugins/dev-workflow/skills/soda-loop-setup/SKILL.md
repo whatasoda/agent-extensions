@@ -75,6 +75,7 @@ You are an autonomous agent in a multi-session loop. Each session is context-bou
 - `VISION.md` — Target end state
 - `SESSION_HANDOFF.md` — Previous session's handoff notes (read if exists)
 - `LEARNINGS.md` — Accumulated cross-session knowledge (read and append if exists)
+- `PLAN-*.md` — Detailed implementation plans per phase (read-only — consult for implementation rationale, do not modify)
 
 ## State Legend
 - `[ ]` pending — not started
@@ -232,9 +233,65 @@ If "カスタマイズ" is selected, ask a follow-up AskUserQuestion with these 
 - Commit prefix (default: `{{DETECTED_COMMIT_PREFIX}}` or `feat`)
 - Verification commands (default: `{{DETECTED_VERIFY_CMDS}}` — user can add/remove/modify)
 
+### Plan Detection
+
+This step runs **after** both the Vision Blueprint path and the file-based Step 1 path converge — it is NOT gated behind Step 1.
+
+1. **Check conversation for Plan Blueprint blocks**: Scan the conversation for `## Plan Blueprint` headings. For each found:
+   - Extract the `**Plan File**` absolute path
+   - Verify the path is under the current `<loop-dir>`
+   - Read the plan file from disk
+2. **Filesystem scan**: Glob `<loop-dir>/PLAN-*.md` to find all plan files
+3. **Merge and deduplicate**: Combine conversation-detected and filesystem-detected plans, deduplicating by canonical absolute path (not basename — prevents cross-loop contamination)
+4. **No plans found** → skip to Step 3: Phase Proposal (existing behavior)
+5. **Plans found**:
+   - For each plan, extract `## Goals Covered` items (bullet list)
+   - Build a coverage map: which VISION.md goals are covered by which plan(s)
+   - Cross-reference against VISION.md `## Goals` to identify uncovered goals
+6. **Stale detection**: Mark plans whose `## Goals Covered` items reference goals that do not exist in VISION.md as "⚠ stale" (text-based matching). This is a warning — do NOT hard-fail.
+7. **User choice** via AskUserQuestion:
+
+   **If no stale plans**:
+   - "プランに基づいてフェーズを生成"
+   - "未カバーのゴールもプランを作成" (suggest running `/soda-loop-plan`)
+   - "プランを無視して従来通り生成"
+
+   **If stale plans exist**:
+   - "stale プランを除外してフェーズを生成"
+   - "プランを無視して従来通り生成"
+   - "中止して /soda-loop-plan で再生成"
+
+   If "中止して /soda-loop-plan で再生成" is selected, print the suggestion and stop.
+   If "プランを無視して従来通り生成" is selected, proceed to Step 3 with the existing LLM-only behavior.
+   If "未カバーのゴールもプランを作成" is selected, suggest running `/soda-loop-plan` for uncovered goals and stop.
+
 ### Step 3: Phase Proposal
 
 Derive phases from the goals in VISION.md. Do NOT ask the user to define phases manually.
+
+**If plans were detected and the user chose plan-based generation**:
+
+1. **Plan-derived phases**: Sort detected plans by numeric prefix (PLAN-01 before PLAN-02, etc.). Each plan becomes a phase:
+   - Phase number = plan's numeric prefix (PLAN-01 → Phase 1, PLAN-02 → Phase 2)
+   - Phase name = plan name (from `# Plan:` heading)
+   - Phase description = derived from the plan's `## Context` section (one sentence summary)
+   - Implementation items: map each `### Step:` block to a PROGRESS.md item (N.M IDs, where N = phase number, M = step order within plan)
+   - For each implementation item:
+     - `Description:` from the step's `Description` field
+     - `Files:` from the step's `Files` field
+     - `Acceptance:` from the step's `Acceptance` field
+     - `Validation:` from the step's `Validation` field
+     - `Deps:` remap step title references to item IDs within the same phase (e.g., if step "Create config" is item 1.1 and step "Add tests" deps on "Create config", then item 1.2's Deps = 1.1)
+   - Validation items: one per implementation item, with `[validate]` tag
+   - Phase validation item: overall phase verification
+
+2. **LLM-derived phases for uncovered goals**: If uncovered goals remain (goals not covered by any plan):
+   - Phase numbers start at `max(plan numeric prefixes) + 1` (handles non-contiguous prefixes)
+   - Use the existing LLM derivation logic (below) for these goals only
+
+3. Present the combined proposal (plan-derived phases first, then LLM-derived phases)
+
+**If no plans were detected, or the user chose to ignore plans**:
 
 1. Parse goals from VISION.md (the `## Goals` section with `- [ ]` items).
 2. Analyze goal relationships and derive phases:
@@ -254,16 +311,16 @@ For each implementation item, ensure the `Validation:` field contains a runnable
 Present the proposed phases:
 
 ```
-Proposed phases (derived from VISION.md):
+Proposed phases (derived from {{SOURCE}}):
 
-Phase 1: {{PHASE_NAME}}
+Phase 1: {{PHASE_NAME}} {{PLAN_TAG}}
   {{PHASE_DESCRIPTION}}
   Items: {{IMPL_COUNT}} implementation + {{VAL_COUNT}} validation
   Goals covered:
     - {{GOAL_1}}
     - {{GOAL_2}}
 
-Phase 2: {{PHASE_NAME}}
+Phase 2: {{PHASE_NAME}} {{PLAN_TAG}}
   {{PHASE_DESCRIPTION}}
   Items: {{IMPL_COUNT}} implementation + {{VAL_COUNT}} validation
   Goals covered:
@@ -272,6 +329,8 @@ Phase 2: {{PHASE_NAME}}
 
 ...
 ```
+
+Where `{{SOURCE}}` is "PLAN-*.md + VISION.md" if plan-derived, or "VISION.md" if LLM-only. `{{PLAN_TAG}}` is "[from PLAN-NN]" for plan-derived phases, or empty for LLM-derived phases.
 
 Use AskUserQuestion:
 - "Generate with these phases"
@@ -295,9 +354,9 @@ After the user confirms the phase proposal in Step 3, compose a preview of the P
    ```bash
    codex exec -m gpt-5.3-codex "Review this loop progress configuration. Focus on phase structure, item dependency chains, and validation specificity — only flag critical problems: /tmp/codex-review-soda-loop-setup.md (ref: <repo-root>/CLAUDE.md)"
    ```
-5. If codex identifies critical issues, revise and re-review:
+5. If codex identifies critical issues, revise and re-review with a **fresh** session (not `resume --last`):
    ```bash
-   codex exec resume --last -m gpt-5.3-codex "Configuration updated — review again. Only flag critical problems: /tmp/codex-review-soda-loop-setup.md (ref: <repo-root>/CLAUDE.md)"
+   codex exec -m gpt-5.3-codex "Review this updated loop progress configuration. Focus on phase structure, item dependency chains, and validation specificity — only flag critical problems: /tmp/codex-review-soda-loop-setup.md (ref: <repo-root>/CLAUDE.md)"
    ```
 6. Include codex feedback (if any) in the Step 4 confirmation presentation.
 7. If the codex command fails, skip with warning: "⚠ codex レビューをスキップします（コマンド実行失敗）" and continue.
