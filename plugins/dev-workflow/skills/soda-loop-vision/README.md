@@ -81,6 +81,17 @@ Key design choices:
 
 The "参考実装を指定する" option allows the user to point at existing code as a model for the project. This is common in practice — "build X similar to how Y works." The reference analysis informs goal verifiability (e.g., "behaves like feature Y") and helps the agent understand conventions the user expects to follow.
 
+### Plan Import
+
+When a user runs `soda-plan` and the resulting plan is too large for single-session implementation, they may want to transition to the loop workflow (`soda-loop-vision` → `soda-loop-plan` → `soda-loop-setup`). The Plan Import sub-procedure preserves the plan's investigation findings, design decisions, and implementation structure during this transition.
+
+Key design choices:
+- **Conversation-context provenance**: Plan detection relies on the plan file path being present in the conversation (from a recent `soda-plan` session's ExitPlanMode) or explicitly provided by the user as $ARGUMENTS. Automatic scanning of `plan-index.json` is intentionally avoided — the index is project-scoped but contains globally discovered plans with no project association, risking cross-project contamination of vision goals.
+- **Opt-in via checkpoint**: Plan Import is offered as a Step 2 checkpoint option alongside Codebase Investigation and Reference Implementation. It is never triggered automatically. The user explicitly chooses to import and confirms the source file.
+- **Best-effort extraction**: Plan files are not strictly templated. Section extraction uses heading patterns and labeled callouts. When extraction fails, the entire plan content is treated as Background context — no information is silently discarded.
+- **Semantic transformation for goals**: Plan steps are implementation actions ("modify file X"); goals must be verifiable outcomes ("X exports type Y"). The transformation is performed during import and presented as candidates for user refinement, not as confirmed goals.
+- **Sub-procedure pattern**: Follows the same structural pattern as Codebase Investigation and Reference Implementation — triggered from checkpoint, does focused work, returns to checkpoint with enriched context.
+
 ### Relationship to soda-loop-setup
 
 ```
