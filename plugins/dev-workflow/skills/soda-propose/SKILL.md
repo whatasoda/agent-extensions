@@ -157,18 +157,19 @@ If the user rejects all approaches, return to Phase 1. Use AskUserQuestion to de
 
 Before emitting the Proposal Summary, run an external review:
 
-1. Write the composed Proposal Summary to `/tmp/codex-review-soda-propose.md` using the Write tool
-2. Determine the project root:
+1. Generate a session-unique review file path: run `mktemp /tmp/codex-review-soda-propose-XXXXXXXX` via Bash and capture the output path (referred to as `REVIEW_FILE` below). Use this path for all codex review steps below.
+2. Write the composed Proposal Summary to `REVIEW_FILE` using the Write tool
+3. Determine the project root:
    ```bash
    git rev-parse --show-toplevel
    ```
-3. Run codex review:
+4. Run codex review. Capture the `session id:` value from codex output (referred to as `CODEX_SESSION` below):
    ```bash
-   codex exec -m gpt-5.3-codex "Review this proposal. Focus on trade-off validity, missing risk assessments, and impact accuracy — only flag critical problems: /tmp/codex-review-soda-propose.md (ref: <repo-root>/CLAUDE.md)"
+   codex exec -m gpt-5.3-codex "Review this proposal. Focus on trade-off validity, missing risk assessments, and impact accuracy — only flag critical problems: REVIEW_FILE (ref: <repo-root>/CLAUDE.md)"
    ```
-4. If codex identifies critical issues, revise the Proposal Summary and re-review:
+5. If codex identifies critical issues, revise the Proposal Summary and re-review using the captured session:
    ```bash
-   codex exec resume --last -m gpt-5.3-codex "Proposal updated — review again. Only flag critical problems: /tmp/codex-review-soda-propose.md (ref: <repo-root>/CLAUDE.md)"
+   codex exec resume -m gpt-5.3-codex CODEX_SESSION "Proposal updated — review again. Only flag critical problems: REVIEW_FILE (ref: <repo-root>/CLAUDE.md)"
    ```
 5. If the codex command fails, skip with warning: "⚠ codex レビューをスキップします（コマンド実行失敗）" and continue.
 

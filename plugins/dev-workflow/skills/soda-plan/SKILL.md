@@ -145,18 +145,19 @@ Priority order: Proposal Summary (approach decision) > Research Summary (codebas
 
 After composing the plan content but before entering plan mode, run an external review:
 
-1. Write the composed plan markdown to `/tmp/codex-review-soda-plan.md` using the Write tool
-2. Determine the project root:
+1. Generate a session-unique review file path: run `mktemp /tmp/codex-review-soda-plan-XXXXXXXX` via Bash and capture the output path (referred to as `REVIEW_FILE` below). Use this path for all codex review steps below.
+2. Write the composed plan markdown to `REVIEW_FILE` using the Write tool
+3. Determine the project root:
    ```bash
    git rev-parse --show-toplevel
    ```
-3. Run initial codex review:
+4. Run initial codex review. Capture the `session id:` value from codex output (referred to as `CODEX_SESSION` below):
    ```bash
-   codex exec -m gpt-5.3-codex "Review this plan. Skip trivial issues — only flag critical problems: /tmp/codex-review-soda-plan.md (ref: <repo-root>/CLAUDE.md)"
+   codex exec -m gpt-5.3-codex "Review this plan. Skip trivial issues — only flag critical problems: REVIEW_FILE (ref: <repo-root>/CLAUDE.md)"
    ```
-4. If codex identifies critical issues, revise the plan content and re-review:
+5. If codex identifies critical issues, revise the plan content and re-review using the captured session:
    ```bash
-   codex exec resume --last -m gpt-5.3-codex "Plan updated — review again. Skip trivial issues — only flag critical problems: /tmp/codex-review-soda-plan.md (ref: <repo-root>/CLAUDE.md)"
+   codex exec resume -m gpt-5.3-codex CODEX_SESSION "Plan updated — review again. Skip trivial issues — only flag critical problems: REVIEW_FILE (ref: <repo-root>/CLAUDE.md)"
    ```
 5. If the codex command fails (non-zero exit or timeout), skip with warning: "⚠ codex レビューをスキップします（コマンド実行失敗）" and continue.
 
