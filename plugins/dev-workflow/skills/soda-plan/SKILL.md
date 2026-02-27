@@ -39,8 +39,6 @@ Priority order: Proposal Summary (approach decision) > Research Summary (codebas
 
 1. **Investigate**: Explore the codebase to understand the scope, affected areas, and existing patterns.
    - If no Proposal Summary is available, investigate from scratch using sub-agents:
-     - **Sub-agent prompt constraints**: Every sub-agent prompt (both survey and focused) MUST begin with the following constraint block:
-       > You are a research-only agent. Do NOT use AskUserQuestion, EnterPlanMode, or any interactive/planning tools. Return your findings in the output format specified below.
      - **Sub-agent output contract**: Every sub-agent prompt MUST end with the following output format requirement:
        > Return findings in this exact format:
        > ### Files
@@ -53,7 +51,9 @@ Priority order: Proposal Summary (approach decision) > Research Summary (codebas
        > - question — what remains unclear from this investigation alone
      - Launch a sub-agent (Task, subagent_type: Explore) to survey project structure, dependencies, and conventions relevant to the task.
      - Summarize the agent's findings into a Common Context block.
-     - Based on findings, optionally launch 1-2 focused sub-agents in parallel. Each prompt must include the Common Context block (summarized, not raw output), the specific investigation question, and both the constraint block and output contract above.
+     - Based on findings, optionally launch 1-2 focused sub-agents in parallel. Each prompt must include the Common Context block (summarized, not raw output), the specific investigation question, and both the constraint block and output contract.
+   - **Sub-agent prompt constraints**: Every sub-agent prompt (both survey and focused) MUST begin with the following constraint block:
+     > You are a research-only agent. Do NOT use AskUserQuestion, EnterPlanMode, or any interactive/planning tools. Return your findings in the output format specified below.
    - **Verification output contract**: When delegating Proposal Summary verification, the sub-agent prompt MUST end with the following output format:
      > Return findings in this exact format:
      > ### Verified
