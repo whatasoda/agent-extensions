@@ -152,11 +152,11 @@ After composing the plan content but before entering plan mode, run an external 
    ```
 3. Run initial codex review:
    ```bash
-   codex exec -m gpt-5.3-codex "このプランをレビューして。瑣末な点には触れず、致命的な点のみ指摘して: /tmp/codex-review-soda-plan.md (ref: <repo-root>/CLAUDE.md)"
+   codex exec -m gpt-5.3-codex "Review this plan. Skip trivial issues — only flag critical problems: /tmp/codex-review-soda-plan.md (ref: <repo-root>/CLAUDE.md)"
    ```
 4. If codex identifies critical issues, revise the plan content and re-review:
    ```bash
-   codex exec resume --last -m gpt-5.3-codex "プランを更新したからレビューして。瑣末な点には触れず、致命的な点のみ指摘して: /tmp/codex-review-soda-plan.md (ref: <repo-root>/CLAUDE.md)"
+   codex exec resume --last -m gpt-5.3-codex "Plan updated — review again. Skip trivial issues — only flag critical problems: /tmp/codex-review-soda-plan.md (ref: <repo-root>/CLAUDE.md)"
    ```
 5. If the codex command fails (non-zero exit or timeout), skip with warning: "⚠ codex レビューをスキップします（コマンド実行失敗）" and continue.
 

@@ -293,11 +293,11 @@ After the user confirms the phase proposal in Step 3, compose a preview of the P
    ```
 4. Run codex review:
    ```bash
-   codex exec -m gpt-5.3-codex "このループ進捗設定をレビューして。フェーズ構成・アイテムの依存関係・検証条件の具体性に注目し、致命的な点のみ指摘して: /tmp/codex-review-soda-loop-setup.md (ref: <repo-root>/CLAUDE.md)"
+   codex exec -m gpt-5.3-codex "Review this loop progress configuration. Focus on phase structure, item dependency chains, and validation specificity — only flag critical problems: /tmp/codex-review-soda-loop-setup.md (ref: <repo-root>/CLAUDE.md)"
    ```
 5. If codex identifies critical issues, revise and re-review:
    ```bash
-   codex exec resume --last -m gpt-5.3-codex "設定を更新したからレビューして。致命的な点のみ指摘して: /tmp/codex-review-soda-loop-setup.md (ref: <repo-root>/CLAUDE.md)"
+   codex exec resume --last -m gpt-5.3-codex "Configuration updated — review again. Only flag critical problems: /tmp/codex-review-soda-loop-setup.md (ref: <repo-root>/CLAUDE.md)"
    ```
 6. Include codex feedback (if any) in the Step 4 confirmation presentation.
 7. If the codex command fails, skip with warning: "⚠ codex レビューをスキップします（コマンド実行失敗）" and continue.

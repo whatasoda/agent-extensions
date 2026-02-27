@@ -295,13 +295,13 @@ When the user selects "完了（ファイルに書き出す）" in Step 4 or Ste
    ```
 4. Run codex review:
    ```bash
-   codex exec -m gpt-5.3-codex "このビジョン・進捗の変更をレビューして。変更の整合性・ゴールの検証可能性に注目し、致命的な点のみ指摘して: /tmp/codex-review-soda-loop-refine.md (ref: <repo-root>/CLAUDE.md)"
+   codex exec -m gpt-5.3-codex "Review these vision/progress changes. Focus on change consistency and goal verifiability — only flag critical problems: /tmp/codex-review-soda-loop-refine.md (ref: <repo-root>/CLAUDE.md)"
    ```
 5. If codex identifies critical issues, present them and offer to return to the annotation cycle:
    Use AskUserQuestion:
    - "修正してから書き出す" → return to Step 4 annotation cycle. When the user completes annotations and selects "完了" again, re-review with resume:
      ```bash
-     codex exec resume --last -m gpt-5.3-codex "変更を修正したからレビューして。致命的な点のみ指摘して: /tmp/codex-review-soda-loop-refine.md (ref: <repo-root>/CLAUDE.md)"
+     codex exec resume --last -m gpt-5.3-codex "Changes revised — review again. Only flag critical problems: /tmp/codex-review-soda-loop-refine.md (ref: <repo-root>/CLAUDE.md)"
      ```
    - "このまま書き出す" → proceed to Step 6
 6. If no critical issues, proceed directly to Step 5 (if "ビジョンと進捗の両方を改善") or Step 6.

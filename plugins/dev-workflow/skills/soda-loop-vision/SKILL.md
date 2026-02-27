@@ -194,12 +194,12 @@ Before presenting the VISION.md draft in Step 5, run an external review:
    ```
 3. Run codex review:
    ```bash
-   codex exec -m gpt-5.3-codex "このビジョン定義をレビューして。ゴールの検証可能性・制約の妥当性・スコープの明確さに注目し、致命的な点のみ指摘して: /tmp/codex-review-soda-loop-vision.md (ref: <repo-root>/CLAUDE.md)"
+   codex exec -m gpt-5.3-codex "Review this vision definition. Focus on goal verifiability, constraint validity, and scope clarity — only flag critical problems: /tmp/codex-review-soda-loop-vision.md (ref: <repo-root>/CLAUDE.md)"
    ```
 4. If codex identifies critical issues, revise the VISION.md content before presenting in Step 5.
 5. If the user requests goal/constraint adjustments in Step 5 and the content is revised, update the temp file and re-review:
    ```bash
-   codex exec resume --last -m gpt-5.3-codex "ビジョンを更新したからレビューして。致命的な点のみ指摘して: /tmp/codex-review-soda-loop-vision.md (ref: <repo-root>/CLAUDE.md)"
+   codex exec resume --last -m gpt-5.3-codex "Vision updated — review again. Only flag critical problems: /tmp/codex-review-soda-loop-vision.md (ref: <repo-root>/CLAUDE.md)"
    ```
 6. If the codex command fails, skip with warning: "⚠ codex レビューをスキップします（コマンド実行失敗）" and continue.
 

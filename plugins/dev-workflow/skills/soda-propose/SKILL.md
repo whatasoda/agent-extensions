@@ -164,11 +164,11 @@ Before emitting the Proposal Summary, run an external review:
    ```
 3. Run codex review:
    ```bash
-   codex exec -m gpt-5.3-codex "この提案をレビューして。トレードオフの妥当性・リスク評価の漏れ・影響範囲の正確性に注目し、致命的な点のみ指摘して: /tmp/codex-review-soda-propose.md (ref: <repo-root>/CLAUDE.md)"
+   codex exec -m gpt-5.3-codex "Review this proposal. Focus on trade-off validity, missing risk assessments, and impact accuracy — only flag critical problems: /tmp/codex-review-soda-propose.md (ref: <repo-root>/CLAUDE.md)"
    ```
 4. If codex identifies critical issues, revise the Proposal Summary and re-review:
    ```bash
-   codex exec resume --last -m gpt-5.3-codex "提案を更新したからレビューして。致命的な点のみ指摘して: /tmp/codex-review-soda-propose.md (ref: <repo-root>/CLAUDE.md)"
+   codex exec resume --last -m gpt-5.3-codex "Proposal updated — review again. Only flag critical problems: /tmp/codex-review-soda-propose.md (ref: <repo-root>/CLAUDE.md)"
    ```
 5. If the codex command fails, skip with warning: "⚠ codex レビューをスキップします（コマンド実行失敗）" and continue.
 
