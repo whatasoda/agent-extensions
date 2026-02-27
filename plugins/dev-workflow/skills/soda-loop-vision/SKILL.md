@@ -55,15 +55,17 @@ Analyze the user's project description (from $ARGUMENTS or free-text input) to i
    - "さらに深掘りしたい（追加の質問がある）"
    - "コードベースを調査して裏付けを取る"
    - "参考実装を指定する"
+   - "既存プランをインポートする"
    - "十分理解できた（ゴール分解に進む）"
    - "自分から補足情報を追加したい"
 4. If "さらに深掘りしたい" is selected: ask the next round of questions (informed by previous answers). Repeat from step 1.
 5. If "コードベースを調査して裏付けを取る" is selected: execute the Codebase Investigation sub-procedure (see below), then return to step 2 (re-present checkpoint with updated context).
 6. If "参考実装を指定する" is selected: execute the Reference Implementation sub-procedure (see below), then return to step 2 (re-present checkpoint with updated context).
-7. If "自分から補足情報を追加したい" is selected: accept the user's free-text input, then return to step 2.
-8. If "十分理解できた" is selected: proceed to Step 3.
+7. If "既存プランをインポートする" is selected: execute the Plan Import sub-procedure (see below), then return to step 2 (re-present checkpoint with updated context).
+8. If "自分から補足情報を追加したい" is selected: accept the user's free-text input, then return to step 2.
+9. If "十分理解できた" is selected: proceed to Step 3.
 
-If after the first round of questions no further ambiguities remain, proceed directly to Step 3 without presenting the checkpoint. Do NOT ask unnecessary checkpoint questions.
+If after the first round of questions no further ambiguities remain, proceed directly to Step 3 without presenting the checkpoint — **unless** a plan file path is detected in the conversation context (from a recent `soda-plan` session) or `$ARGUMENTS` contains a plan file path. In that case, always present the checkpoint to give the user the opportunity to import the plan. Do NOT ask unnecessary checkpoint questions.
 
 Carry forward any constraints or exclusions that emerged during this dialogue — they will be pre-populated in Step 4.
 
@@ -73,6 +75,7 @@ Also retain the following context from the dialogue for use in Step 6:
 - **Key decisions**: Important choices resolved during discovery — what was chosen, what was rejected, and why
 - **Investigation findings**: Codebase patterns, file paths, and constraints discovered through sub-agent investigation (if performed)
 - **Reference implementation**: Structure and patterns from the reference code analyzed (if specified)
+- **Plan import**: Purpose seed, background/technical context seeds, key decision seeds, goal seeds, and constraints seeds extracted from an imported plan file (if imported)
 
 ### Codebase Investigation (sub-procedure)
 
@@ -123,7 +126,64 @@ Synthesize findings as Reference Implementation context. This context informs go
 
 Present a brief summary of the reference implementation analysis in Japanese before returning to the Step 2 checkpoint.
 
+### Plan Import (sub-procedure)
+
+Triggered when user selects "既存プランをインポートする" at the Step 2 checkpoint.
+
+Ask the user to provide the plan file path. The plan file path is typically visible in the conversation from a recent `soda-plan` session (after ExitPlanMode). If `$ARGUMENTS` contains a file path to a plan file, suggest it as the default.
+
+Once the path is confirmed, read the plan file using the Read tool.
+
+**Section extraction** (best-effort, by heading patterns):
+
+| Plan section | Detection pattern | Maps to |
+|---|---|---|
+| Task summary | First `#` heading or opening paragraph | Purpose seed |
+| Investigation summary | Paragraphs describing findings, affected areas, patterns | Background + Technical Context seeds |
+| Design decisions | `**Design Decision: ...**` callouts or `**Why: ...**` callouts | Key Decisions seeds |
+| Steps | `- [ ]` items with commit messages and file changes | Goal seeds (requires semantic transformation) |
+| Risks | Section mentioning risks and mitigations | Constraints seeds |
+| User Context | `**User Context: ...**` callouts | Retained as authoritative domain knowledge |
+
+If section headings do not match expected patterns, treat the entire plan content as Background context.
+
+**Step-to-Goal semantic transformation:**
+
+Plan steps describe implementation actions; goals must describe verifiable outcomes. Transform each step's intent into an outcome statement with a pass/fail condition.
+
+Examples:
+- Step: "Add Plan Context Detection section to SKILL.md"
+  → Goal: "soda-loop-vision SKILL.md contains a Plan Import sub-procedure"
+  → Acceptance: "The sub-procedure section exists and is reachable from the Step 2 checkpoint"
+- Step: "Modify `src/config.ts` to export a `Config` type"
+  → Goal: "`src/config.ts` exports a `Config` type"
+  → Acceptance: "`bun typecheck` passes"
+
+Present a summary of extracted context in Japanese:
+
+> **プランから抽出した情報:**
+> - **Purpose**: {{EXTRACTED_PURPOSE}}
+> - **Background/Technical Context**: {{SUMMARY}}
+> - **Key Decisions**: {{COUNT}} 件
+> - **Goal seeds**: {{COUNT}} 件（ステップから変換）
+> - **Constraints seeds**: {{COUNT}} 件（リスクから変換）
+
+Return to the Step 2 checkpoint with the enriched context. The extracted context is retained alongside other discovery context (Problem background, Technical landscape, Key decisions, Investigation findings) for use in Steps 3-6.
+
 ## Step 3: Goal Elicitation
+
+If Plan Import was performed in Step 2 and goal seeds are available, use them as the initial draft goal list instead of decomposing from scratch. Present them with clear labeling:
+
+> 以下はプランのステップから変換したゴール候補です。必要に応じて調整してください。
+
+Each goal seed has already been transformed from an implementation step to a verifiable outcome during Plan Import. Review each seed for:
+- Is the goal statement outcome-oriented (not action-oriented)?
+- Is the Acceptance condition concrete and verifiable?
+- Does the goal capture the intent, not just the mechanism?
+
+Refine any goals that are still too implementation-focused before presenting to the user. Then proceed to the existing goal presentation and refinement flow below.
+
+If no goal seeds are available (no Plan Import, or extraction failed), proceed normally:
 
 Using the enriched understanding from Requirements Discovery, decompose the project into 3-10 verifiable goals. If no $ARGUMENTS was provided, use the understanding built through the discovery dialogue. Each goal must be:
 - **Concrete**: Describes a specific outcome, not a vague aspiration
