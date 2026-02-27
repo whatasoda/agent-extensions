@@ -3,7 +3,7 @@ name: soda-propose
 description: Compare approaches with sub-agent investigation
 user-invocable: true
 argument-hint: [problem description]
-allowed-tools: Bash(git *), Read, Grep, Glob, Task, AskUserQuestion
+allowed-tools: Bash(git *), Bash(codex *), Read, Write, Grep, Glob, Task, AskUserQuestion
 ---
 
 Investigate and propose multiple approaches for the given problem or goal.
@@ -152,6 +152,27 @@ Using the per-approach findings from sub-agents, assemble:
 Use AskUserQuestion to confirm the final selection. Options should include each shortlisted approach by label, plus "None of these — revisit from scratch". On selection, emit the Proposal Summary and suggest `/soda-plan`.
 
 If the user rejects all approaches, return to Phase 1. Use AskUserQuestion to determine the next step: "Redefine the problem and re-investigate" / "Broaden scope to find additional approaches" / "End this exploration".
+
+### Codex Review (pre-emission)
+
+Before emitting the Proposal Summary, run an external review:
+
+1. Write the composed Proposal Summary to `/tmp/codex-review-soda-propose.md` using the Write tool
+2. Determine the project root:
+   ```bash
+   git rev-parse --show-toplevel
+   ```
+3. Run codex review:
+   ```bash
+   codex exec -m gpt-5.3-codex "Review this proposal. Focus on trade-off validity, missing risk assessments, and impact accuracy — only flag critical problems: /tmp/codex-review-soda-propose.md (ref: <repo-root>/CLAUDE.md)"
+   ```
+4. If codex identifies critical issues, revise the Proposal Summary and re-review:
+   ```bash
+   codex exec resume --last -m gpt-5.3-codex "Proposal updated — review again. Only flag critical problems: /tmp/codex-review-soda-propose.md (ref: <repo-root>/CLAUDE.md)"
+   ```
+5. If the codex command fails, skip with warning: "⚠ codex レビューをスキップします（コマンド実行失敗）" and continue.
+
+Emit the reviewed Proposal Summary.
 
 ## Proposal Summary Format
 
