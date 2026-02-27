@@ -97,15 +97,55 @@ Otherwise, ask "Which approaches should I compare in detail?" using AskUserQuest
 
 ## Phase 4: Detailed Comparison & Decision
 
-For the shortlisted approaches, provide:
-- Detailed implementation outline
-- Affected files and areas with specifics
+### Comparison Framework
+
+Before launching sub-agents, derive a comparison framework from the Phase 1 priority axis. The framework specifies evaluation dimensions that all per-approach sub-agents must address consistently:
+
+**Fixed dimensions** (always included):
+- Implementation complexity (step count, affected file count, migration effort)
+- Risk assessment (migration risk, compatibility risk, regression risk)
+- Impact assessment (Gains, Losses/Risks, UX Delta)
+
+**Dynamic dimension** (derived from Phase 1 priority axis):
+- Add one dimension matching the confirmed priority axis (e.g., "Performance impact" if speed is prioritized, "Long-term maintainability" if maintainability is prioritized)
+
+### Approach Analysis Output Contract
+
+Per-approach sub-agent prompts MUST end with the following output format:
+> Return findings in this exact format:
+> ### Implementation Outline
+> - step — description (affected file: `path/to/file`)
+> ### Affected Areas
+> - `path/to/file` — what changes and why
+> ### Pros
+> - advantage — explanation
+> ### Cons
+> - disadvantage — explanation
+> ### Risks
+> - risk — likelihood and impact, mitigation suggestion
+> ### Impact Assessment
+> - **Gains**: (what will be achieved)
+> - **Losses / Risks**: (what might be lost or degraded)
+> - **UX Delta**: (how the end-user experience changes)
+> ### Priority Axis Evaluation
+> - (evaluation against the dynamic dimension from the Comparison Framework)
+
+### Step 1: Per-Approach Analysis (Sub-agents)
+
+For each shortlisted approach, launch a sub-agent (Task, subagent_type: Explore, model: sonnet) in parallel. Each sub-agent prompt must include:
+1. The constraint block (same as Phase 2)
+2. The Common Context block from Phase 2 (summarized, not raw output)
+3. The Comparison Framework (all evaluation dimensions)
+4. The approach summary from Phase 3 (label, summary, key trade-off, scope of impact)
+5. The Approach Analysis output contract
+
+### Step 2: Comparison Assembly (Main Context)
+
+Using the per-approach findings from sub-agents, assemble:
 - Pros / Cons comparison table
-- Risk assessment per approach
-- **Impact Tracking**: For each candidate, compare side by side:
-  - **Gains**: What will be achieved (problem resolution, UX improvement, performance, etc.)
-  - **Losses / Risks**: What might be lost or degraded (existing functionality, UX aspects, compatibility)
-  - **UX Delta**: How the end-user experience changes concretely
+- Risk assessment comparison
+- **Impact Tracking**: side-by-side comparison of Gains, Losses/Risks, UX Delta
+- Priority axis evaluation comparison
 - Recommendation with reasoning
 - When emitting the Proposal Summary, populate Implementation Hints if the comparison revealed meaningful implementation ordering or architectural decisions. Populate Scope Boundary if the selected approach has explicit exclusions or deferrals.
 
