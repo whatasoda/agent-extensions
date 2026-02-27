@@ -91,7 +91,7 @@ If this fails (non-git context), use the current working directory as the repo r
 
 **Detection order**:
 
-First, check the conversation for a **Vision Blueprint** block (produced by `/soda-loop-vision` or `/soda-loop-refine`). If found, extract loop name from the `**Loop Name**` field and derive the loop directory as `<repo-root>/.agent-loops/<loop-name>/`.
+First, check the conversation for a **Vision Blueprint** block (produced by `/soda-loop-vision`). If found, extract loop name from the `**Loop Name**` field and derive the loop directory as `<repo-root>/.agent-loops/<loop-name>/`.
 
 If no Vision Blueprint is found:
 1. If `$ARGUMENTS` looks like a loop name or path, use it to locate `<repo-root>/.agent-loops/<argument>/VISION.md`
@@ -259,7 +259,7 @@ Next:
 ## Constraints
 
 - This skill only creates plan files. Do NOT generate PROGRESS.md, AGENT_PROMPT.md, or run-loop.ts.
-- Do NOT modify VISION.md — that is `/soda-loop-vision` or `/soda-loop-refine`'s responsibility.
+- Do NOT modify VISION.md — that is `/soda-loop-vision`'s responsibility.
 - Do NOT enter plan mode (no EnterPlanMode).
 - The Plan Blueprint block format must be stable — `/soda-loop-setup` detects it by heading pattern.
 - Step Deps may only reference titles within the same plan. Cross-plan dependencies are expressed via phase ordering (numeric prefixes).

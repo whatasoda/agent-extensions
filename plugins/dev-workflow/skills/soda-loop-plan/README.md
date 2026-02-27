@@ -69,7 +69,6 @@ New plans get `max(existing prefixes) + 1`, zero-padded to 2 digits. If no exist
 Plans can become stale when VISION.md goals change after plan creation.
 
 - **`soda-loop-setup` detects stale plans**: Plans referencing non-existent goals (goals that were removed or renamed in VISION.md) trigger a warning during setup. Setup continues but flags the mismatch.
-- **`soda-loop-refine` warns about stale plans**: When vision goals are modified through refine, it warns that existing plans may reference outdated goals.
 - **No auto-invalidation**: The system does not automatically delete or regenerate stale plans. The user decides whether to regenerate, update, or ignore the staleness. This avoids destructive automation on artifacts that may have required significant investigation effort.
 
 ### No EnterPlanMode
@@ -86,4 +85,3 @@ Same design choice as `soda-loop-vision`: this is an interactive dialogue skill,
 
 - The plan layer is optional: small tasks can skip `/soda-loop-plan` and go directly from vision to setup
 - Setup detects existing plans and uses them for phase derivation instead of pure LLM reasoning
-- Refine detects plan staleness when vision goals change
