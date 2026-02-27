@@ -345,21 +345,22 @@ If the user requests adjustments, incorporate feedback and re-present. Do NOT pr
 After the user confirms the phase proposal in Step 3, compose a preview of the PROGRESS.md content and review it:
 
 1. Compose the PROGRESS.md content by substituting all template placeholders (phases, items, validation criteria, dependencies)
-2. Write to `/tmp/codex-review-soda-loop-setup.md` using the Write tool
-3. Determine the project root:
+2. Generate a session-unique review file path: run `mktemp /tmp/codex-review-soda-loop-setup-XXXXXXXX` via Bash and capture the output path (referred to as `REVIEW_FILE` below). Use this path for all codex review steps below.
+3. Write to `REVIEW_FILE` using the Write tool
+4. Determine the project root:
    ```bash
    git rev-parse --show-toplevel
    ```
-4. Run codex review:
+5. Run codex review:
    ```bash
-   codex exec -m gpt-5.3-codex "Review this loop progress configuration. Focus on phase structure, item dependency chains, and validation specificity — only flag critical problems: /tmp/codex-review-soda-loop-setup.md (ref: <repo-root>/CLAUDE.md)"
+   codex exec -m gpt-5.3-codex "Review this loop progress configuration. Focus on phase structure, item dependency chains, and validation specificity — only flag critical problems: REVIEW_FILE (ref: <repo-root>/CLAUDE.md)"
    ```
-5. If codex identifies critical issues, revise and re-review with a **fresh** session (not `resume --last`):
+6. If codex identifies critical issues, revise and re-review with a **fresh** session:
    ```bash
-   codex exec -m gpt-5.3-codex "Review this updated loop progress configuration. Focus on phase structure, item dependency chains, and validation specificity — only flag critical problems: /tmp/codex-review-soda-loop-setup.md (ref: <repo-root>/CLAUDE.md)"
+   codex exec -m gpt-5.3-codex "Review this updated loop progress configuration. Focus on phase structure, item dependency chains, and validation specificity — only flag critical problems: REVIEW_FILE (ref: <repo-root>/CLAUDE.md)"
    ```
-6. Include codex feedback (if any) in the Step 4 confirmation presentation.
-7. If the codex command fails, skip with warning: "⚠ codex レビューをスキップします（コマンド実行失敗）" and continue.
+7. Include codex feedback (if any) in the Step 4 confirmation presentation.
+8. If the codex command fails, skip with warning: "⚠ codex レビューをスキップします（コマンド実行失敗）" and continue.
 
 ### Step 4: Confirmation
 

@@ -187,19 +187,20 @@ If the user selects any option other than skip, ask follow-up questions to colle
 
 Before presenting the VISION.md draft in Step 5, run an external review:
 
-1. Write the composed VISION.md content to `/tmp/codex-review-soda-loop-vision.md` using the Write tool
-2. Determine the project root:
+1. Generate a session-unique review file path: run `mktemp /tmp/codex-review-soda-loop-vision-XXXXXXXX` via Bash and capture the output path (referred to as `REVIEW_FILE` below). Use this path for all codex review steps below.
+2. Write the composed VISION.md content to `REVIEW_FILE` using the Write tool
+3. Determine the project root:
    ```bash
    git rev-parse --show-toplevel
    ```
-3. Run codex review:
+4. Run codex review. Capture the `session id:` value from codex output (referred to as `CODEX_SESSION` below):
    ```bash
-   codex exec -m gpt-5.3-codex "Review this vision definition. Focus on goal verifiability, constraint validity, and scope clarity — only flag critical problems: /tmp/codex-review-soda-loop-vision.md (ref: <repo-root>/CLAUDE.md)"
+   codex exec -m gpt-5.3-codex "Review this vision definition. Focus on goal verifiability, constraint validity, and scope clarity — only flag critical problems: REVIEW_FILE (ref: <repo-root>/CLAUDE.md)"
    ```
-4. If codex identifies critical issues, revise the VISION.md content before presenting in Step 5.
-5. If the user requests goal/constraint adjustments in Step 5 and the content is revised, update the temp file and re-review:
+5. If codex identifies critical issues, revise the VISION.md content before presenting in Step 5.
+6. If the user requests goal/constraint adjustments in Step 5 and the content is revised, update `REVIEW_FILE` and re-review using the captured session:
    ```bash
-   codex exec resume --last -m gpt-5.3-codex "Vision updated — review again. Only flag critical problems: /tmp/codex-review-soda-loop-vision.md (ref: <repo-root>/CLAUDE.md)"
+   codex exec resume -m gpt-5.3-codex CODEX_SESSION "Vision updated — review again. Only flag critical problems: REVIEW_FILE (ref: <repo-root>/CLAUDE.md)"
    ```
 6. If the codex command fails, skip with warning: "⚠ codex レビューをスキップします（コマンド実行失敗）" and continue.
 
