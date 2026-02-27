@@ -449,7 +449,7 @@ function parseVision(visionPath: string): VisionInfo | null {
   }
 }
 
-function parsePlans(loopDir: string, totalGoalCount: number): PlansStatus | null {
+function parsePlans(loopDir: string, goals: string[]): PlansStatus | null {
   const glob = new Bun.Glob("PLAN-*.md");
   const planFiles = Array.from(glob.scanSync({ cwd: loopDir, absolute: false })).sort();
 
@@ -513,11 +513,14 @@ function parsePlans(loopDir: string, totalGoalCount: number): PlansStatus | null
     }
   }
 
+  const goalSet = new Set(goals);
+  const coveredGoalCount = [...allCoveredGoals].filter((g) => goalSet.has(g)).length;
+
   return {
     count: files.length,
     files,
-    coveredGoalCount: allCoveredGoals.size,
-    totalGoalCount,
+    coveredGoalCount,
+    totalGoalCount: goals.length,
   };
 }
 
@@ -609,7 +612,7 @@ function main(): void {
 
     const visionPath = resolve(loopDir, "VISION.md");
     const vision = parseVision(visionPath);
-    const plans = parsePlans(loopDir, vision?.goalCount ?? 0);
+    const plans = parsePlans(loopDir, vision?.goals.map((g) => g.text) ?? []);
     if (!vision) {
       warnings.push("No VISION.md found");
     }
