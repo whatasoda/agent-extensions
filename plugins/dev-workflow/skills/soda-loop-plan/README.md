@@ -12,7 +12,7 @@ The soda-loop system currently has a two-step workflow: `soda-loop-vision` creat
 
 ### 1:1 plan-to-phase mapping
 
-PLAN-01 becomes Phase 1, PLAN-02 becomes Phase 2. Each plan's steps become items N.1, N.2, etc. within its corresponding phase.
+Plans sorted by numeric prefix become sequential phases (e.g., PLAN-01 → Phase 1, PLAN-02 → Phase 2). Each plan's steps become items N.1, N.2, etc. within its corresponding phase.
 
 - **Simple, predictable mapping**: No complex merge logic is needed. The user knows exactly which plan produced which phase.
 - **Numeric prefixes determine phase ordering**: PLAN-01 before PLAN-02. Non-contiguous prefixes are handled gracefully (e.g., if PLAN-02 is deleted, PLAN-01 and PLAN-03 still map to Phase 1 and Phase 2 in order).

@@ -272,7 +272,7 @@ Derive phases from the goals in VISION.md. Do NOT ask the user to define phases 
 **If plans were detected and the user chose plan-based generation**:
 
 1. **Plan-derived phases**: Sort detected plans by numeric prefix (PLAN-01 before PLAN-02, etc.). Each plan becomes a phase:
-   - Phase number = plan's numeric prefix (PLAN-01 → Phase 1, PLAN-02 → Phase 2)
+   - Phase number = sequential position after sorting by numeric prefix (e.g., PLAN-01 and PLAN-03 → Phase 1 and Phase 2)
    - Phase name = plan name (from `# Plan:` heading)
    - Phase description = derived from the plan's `## Context` section (one sentence summary)
    - Implementation items: map each `### Step:` block to a PROGRESS.md item (N.M IDs, where N = phase number, M = step order within plan)
@@ -286,7 +286,7 @@ Derive phases from the goals in VISION.md. Do NOT ask the user to define phases 
    - Phase validation item: overall phase verification
 
 2. **LLM-derived phases for uncovered goals**: If uncovered goals remain (goals not covered by any plan):
-   - Phase numbers start at `max(plan numeric prefixes) + 1` (handles non-contiguous prefixes)
+   - Phase numbers start at `(number of plan-derived phases) + 1`
    - Use the existing LLM derivation logic (below) for these goals only
 
 3. Present the combined proposal (plan-derived phases first, then LLM-derived phases)

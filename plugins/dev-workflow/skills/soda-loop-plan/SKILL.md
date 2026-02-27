@@ -50,7 +50,7 @@ If $ARGUMENTS is empty, proceed directly to loop detection. If $ARGUMENTS contai
 
 File naming: `PLAN-NN-<kebab-name>.md` (zero-padded numeric prefix). Location: `.agent-loops/<loop-name>/`.
 
-1:1 plan-to-phase mapping: PLAN-01 → Phase 1 in PROGRESS.md. Each plan's steps become items N.1, N.2, etc.
+1:1 plan-to-phase mapping: plans sorted by numeric prefix map to sequential phases (e.g., PLAN-01 and PLAN-03 → Phase 1 and Phase 2). Each plan's steps become items N.1, N.2, etc. where N is the sequential phase number.
 
 **Deps constraint**: Step `Deps` may only reference titles within the same plan. Cross-plan deps are expressed via phase ordering (numeric prefixes).
 
