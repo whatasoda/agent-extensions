@@ -45,6 +45,7 @@ The loop directory is: `<repo-root>/.agent-loops/<loop-name>/`
 - Read VISION.md (required — if missing, suggest `/soda-loop-vision` and stop)
 - Read PROGRESS.md (optional — note whether it exists)
 - Check for STOP file existence using Glob tool
+- Glob `<loop-dir>/PLAN-*.md` to detect existing plan files. If found, extract `## Goals Covered` items from each plan.
 
 ## Step 2: Current State Presentation
 
@@ -102,6 +103,21 @@ If PROGRESS.md exists, append:
 ```
 
 If a STOP file exists, note: "⏹ ループは停止中です"
+
+**If PLAN-*.md files were found**, present plan coverage:
+```
+## 計画ファイル
+
+| プラン | ゴールカバレッジ | ステータス |
+|--------|------------------|------------|
+| PLAN-01-{{name}} | {{covered goal count}} goals | ✓ valid / ⚠ stale |
+```
+
+A plan is **stale** if any of its `## Goals Covered` items do not match a goal in VISION.md's `## Goals` section (text-based matching). Note uncovered goals:
+```
+未カバーのゴール:
+- {{uncovered goal text}}
+```
 
 **Context detection**: Check the conversation for output from `/soda-loop-status`. If status dashboard output is present (identified by "ループステータス" heading or phase table format), note it as supplementary context — the user likely checked status before invoking this skill. Reference any blocked items or issues visible in the status output.
 
@@ -335,6 +351,17 @@ Write PROGRESS.md, preserving the existing structure. **Do NOT modify the Sessio
 ## Step 7: Vision Blueprint & Next Steps
 
 After writing files, emit a **Vision Blueprint** block in the conversation. This enables same-session handoff to `/soda-loop-setup`.
+
+**Plan staleness check**: If VISION.md was modified AND PLAN-*.md files exist in the loop directory:
+1. Re-read all PLAN-*.md files and check their `## Goals Covered` items against the updated VISION.md goals
+2. If any plans reference goals that no longer exist or have changed text:
+   ```
+   ⚠ ビジョン変更により以下のプランが stale になった可能性があります:
+   - {{PLAN_FILENAME}}: "{{stale goal text}}" がビジョンに見つかりません
+
+   推奨: `/soda-loop-plan` でプランを再生成してください
+   ```
+3. This is a warning only — do not block the Vision Blueprint emission or file writing
 
 ```
 ## Vision Blueprint
