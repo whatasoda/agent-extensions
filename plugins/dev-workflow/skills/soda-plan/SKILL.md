@@ -3,7 +3,7 @@ name: soda-plan
 description: Plan implementation with sub-agents and design review
 user-invocable: true
 argument-hint: [task description]
-allowed-tools: Bash(git *), Read, Grep, Glob, Task, AskUserQuestion, EnterPlanMode, ExitPlanMode
+allowed-tools: Bash(git *), Bash(codex *), Read, Write, Grep, Glob, Task, AskUserQuestion, EnterPlanMode, ExitPlanMode
 ---
 
 Create a detailed implementation plan for the given task.
@@ -99,7 +99,7 @@ Priority order: Proposal Summary (approach decision) > Research Summary (codebas
    > ### Validation Approaches
    > - (how to verify changes in this area)
 
-   Use the EnterPlanMode tool to enter plan mode, then formulate the plan. Include the following elements. Do not follow a fixed template — organize and format them as best fits the task. Follow the Compact-Resilience Guidelines below when authoring plan content.
+   Compose the plan content as markdown text (do not enter plan mode yet). Include the following elements. Do not follow a fixed template — organize and format them as best fits the task. Follow the Compact-Resilience Guidelines below when authoring plan content. After composition, proceed to the Codex Review sub-section before entering plan mode.
 
    **Required elements:**
    - **Task summary and branch name**
@@ -140,6 +140,27 @@ Priority order: Proposal Summary (approach decision) > Research Summary (codebas
      - Iteration order
      - File organization within an already-decided architecture
    - **Ambiguities** — if there are ambiguous requirements or missing information, note them as labeled callouts in the plan body rather than asking separately.
+
+### Codex Review (pre-plan-mode)
+
+After composing the plan content but before entering plan mode, run an external review:
+
+1. Write the composed plan markdown to `/tmp/codex-review-soda-plan.md` using the Write tool
+2. Determine the project root:
+   ```bash
+   git rev-parse --show-toplevel
+   ```
+3. Run initial codex review:
+   ```bash
+   codex exec -m gpt-5.3-codex "このプランをレビューして。瑣末な点には触れず、致命的な点のみ指摘して: /tmp/codex-review-soda-plan.md (ref: <repo-root>/CLAUDE.md)"
+   ```
+4. If codex identifies critical issues, revise the plan content and re-review:
+   ```bash
+   codex exec resume --last -m gpt-5.3-codex "プランを更新したからレビューして。瑣末な点には触れず、致命的な点のみ指摘して: /tmp/codex-review-soda-plan.md (ref: <repo-root>/CLAUDE.md)"
+   ```
+5. If the codex command fails (non-zero exit or timeout), skip with warning: "⚠ codex レビューをスキップします（コマンド実行失敗）" and continue.
+
+After the codex review completes, use the EnterPlanMode tool to enter plan mode. Write the reviewed plan content to the plan file. Proceed with the Plan Annotation Guidance below, then exit plan mode via ExitPlanMode.
 
 ## Plan Annotation Guidance
 

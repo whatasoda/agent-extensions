@@ -3,7 +3,7 @@ name: soda-loop-vision
 description: Define structured vision with verifiable goals for autonomous loop projects
 user-invocable: true
 argument-hint: [project goal description]
-allowed-tools: Bash(git *), Bash(bun *), Read, Grep, Glob, Write, Task, AskUserQuestion
+allowed-tools: Bash(git *), Bash(bun *), Bash(codex *), Read, Grep, Glob, Write, Task, AskUserQuestion
 ---
 
 **CRITICAL**: Do NOT use EnterPlanMode or enter plan mode at any point during this skill. This is an interactive dialogue skill — not an implementation task. Proceed directly through the steps below without planning.
@@ -182,6 +182,26 @@ If no constraints emerged during discovery, use AskUserQuestion:
 - "制約と除外の両方を追加"
 
 If the user selects any option other than skip, ask follow-up questions to collect the details. Present the collected constraints/exclusions for confirmation before proceeding.
+
+### Codex Review (pre-draft-review)
+
+Before presenting the VISION.md draft in Step 5, run an external review:
+
+1. Write the composed VISION.md content to `/tmp/codex-review-soda-loop-vision.md` using the Write tool
+2. Determine the project root:
+   ```bash
+   git rev-parse --show-toplevel
+   ```
+3. Run codex review:
+   ```bash
+   codex exec -m gpt-5.3-codex "このビジョン定義をレビューして。ゴールの検証可能性・制約の妥当性・スコープの明確さに注目し、致命的な点のみ指摘して: /tmp/codex-review-soda-loop-vision.md (ref: <repo-root>/CLAUDE.md)"
+   ```
+4. If codex identifies critical issues, revise the VISION.md content before presenting in Step 5.
+5. If the user requests goal/constraint adjustments in Step 5 and the content is revised, update the temp file and re-review:
+   ```bash
+   codex exec resume --last -m gpt-5.3-codex "ビジョンを更新したからレビューして。致命的な点のみ指摘して: /tmp/codex-review-soda-loop-vision.md (ref: <repo-root>/CLAUDE.md)"
+   ```
+6. If the codex command fails, skip with warning: "⚠ codex レビューをスキップします（コマンド実行失敗）" and continue.
 
 ## Step 5: Draft Review
 

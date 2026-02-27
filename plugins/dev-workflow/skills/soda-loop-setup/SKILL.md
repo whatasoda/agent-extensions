@@ -2,7 +2,7 @@
 name: soda-loop-setup
 description: Generate autonomous loop harness from vision blueprint
 user-invocable: true
-allowed-tools: Bash(git *), Bash(bun *), Read, Grep, Glob, Write, AskUserQuestion
+allowed-tools: Bash(git *), Bash(bun *), Bash(codex *), Read, Grep, Glob, Write, AskUserQuestion
 ---
 
 Generate an autonomous multi-session loop harness for a project. The harness consists of three files: PROGRESS.md, AGENT_PROMPT.md, and run-loop.ts. It consumes a VISION.md produced by `/soda-loop-vision` (or provided inline).
@@ -280,6 +280,27 @@ Use AskUserQuestion:
 - "Adjust items" (modify specific items within phases)
 
 If the user requests adjustments, incorporate feedback and re-present. Do NOT proceed until the user confirms.
+
+### Codex Review (pre-confirmation)
+
+After the user confirms the phase proposal in Step 3, compose a preview of the PROGRESS.md content and review it:
+
+1. Compose the PROGRESS.md content by substituting all template placeholders (phases, items, validation criteria, dependencies)
+2. Write to `/tmp/codex-review-soda-loop-setup.md` using the Write tool
+3. Determine the project root:
+   ```bash
+   git rev-parse --show-toplevel
+   ```
+4. Run codex review:
+   ```bash
+   codex exec -m gpt-5.3-codex "このループ進捗設定をレビューして。フェーズ構成・アイテムの依存関係・検証条件の具体性に注目し、致命的な点のみ指摘して: /tmp/codex-review-soda-loop-setup.md (ref: <repo-root>/CLAUDE.md)"
+   ```
+5. If codex identifies critical issues, revise and re-review:
+   ```bash
+   codex exec resume --last -m gpt-5.3-codex "設定を更新したからレビューして。致命的な点のみ指摘して: /tmp/codex-review-soda-loop-setup.md (ref: <repo-root>/CLAUDE.md)"
+   ```
+6. Include codex feedback (if any) in the Step 4 confirmation presentation.
+7. If the codex command fails, skip with warning: "⚠ codex レビューをスキップします（コマンド実行失敗）" and continue.
 
 ### Step 4: Confirmation
 

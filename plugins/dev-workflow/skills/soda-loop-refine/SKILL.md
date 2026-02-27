@@ -3,7 +3,7 @@ name: soda-loop-refine
 description: Iteratively refine VISION.md and PROGRESS.md through annotation cycle and codebase investigation
 user-invocable: true
 argument-hint: [loop name or refinement focus]
-allowed-tools: Bash(git *), Bash(bun *), Read, Grep, Glob, Write, Task, AskUserQuestion
+allowed-tools: Bash(git *), Bash(bun *), Bash(codex *), Read, Grep, Glob, Write, Task, AskUserQuestion
 ---
 
 **CRITICAL**: Do NOT use EnterPlanMode or enter plan mode at any point during this skill. This is an interactive dialogue skill — not an implementation task. Proceed directly through the steps below without planning.
@@ -282,6 +282,30 @@ Use AskUserQuestion:
 - "完了（ファイルに書き出す）" — finalize
 
 For each modification, present the change and confirm before accumulating. After "完了", proceed to Step 6.
+
+### Codex Review (pre-apply)
+
+When the user selects "完了（ファイルに書き出す）" in Step 4 or Step 5, review the modified artifacts before writing:
+
+1. Write the modified VISION.md content to `/tmp/codex-review-soda-loop-refine.md` using the Write tool
+2. If PROGRESS.md was also modified, append its content to the same temp file (separated by `---`)
+3. Determine the project root:
+   ```bash
+   git rev-parse --show-toplevel
+   ```
+4. Run codex review:
+   ```bash
+   codex exec -m gpt-5.3-codex "このビジョン・進捗の変更をレビューして。変更の整合性・ゴールの検証可能性に注目し、致命的な点のみ指摘して: /tmp/codex-review-soda-loop-refine.md (ref: <repo-root>/CLAUDE.md)"
+   ```
+5. If codex identifies critical issues, present them and offer to return to the annotation cycle:
+   Use AskUserQuestion:
+   - "修正してから書き出す" → return to Step 4 annotation cycle. When the user completes annotations and selects "完了" again, re-review with resume:
+     ```bash
+     codex exec resume --last -m gpt-5.3-codex "変更を修正したからレビューして。致命的な点のみ指摘して: /tmp/codex-review-soda-loop-refine.md (ref: <repo-root>/CLAUDE.md)"
+     ```
+   - "このまま書き出す" → proceed to Step 6
+6. If no critical issues, proceed directly to Step 5 (if "ビジョンと進捗の両方を改善") or Step 6.
+7. If the codex command fails, skip with warning: "⚠ codex レビューをスキップします（コマンド実行失敗）" and proceed.
 
 ## Step 6: Apply Changes
 
