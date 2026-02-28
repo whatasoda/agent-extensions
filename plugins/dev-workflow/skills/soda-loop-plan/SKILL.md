@@ -3,7 +3,7 @@ name: soda-loop-plan
 description: Create a detailed plan for a subset of soda-loop vision goals
 user-invocable: true
 argument-hint: "[loop-name or path]"
-allowed-tools: Bash(git *), Bash(codex *), Read, Write, Grep, Glob, Task, AskUserQuestion
+allowed-tools: Bash(git *), Bash(codex *), Bash(bun *), Read, Write, Grep, Glob, Task, AskUserQuestion
 ---
 
 **CRITICAL**: Do NOT use EnterPlanMode or enter plan mode at any point during this skill. This is an interactive dialogue skill — not an implementation task. Proceed directly through the steps below without planning.
@@ -198,23 +198,21 @@ Compose the PLAN-*.md file following the format defined in the PLAN-*.md File Fo
 
 ### Codex Review
 
-Before writing the plan file, run an external review:
+Before writing the plan file, run an external review via `codex-review.ts`. Each invocation is a single Bash call — temp file creation, content writing, and codex execution are handled by the script.
 
-1. Generate a session-unique review file path: run `mktemp /tmp/codex-review-soda-loop-plan-XXXXXXXX` via Bash and capture the output path (referred to as `REVIEW_FILE` below). Use this path for all codex review steps below.
-2. Write the composed PLAN-*.md content to `REVIEW_FILE` using the Write tool
-3. Determine the project root:
+1. Run codex review:
    ```bash
-   git rev-parse --show-toplevel
+   bun ${CLAUDE_PLUGIN_ROOT}/scripts/codex-review.ts init "Review this implementation plan. Focus on step completeness, dependency correctness, and acceptance criteria verifiability — only flag critical problems" <<'CODEX_REVIEW_EOF'
+   [composed PLAN-*.md content]
+   CODEX_REVIEW_EOF
    ```
-4. Run codex review:
+2. If codex identifies critical issues, revise the plan content and re-review with a **fresh** session:
    ```bash
-   codex exec -m gpt-5.3-codex "Review this implementation plan. Focus on step completeness, dependency correctness, and acceptance criteria verifiability — only flag critical problems: REVIEW_FILE (ref: <repo-root>/CLAUDE.md)"
+   bun ${CLAUDE_PLUGIN_ROOT}/scripts/codex-review.ts init "Review this updated implementation plan. Focus on step completeness, dependency correctness, and acceptance criteria verifiability — only flag critical problems" <<'CODEX_REVIEW_EOF'
+   [revised PLAN-*.md content]
+   CODEX_REVIEW_EOF
    ```
-5. If codex identifies critical issues, revise the plan content and re-review with a **fresh** session:
-   ```bash
-   codex exec -m gpt-5.3-codex "Review this updated implementation plan. Focus on step completeness, dependency correctness, and acceptance criteria verifiability — only flag critical problems: REVIEW_FILE (ref: <repo-root>/CLAUDE.md)"
-   ```
-6. If the codex command fails, skip with warning: "⚠ codex レビューをスキップします（コマンド実行失敗）" and continue.
+3. If the script outputs a skip warning, continue without review.
 
 ### Step 5: Write Plan File
 
