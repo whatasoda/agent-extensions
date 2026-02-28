@@ -579,51 +579,18 @@ function discoverLoopDir(): string | { multiple: { name: string; dir: string }[]
   return { multiple: loops };
 }
 
-// === Main ===
+// === Status Builder ===
 
-function main(): void {
-  const explicitArg = process.argv[2];
-  let loopDir: string;
-
-  if (explicitArg && explicitArg !== ".") {
-    // Explicit path provided — use directly
-    loopDir = resolve(process.cwd(), explicitArg);
-  } else {
-    // Auto-discover from .agent-loops/
-    const discovered = discoverLoopDir();
-
-    if (discovered === null) {
-      // No loops found in .agent-loops/ — fall back to cwd check
-      loopDir = resolve(process.cwd(), explicitArg ?? ".");
-    } else if (typeof discovered === "string") {
-      // Single loop found
-      loopDir = discovered;
-    } else {
-      // Multiple loops found — output selection prompt
-      console.log(
-        JSON.stringify({
-          multipleLoops: true,
-          available: discovered.multiple.map((l) => l.name),
-          agentLoopsDir: resolve(findRepoRoot()!, ".agent-loops"),
-          warnings: [],
-        }),
-      );
-      return;
-    }
-  }
-
+function buildStatus(loopDir: string): LoopStatusOutput | { loopDir: string; error: string; warnings: string[] } {
   const warnings: string[] = [];
 
   const progressPath = resolve(loopDir, "PROGRESS.md");
   if (!existsSync(progressPath)) {
-    console.log(
-      JSON.stringify({
-        loopDir,
-        error: `No PROGRESS.md found in ${loopDir}. This may not be a loop directory.`,
-        warnings: [],
-      }),
-    );
-    return;
+    return {
+      loopDir,
+      error: `No PROGRESS.md found in ${loopDir}. This may not be a loop directory.`,
+      warnings: [],
+    };
   }
 
   try {
@@ -672,7 +639,7 @@ function main(): void {
       ? { exists: true }
       : null;
 
-    const output: LoopStatusOutput = {
+    return {
       loopDir,
       projectName: progress.projectName,
       isRunning,
@@ -696,16 +663,78 @@ function main(): void {
       sessionHandoff,
       warnings,
     };
-
-    console.log(JSON.stringify(output));
   } catch (e) {
-    console.log(
-      JSON.stringify({
-        loopDir,
-        error: `Failed to parse loop status: ${e instanceof Error ? e.message : String(e)}`,
-        warnings: [],
-      }),
-    );
+    return {
+      loopDir,
+      error: `Failed to parse loop status: ${e instanceof Error ? e.message : String(e)}`,
+      warnings: [],
+    };
+  }
+}
+
+// === Main ===
+
+function resolveLoopDir(): string | null {
+  // Filter out flags from positional args
+  const positionalArgs = process.argv.slice(2).filter(a => !a.startsWith("--"));
+  const explicitArg = positionalArgs[0];
+
+  if (explicitArg && explicitArg !== ".") {
+    return resolve(process.cwd(), explicitArg);
+  }
+
+  const discovered = discoverLoopDir();
+  if (discovered === null) {
+    return resolve(process.cwd(), explicitArg ?? ".");
+  }
+  if (typeof discovered === "string") {
+    return discovered;
+  }
+
+  // Multiple loops — output selection prompt
+  console.log(
+    JSON.stringify({
+      multipleLoops: true,
+      available: discovered.multiple.map((l) => l.name),
+      agentLoopsDir: resolve(findRepoRoot()!, ".agent-loops"),
+      warnings: [],
+    }),
+  );
+  return null;
+}
+
+async function main(): Promise<void> {
+  const loopDir = resolveLoopDir();
+  if (!loopDir) return;
+
+  const watchMode = process.argv.includes("--watch");
+  const intervalArg = process.argv.find(a => a.startsWith("--interval="));
+  const interval = parseInt(intervalArg?.split("=")[1] ?? "30", 10);
+
+  if (watchMode) {
+    const progressPath = resolve(loopDir, "PROGRESS.md");
+    const stopPath = resolve(loopDir, "STOP");
+    let lastMtime = 0;
+
+    while (true) {
+      const stopExists = existsSync(stopPath);
+      const mtime = existsSync(progressPath) ? statSync(progressPath).mtimeMs : 0;
+
+      if (mtime !== lastMtime || stopExists) {
+        lastMtime = mtime;
+        const output = buildStatus(loopDir);
+        console.log(JSON.stringify(output));
+
+        // Exit watch when loop is done
+        if ("isStopped" in output && (output.isStopped || output.progress.percentComplete === 100)) break;
+        if ("error" in output) break;
+      }
+
+      await Bun.sleep(interval * 1000);
+    }
+  } else {
+    const output = buildStatus(loopDir);
+    console.log(JSON.stringify(output));
   }
 }
 
