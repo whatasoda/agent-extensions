@@ -31,6 +31,8 @@ Optional:
 
 - `src/` - TypeScript source (built to `dist/` via `bun run build`)
 - `hooks/hooks.json` - Event-driven hook definitions (reference `${CLAUDE_PLUGIN_ROOT}/dist/...`)
+- `agents/` - Agent definition files (`.md` format)
+- `scripts/` - Plugin-level utility scripts
 - `.mcp.json` - MCP server configurations
 - `.lsp.json` - LSP server configurations
 
