@@ -152,22 +152,45 @@ If the user selects any option other than skip, ask follow-up questions to colle
 
 ### Codex Review (pre-draft-review)
 
-Before presenting the VISION.md draft in Step 5, run an external review via `codex-review.ts`. Each invocation is a single Bash call — temp file creation, content writing, and codex execution are handled by the script.
+Delegate codex review to a subagent to keep the full codex output out of the main context.
 
-1. Run initial review. Capture `review_file:` and `session_id:` from output:
-   ```bash
-   bun ${CLAUDE_PLUGIN_ROOT}/scripts/codex-review.ts init "Review this vision definition. Focus on goal verifiability, constraint validity, and scope clarity — only flag critical problems" <<'CODEX_REVIEW_EOF'
-   [composed VISION.md content]
-   CODEX_REVIEW_EOF
-   ```
-2. If codex identifies critical issues, revise the VISION.md content before presenting in Step 5.
-3. If the user requests goal/constraint adjustments in Step 5 and the content is revised, re-review:
-   ```bash
-   bun ${CLAUDE_PLUGIN_ROOT}/scripts/codex-review.ts resume CODEX_SESSION REVIEW_FILE "Vision updated — review again. Only flag critical problems" <<'CODEX_REVIEW_EOF'
-   [revised VISION.md content]
-   CODEX_REVIEW_EOF
-   ```
-4. If the script outputs a skip warning, continue without review.
+1. Launch a codex review subagent:
+   - Tool: `Task(subagent_type: Explore, model: haiku)`
+   - Prompt must include: the constraint block ("You are a codex-review agent. Run the review command below, parse the output, and return findings in the specified format. Do NOT use AskUserQuestion, EnterPlanMode, or any interactive tools."), the Bash command with composed content via heredoc, and the Codex Review Output Contract — Init.
+   - Bash command:
+     ```bash
+     bun ${CLAUDE_PLUGIN_ROOT}/scripts/codex-review.ts init "Review this vision definition. Focus on goal verifiability, constraint validity, and scope clarity — only flag critical problems" <<'CODEX_REVIEW_EOF'
+     [composed VISION.md content]
+     CODEX_REVIEW_EOF
+     ```
+   - **Codex Review Output Contract — Init**:
+     ```
+     Return findings in this exact format:
+     ### Review Result
+     - **review_file**: (path from script output line `review_file:`)
+     - **session_id**: (value from script output line `session_id:`, or "none")
+     - **Status**: No critical issues | Critical issues found | Skipped
+     ### Critical Issues
+     - (issue description — or "none")
+     ```
+   - Capture `review_file`, `session_id`, and critical issues from the subagent's response.
+2. If the subagent reports critical issues, revise the VISION.md content before presenting in Step 5.
+3. If the user requests goal/constraint adjustments in Step 5 and the content is revised, launch another subagent with the resume command:
+   - Bash command:
+     ```bash
+     bun ${CLAUDE_PLUGIN_ROOT}/scripts/codex-review.ts resume CODEX_SESSION REVIEW_FILE "Vision updated — review again. Only flag critical problems" <<'CODEX_REVIEW_EOF'
+     [revised VISION.md content]
+     CODEX_REVIEW_EOF
+     ```
+   - **Codex Review Output Contract — Resume**:
+     ```
+     Return findings in this exact format:
+     ### Review Result
+     - **Status**: No critical issues | Critical issues found | Skipped
+     ### Critical Issues
+     - (issue description — or "none")
+     ```
+4. If the subagent reports skip or failure, continue without review.
 
 ## Step 5: Draft Review
 

@@ -143,21 +143,44 @@ Priority order: Proposal Summary (approach decision) > Research Summary (codebas
 
 ### Codex Review (pre-plan-mode)
 
-After composing the plan content but before entering plan mode, run an external review via `codex-review.ts`. Each invocation is a single Bash call — temp file creation, content writing, and codex execution are handled by the script.
+Delegate codex review to a subagent to keep the full codex output out of the main context.
 
-1. Run initial review. Capture `review_file:` and `session_id:` from output:
-   ```bash
-   bun ${CLAUDE_PLUGIN_ROOT}/scripts/codex-review.ts init "Review this plan. Skip trivial issues — only flag critical problems" <<'CODEX_REVIEW_EOF'
-   [composed plan content]
-   CODEX_REVIEW_EOF
-   ```
-2. If codex identifies critical issues, revise the plan content and re-review:
-   ```bash
-   bun ${CLAUDE_PLUGIN_ROOT}/scripts/codex-review.ts resume CODEX_SESSION REVIEW_FILE "Plan updated — review again. Skip trivial issues — only flag critical problems" <<'CODEX_REVIEW_EOF'
-   [revised plan content]
-   CODEX_REVIEW_EOF
-   ```
-3. If the script outputs a skip warning, continue without review.
+1. Launch a codex review subagent:
+   - Tool: `Task(subagent_type: Explore, model: haiku)`
+   - Prompt must include: the constraint block ("You are a codex-review agent. Run the review command below, parse the output, and return findings in the specified format. Do NOT use AskUserQuestion, EnterPlanMode, or any interactive tools."), the Bash command with composed content via heredoc, and the Codex Review Output Contract — Init.
+   - Bash command:
+     ```bash
+     bun ${CLAUDE_PLUGIN_ROOT}/scripts/codex-review.ts init "Review this plan. Skip trivial issues — only flag critical problems" <<'CODEX_REVIEW_EOF'
+     [composed plan content]
+     CODEX_REVIEW_EOF
+     ```
+   - **Codex Review Output Contract — Init**:
+     ```
+     Return findings in this exact format:
+     ### Review Result
+     - **review_file**: (path from script output line `review_file:`)
+     - **session_id**: (value from script output line `session_id:`, or "none")
+     - **Status**: No critical issues | Critical issues found | Skipped
+     ### Critical Issues
+     - (issue description — or "none")
+     ```
+   - Capture `review_file`, `session_id`, and critical issues from the subagent's response.
+2. If the subagent reports critical issues, revise the content and launch another subagent with the resume command:
+   - Bash command:
+     ```bash
+     bun ${CLAUDE_PLUGIN_ROOT}/scripts/codex-review.ts resume CODEX_SESSION REVIEW_FILE "Plan updated — review again. Skip trivial issues — only flag critical problems" <<'CODEX_REVIEW_EOF'
+     [revised plan content]
+     CODEX_REVIEW_EOF
+     ```
+   - **Codex Review Output Contract — Resume**:
+     ```
+     Return findings in this exact format:
+     ### Review Result
+     - **Status**: No critical issues | Critical issues found | Skipped
+     ### Critical Issues
+     - (issue description — or "none")
+     ```
+3. If the subagent reports skip or failure, continue without review.
 
 After the codex review completes, use the EnterPlanMode tool to enter plan mode. Write the reviewed plan content to the plan file. Proceed with the Plan Annotation Guidance below, then exit plan mode via ExitPlanMode.
 
