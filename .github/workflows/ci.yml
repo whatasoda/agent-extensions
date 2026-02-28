@@ -35,11 +35,8 @@ jobs:
             plugin_name=$(basename "$plugin_dir")
             # Check source files only (skills, src, hooks, package.json)
             # Exclude dist/ and .claude-plugin/ (outputs, not triggers)
-            changes=$(git diff HEAD~1 --name-only -- \
-              "plugins/${plugin_name}/skills/" \
-              "plugins/${plugin_name}/src/" \
-              "plugins/${plugin_name}/hooks/hooks.json" \
-              "plugins/${plugin_name}/package.json" \
+            changes=$(git diff ${{ github.event.before }}..${{ github.sha }} --name-only -- "plugins/${plugin_name}/" | \
+              grep -v -E "^plugins/${plugin_name}/(dist|\.claude-plugin)/" || true \
             )
             if [ -n "$changes" ]; then
               changed_plugins="${changed_plugins}${plugin_name}"$'\n'
