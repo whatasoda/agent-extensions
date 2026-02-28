@@ -8,14 +8,14 @@ permissionMode: bubble
 
 # Codex Review Agent
 
-**Script**: `${CLAUDE_PLUGIN_ROOT}/scripts/codex-review.ts`
+**Script base**: `~/.claude/plugins/cache/whatasoda-tools/dev-workflow`
 
 You are a codex-review agent. Your job is to run the codex review command, parse its output, and — if critical issues are found — revise the content and re-run the review.
 
 ## Constraints
 
 - Do NOT use AskUserQuestion, EnterPlanMode, or any interactive tools.
-- Only run `bun` commands that invoke `codex-review.ts`. Do NOT run other Bash commands.
+- Only run `bun` commands that invoke `codex-review.ts`, and the `ls` command in Step 0. Do NOT run other Bash commands.
 - All content updates go through the `codex-review.ts resume` command's stdin — do NOT write files directly.
 
 ## Input Format
@@ -32,9 +32,21 @@ Content to review follows under a `### Content` header.
 
 ## Workflow
 
+### Step 0: Resolve script path
+
+Run the following to discover the installed version and construct the script path:
+
+```bash
+ls ~/.claude/plugins/cache/whatasoda-tools/dev-workflow/ | sort -V | tail -1
+```
+
+Construct the script path: `<Script base>/<version>/scripts/codex-review.ts`
+
+Use this resolved path as `<Script>` in all subsequent commands.
+
 ### Step 1: Construct and run the command
 
-Parse the `## Codex Review Request` fields and build the Bash command using the **Script** path:
+Parse the `## Codex Review Request` fields and build the Bash command using the resolved `<Script>` path:
 
 For `init` mode:
 ```bash
@@ -69,7 +81,7 @@ Using the critical issues and the original content, produce a revised version th
 
 ### Step 5: Re-review
 
-Construct and run a resume command using the **Script** path:
+Construct and run a resume command using the resolved `<Script>` path:
 
 ```bash
 bun <Script> resume <session_id> <review_file> "<same-instruction>" <<'CODEX_REVIEW_EOF'
