@@ -214,7 +214,7 @@ Before writing the plan file, run an external review:
    ```bash
    codex exec -m gpt-5.3-codex "Review this updated implementation plan. Focus on step completeness, dependency correctness, and acceptance criteria verifiability — only flag critical problems: REVIEW_FILE (ref: <repo-root>/CLAUDE.md)"
    ```
-5. If the codex command fails, skip with warning: "⚠ codex レビューをスキップします（コマンド実行失敗）" and continue.
+6. If the codex command fails, skip with warning: "⚠ codex レビューをスキップします（コマンド実行失敗）" and continue.
 
 ### Step 5: Write Plan File
 

@@ -10,7 +10,7 @@ Quick codebase research for topics that don't require deep multi-agent investiga
 
 ## Design Notes
 
-- **No sub-agents**: The Task tool is excluded from `allowed-tools`, enforcing direct investigation only. This is the primary difference from the full version and matches the pattern in `soda-plan-lite` and `soda-propose-lite`.
+- **No sub-agents**: The Task tool is excluded from `allowed-tools`, enforcing direct investigation only. This is the primary difference from the full version and matches the pattern in `soda-propose-lite`.
 
 - **Single AskUserQuestion**: The annotation checkpoint combines correction input and finalization into one interaction. The user can either correct findings and finalize, finalize immediately, or escalate to the full version. This is the only interactive gate in the skill.
 
