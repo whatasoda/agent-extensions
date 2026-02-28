@@ -143,26 +143,20 @@ Priority order: Proposal Summary (approach decision) > Research Summary (codebas
 
 ### Codex Review (pre-plan-mode)
 
-Delegate codex review to a subagent to keep the full codex output out of the main context.
+Delegate codex review to a subagent. The subagent handles revision internally if critical issues are found.
 
 1. Launch a codex review subagent:
    - Tool: `Task(subagent_type: dev-workflow:codex-review)`
-   - Prompt: Specify "init" mode and include the Bash command with composed content via heredoc.
+   - Prompt: Include the Bash command with composed content via heredoc.
    - Bash command:
      ```bash
      bun ${CLAUDE_PLUGIN_ROOT}/scripts/codex-review.ts init "Review this plan. Skip trivial issues — only flag critical problems" <<'CODEX_REVIEW_EOF'
      [composed plan content]
      CODEX_REVIEW_EOF
      ```
-   - Capture `review_file`, `session_id`, and critical issues from the subagent's response.
-2. If the subagent reports critical issues, revise the content and launch another subagent specifying "resume" mode:
-   - Bash command:
-     ```bash
-     bun ${CLAUDE_PLUGIN_ROOT}/scripts/codex-review.ts resume CODEX_SESSION REVIEW_FILE "Plan updated — review again. Skip trivial issues — only flag critical problems" <<'CODEX_REVIEW_EOF'
-     [revised plan content]
-     CODEX_REVIEW_EOF
-     ```
-3. If the subagent reports skip or failure, continue without review.
+2. Use the subagent's response:
+   - If **Revision Applied: Yes**: use the `Revised Content` from the response as the plan content.
+   - If **Status: Skipped** or subagent failure: continue without review.
 
 After the codex review completes, use the EnterPlanMode tool to enter plan mode. Write the reviewed plan content to the plan file. Proceed with the Plan Annotation Guidance below, then exit plan mode via ExitPlanMode.
 

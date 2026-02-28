@@ -198,26 +198,20 @@ Compose the PLAN-*.md file following the format defined in the PLAN-*.md File Fo
 
 ### Codex Review
 
-Delegate codex review to a subagent to keep the full codex output out of the main context.
+Delegate codex review to a subagent. The subagent handles revision internally if critical issues are found.
 
 1. Launch a codex review subagent:
    - Tool: `Task(subagent_type: dev-workflow:codex-review)`
-   - Prompt: Specify "init" mode and include the Bash command with composed content via heredoc.
+   - Prompt: Include the Bash command with composed content via heredoc.
    - Bash command:
      ```bash
      bun ${CLAUDE_PLUGIN_ROOT}/scripts/codex-review.ts init "Review this implementation plan. Focus on step completeness, dependency correctness, and acceptance criteria verifiability — only flag critical problems" <<'CODEX_REVIEW_EOF'
      [composed PLAN-*.md content]
      CODEX_REVIEW_EOF
      ```
-   - Capture `review_file`, `session_id`, and critical issues from the subagent's response.
-2. If the subagent reports critical issues, revise the content and launch another subagent with a **fresh** "init" command (not resume):
-   - Bash command:
-     ```bash
-     bun ${CLAUDE_PLUGIN_ROOT}/scripts/codex-review.ts init "Review this implementation plan. Focus on step completeness, dependency correctness, and acceptance criteria verifiability — only flag critical problems" <<'CODEX_REVIEW_EOF'
-     [revised PLAN-*.md content]
-     CODEX_REVIEW_EOF
-     ```
-3. If the subagent reports skip or failure, continue without review.
+2. Use the subagent's response:
+   - If **Revision Applied: Yes**: use the `Revised Content` from the response as the plan content.
+   - If **Status: Skipped** or subagent failure: continue without review.
 
 ### Step 5: Write Plan File
 

@@ -231,28 +231,22 @@ If the user requests adjustments, incorporate feedback and re-present. Do NOT pr
 
 ### Codex Review (pre-confirmation)
 
-Delegate codex review to a subagent to keep the full codex output out of the main context.
+Delegate codex review to a subagent. The subagent handles revision internally if critical issues are found.
 
 1. Compose the PROGRESS.md content by substituting all template placeholders (phases, items, validation criteria, dependencies)
 2. Launch a codex review subagent:
    - Tool: `Task(subagent_type: dev-workflow:codex-review)`
-   - Prompt: Specify "init" mode and include the Bash command with composed content via heredoc.
+   - Prompt: Include the Bash command with composed content via heredoc.
    - Bash command:
      ```bash
      bun ${CLAUDE_PLUGIN_ROOT}/scripts/codex-review.ts init "Review this loop progress configuration. Focus on phase structure, item dependency chains, and validation specificity — only flag critical problems" <<'CODEX_REVIEW_EOF'
      [composed PROGRESS.md content]
      CODEX_REVIEW_EOF
      ```
-   - Capture `review_file`, `session_id`, and critical issues from the subagent's response.
-3. If the subagent reports critical issues, revise the content and launch another subagent with a **fresh** "init" command (not resume):
-   - Bash command:
-     ```bash
-     bun ${CLAUDE_PLUGIN_ROOT}/scripts/codex-review.ts init "Review this loop progress configuration. Focus on phase structure, item dependency chains, and validation specificity — only flag critical problems" <<'CODEX_REVIEW_EOF'
-     [revised PROGRESS.md content]
-     CODEX_REVIEW_EOF
-     ```
+3. Use the subagent's response:
+   - If **Revision Applied: Yes**: use the `Revised Content` from the response as the PROGRESS.md content.
+   - If **Status: Skipped** or subagent failure: continue without review.
 4. Include codex feedback (if any) in the Step 4 confirmation presentation.
-5. If the subagent reports skip or failure, continue without review.
 
 ### Step 4: Confirmation
 
