@@ -25,8 +25,8 @@ git rev-parse --show-toplevel
 If this fails (non-git context), use the current working directory as the repo root.
 
 **Loop name derivation**:
-- If `$ARGUMENTS` is provided, derive a suggested loop name by slugifying: lowercase, replace spaces/special chars with hyphens, trim to 50 chars (e.g., "Add dark mode support" → `add-dark-mode-support`)
-- If `$ARGUMENTS` is empty, ask the user for a loop name
+- If `$ARGUMENTS` is provided, derive a suggested loop name by slugifying: lowercase, replace spaces/special chars with hyphens, trim to 50 chars, then prepend the current date as `YYYYMMDD-` prefix (e.g., "Add dark mode support" on 2026-02-28 → `20260228-add-dark-mode-support`). The date is derived from the `currentDate` system context.
+- If `$ARGUMENTS` is empty, ask the user for a loop name. After receiving the user-provided name, slugify it and prepend the `YYYYMMDD-` date prefix automatically (the user does not type the date prefix themselves).
 
 **Confirm loop name** with AskUserQuestion:
 - "「{{SUGGESTED_LOOP_NAME}}」で進める"
