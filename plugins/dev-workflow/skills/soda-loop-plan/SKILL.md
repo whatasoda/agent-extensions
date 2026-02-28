@@ -201,33 +201,22 @@ Compose the PLAN-*.md file following the format defined in the PLAN-*.md File Fo
 Delegate codex review to a subagent to keep the full codex output out of the main context.
 
 1. Launch a codex review subagent:
-   - Tool: `Task(subagent_type: Explore, model: haiku)`
-   - Prompt must include: the constraint block ("You are a codex-review agent. Run the review command below, parse the output, and return findings in the specified format. Do NOT use AskUserQuestion, EnterPlanMode, or any interactive tools."), the Bash command with composed content via heredoc, and the Codex Review Output Contract — Init.
+   - Tool: `Task(subagent_type: dev-workflow:codex-review)`
+   - Prompt: Specify "init" mode and include the Bash command with composed content via heredoc.
    - Bash command:
      ```bash
      bun ${CLAUDE_PLUGIN_ROOT}/scripts/codex-review.ts init "Review this implementation plan. Focus on step completeness, dependency correctness, and acceptance criteria verifiability — only flag critical problems" <<'CODEX_REVIEW_EOF'
      [composed PLAN-*.md content]
      CODEX_REVIEW_EOF
      ```
-   - **Codex Review Output Contract — Init**:
-     ```
-     Return findings in this exact format:
-     ### Review Result
-     - **review_file**: (path from script output line `review_file:`)
-     - **session_id**: (value from script output line `session_id:`, or "none")
-     - **Status**: No critical issues | Critical issues found | Skipped
-     ### Critical Issues
-     - (issue description — or "none")
-     ```
    - Capture `review_file`, `session_id`, and critical issues from the subagent's response.
-2. If the subagent reports critical issues, revise the content and launch another subagent with a **fresh** init command (not resume):
+2. If the subagent reports critical issues, revise the content and launch another subagent with a **fresh** "init" command (not resume):
    - Bash command:
      ```bash
      bun ${CLAUDE_PLUGIN_ROOT}/scripts/codex-review.ts init "Review this implementation plan. Focus on step completeness, dependency correctness, and acceptance criteria verifiability — only flag critical problems" <<'CODEX_REVIEW_EOF'
      [revised PLAN-*.md content]
      CODEX_REVIEW_EOF
      ```
-   - Use the Codex Review Output Contract — Init (same as step 1).
 3. If the subagent reports skip or failure, continue without review.
 
 ### Step 5: Write Plan File
