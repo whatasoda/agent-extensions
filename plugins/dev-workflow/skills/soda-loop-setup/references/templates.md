@@ -74,6 +74,15 @@ You are an autonomous agent in a multi-session loop. Each session is context-bou
 8. Commit changes: `{{COMMIT_PREFIX}}: <description>` — stage specific files only.
 9. After 3+ items or when context feels heavy, exit cleanly.
 
+## Adaptive Planning
+
+When SESSION_HANDOFF.md or LEARNINGS.md reveals significant context:
+1. Re-evaluate pending item priority — if a discovered pattern or pitfall affects multiple items, address the most impactful first
+2. If an item's Acceptance criteria are outdated (e.g., API changed, dependency updated), update the criteria in PROGRESS.md before starting work
+3. When discovery reveals a prerequisite not captured in Deps, add the dependency notation before proceeding
+4. If completing an item reveals that another planned item is unnecessary, mark it `[x]` with a note "Superseded by [item-id]"
+5. Log all plan adjustments in LEARNINGS.md under ## Patterns
+
 ## Self-Review Checklist
 Before marking any item `[x]`, verify ALL of the following:
 - [ ] `git diff` shows only changes serving this item's goal
