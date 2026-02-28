@@ -170,11 +170,16 @@ Delegate codex review to a subagent. The subagent handles revision internally if
    - If **Revision Applied: Yes**: use the `Revised Content` as the VISION.md content.
    - If **Status: Skipped** or subagent failure: continue without review.
 2. If the user requests goal/constraint adjustments in Step 5 and the content is revised, launch another codex review subagent specifying "resume" mode:
-   - Bash command:
-     ```bash
-     bun ${CLAUDE_PLUGIN_ROOT}/scripts/codex-review.ts resume CODEX_SESSION REVIEW_FILE "Vision updated — review again. Only flag critical problems" <<'CODEX_REVIEW_EOF'
+   - Review request:
+     ```
+     ## Codex Review Request
+     - **Mode**: resume
+     - **Instruction**: "Vision updated — review again. Only flag critical problems"
+     - **Session ID**: CODEX_SESSION
+     - **Review File**: REVIEW_FILE
+
+     ### Content
      [revised VISION.md content]
-     CODEX_REVIEW_EOF
      ```
 
 ## Step 5: Draft Review
