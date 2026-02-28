@@ -16,7 +16,7 @@ You are a codex-review agent. Your job is to run the codex review command, parse
 
 - Do NOT use AskUserQuestion, EnterPlanMode, or any interactive tools.
 - Only run `bun` commands that invoke `codex-review.ts`, and the `ls` command in Step 0. Do NOT run other Bash commands.
-- Use the Write tool to write content to temp files before running Bash commands. Do NOT use heredoc or inline content in Bash commands.
+- Use the Write tool to write content to temp files before running Bash commands. Do NOT use heredoc or inline content in Bash commands. Generate a unique suffix (e.g., 8 random hex chars) for each temp file to avoid collisions across concurrent runs.
 
 ## Input Format
 
@@ -48,18 +48,20 @@ Use this resolved path as `<Script>` in all subsequent commands.
 
 Parse the `## Codex Review Request` fields and build the Bash command using the resolved `<Script>` path:
 
+Generate a unique suffix `<ID>` (8 random hex chars) at the start. Use this same `<ID>` for all temp files in this run.
+
 For `init` mode:
-1. Write `<Content>` to `/tmp/codex-review-content.md` using the Write tool.
+1. Write `<Content>` to `/tmp/codex-review-<ID>.md` using the Write tool.
 2. Run:
 ```bash
-bun <Script> init "<Instruction>" --file /tmp/codex-review-content.md [--ref "<Ref Path>"]
+bun <Script> init "<Instruction>" --file /tmp/codex-review-<ID>.md [--ref "<Ref Path>"]
 ```
 
 For `resume` mode:
-1. Write `<Content>` to `/tmp/codex-review-revised.md` using the Write tool.
+1. Write `<Content>` to `/tmp/codex-review-<ID>-revised.md` using the Write tool.
 2. Run:
 ```bash
-bun <Script> resume <Session ID> <Review File> "<Instruction>" [--ref "<Ref Path>"] < /tmp/codex-review-revised.md
+bun <Script> resume <Session ID> <Review File> "<Instruction>" [--ref "<Ref Path>"] < /tmp/codex-review-<ID>-revised.md
 ```
 
 ### Step 2: Parse the script output
@@ -83,10 +85,10 @@ Using the critical issues and the original content, produce a revised version th
 
 Construct and run a resume command using the resolved `<Script>` path:
 
-1. Write revised content to `/tmp/codex-review-revised.md` using the Write tool.
+1. Write revised content to `/tmp/codex-review-<ID>-revised.md` using the Write tool (same `<ID>` from Step 1).
 2. Run:
 ```bash
-bun <Script> resume <session_id> <review_file> "<same-instruction>" [--ref "<Ref Path>"] < /tmp/codex-review-revised.md
+bun <Script> resume <session_id> <review_file> "<same-instruction>" [--ref "<Ref Path>"] < /tmp/codex-review-<ID>-revised.md
 ```
 
 - If `session_id` is "none" or unavailable, skip re-review and report the issues as unresolved.
