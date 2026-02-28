@@ -15,6 +15,7 @@ const config = {
   summaryEnabled: process.env.LOOP_SUMMARY !== "0",
   summaryBudgetUsd: parseFloat(process.env.SUMMARY_BUDGET_USD ?? "1"),
   qualityGate: process.env.QUALITY_GATE !== "0",
+  stagnationThreshold: parseInt(process.env.STAGNATION_THRESHOLD ?? "3", 10),
 };
 
 const PROGRESS_FILE = resolve(config.loopDir, "PROGRESS.md");
@@ -812,13 +813,14 @@ async function main(): Promise<void> {
     `Dir: ${config.loopDir} | Model: ${config.claudeModel} | Budget: $${config.maxBudgetUsd}/session`,
   );
   log(
-    `Max sessions: ${config.maxSessions} | Idle timeout: ${config.idleTimeout}s | Cooldown: ${config.cooldownSecs}s`,
+    `Max sessions: ${config.maxSessions} | Idle timeout: ${config.idleTimeout}s | Cooldown: ${config.cooldownSecs}s | Stagnation threshold: ${config.stagnationThreshold}`,
   );
 
   let sessionCount = 0;
   let zeroItemRuns = 0;
   let preGraceTotal = 0;
   let consecutiveQualityFailures = 0;
+  let consecutiveStagnantSessions = 0;
   const verifyCommands = config.qualityGate ? await parseVerifyCommands() : [];
 
   await initLearnings();
@@ -891,6 +893,24 @@ async function main(): Promise<void> {
     // Generate cross-session intelligence files
     await generateSessionHandoff(sessionCount, delta);
     await truncateLearnings();
+
+    // Circuit breaker: stagnation detection
+    // Skip during grace sessions — they legitimately produce zero item changes
+    if (zeroItemRuns === 0) {
+      const isStagnant = delta.completedItems.length === 0
+        && delta.blockedItems.length === 0
+        && delta.changedFiles.length === 0;
+      if (isStagnant) {
+        consecutiveStagnantSessions++;
+        log(`Stagnant session (${consecutiveStagnantSessions}/${config.stagnationThreshold})`);
+      } else {
+        consecutiveStagnantSessions = 0;
+      }
+      if (consecutiveStagnantSessions >= config.stagnationThreshold) {
+        log(`Circuit breaker: ${config.stagnationThreshold} consecutive stagnant sessions. Stopping.`);
+        break;
+      }
+    }
 
     // Run between-session quality gate
     if (verifyCommands.length > 0) {
