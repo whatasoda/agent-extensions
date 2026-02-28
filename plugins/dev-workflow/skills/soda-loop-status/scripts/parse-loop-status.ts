@@ -27,6 +27,8 @@ interface SessionEntry {
   exitReason: string;
   sessionId: string | null;
   costUsd: number | null;
+  durationMs: number | null;
+  numTurns: number | null;
   completedItems: string[];
   changedFiles: string[];
 }
@@ -77,6 +79,8 @@ interface LoopStatusOutput {
     count: number;
     entries: SessionEntry[];
     totalCostUsd: number | null;
+    averageCostUsd: number | null;
+    averageDurationMs: number | null;
   };
   vision: VisionInfo | null;
   plans: PlansStatus | null;
@@ -303,15 +307,19 @@ function parseSessionLogs(
     completedItems: string[];
     changedFiles: string[];
   }>,
-): { entries: SessionEntry[]; totalCostUsd: number | null } {
+): { entries: SessionEntry[]; totalCostUsd: number | null; averageCostUsd: number | null; averageDurationMs: number | null } {
   if (!existsSync(logDir)) {
     // Fall back to PROGRESS.md session log entries only (no cost data)
     return {
       entries: sessionLogEntries.map((e) => ({
         ...e,
         costUsd: e.costUsd ?? null,
+        durationMs: null,
+        numTurns: null,
       })),
       totalCostUsd: null,
+      averageCostUsd: null,
+      averageDurationMs: null,
     };
   }
 
@@ -323,15 +331,17 @@ function parseSessionLogs(
       return numA - numB;
     });
 
-  // Build a map of session number → {sessionId, costUsd} from log files
+  // Build a map of session number → {sessionId, costUsd, durationMs, numTurns} from log files
   const logData = new Map<
     number,
-    { sessionId: string | null; costUsd: number | null }
+    { sessionId: string | null; costUsd: number | null; durationMs: number | null; numTurns: number | null }
   >();
   for (const file of logFiles) {
     const num = parseInt(file.match(/session-(\d+)/)?.[1] ?? "0", 10);
     let sessionId: string | null = null;
     let costUsd: number | null = null;
+    let durationMs: number | null = null;
+    let numTurns: number | null = null;
 
     try {
       const content = readFileSync(resolve(logDir, file), "utf-8");
@@ -342,8 +352,16 @@ function parseSessionLogs(
           if (event.type === "init" && event.session_id) {
             sessionId = event.session_id;
           }
-          if (event.type === "result" && event.cost_usd !== undefined) {
-            costUsd = event.cost_usd;
+          if (event.type === "result") {
+            if (event.cost_usd !== undefined) {
+              costUsd = event.cost_usd;
+            }
+            if (event.duration_ms !== undefined) {
+              durationMs = event.duration_ms;
+            }
+            if (event.num_turns !== undefined) {
+              numTurns = event.num_turns;
+            }
           }
         } catch {
           // Skip malformed NDJSON lines
@@ -353,7 +371,7 @@ function parseSessionLogs(
       // Skip unreadable log files
     }
 
-    logData.set(num, { sessionId, costUsd });
+    logData.set(num, { sessionId, costUsd, durationMs, numTurns });
   }
 
   // Merge PROGRESS.md session log with .loop-logs data
@@ -368,6 +386,8 @@ function parseSessionLogs(
       exitReason: entry.exitReason,
       sessionId: logInfo?.sessionId ?? entry.sessionId,
       costUsd: logInfo?.costUsd ?? entry.costUsd ?? null,
+      durationMs: logInfo?.durationMs ?? null,
+      numTurns: logInfo?.numTurns ?? null,
       completedItems: entry.completedItems,
       changedFiles: entry.changedFiles,
     });
@@ -382,6 +402,8 @@ function parseSessionLogs(
         exitReason: "unknown",
         sessionId: info.sessionId,
         costUsd: info.costUsd,
+        durationMs: info.durationMs,
+        numTurns: info.numTurns,
         completedItems: [],
         changedFiles: [],
       });
@@ -392,8 +414,12 @@ function parseSessionLogs(
 
   const costs = entries.map((e) => e.costUsd).filter((c): c is number => c !== null);
   const totalCostUsd = costs.length > 0 ? costs.reduce((a, b) => a + b, 0) : null;
+  const averageCostUsd = costs.length > 0 ? totalCostUsd! / costs.length : null;
 
-  return { entries, totalCostUsd };
+  const durations = entries.map((e) => e.durationMs).filter((d): d is number => d !== null);
+  const averageDurationMs = durations.length > 0 ? durations.reduce((a, b) => a + b, 0) / durations.length : null;
+
+  return { entries, totalCostUsd, averageCostUsd, averageDurationMs };
 }
 
 function parseVision(visionPath: string): VisionInfo | null {
