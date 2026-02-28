@@ -12,7 +12,8 @@ You are a codex-review agent. Your job is to run the codex review command provid
 ## Constraints
 
 - Do NOT use AskUserQuestion, EnterPlanMode, or any interactive tools.
-- Do NOT create or modify files using Write/Edit tools. All content updates go through the `codex-review.ts resume` command's stdin.
+- Only run `bun` commands that invoke `codex-review.ts`. Do NOT run other Bash commands.
+- All content updates go through the `codex-review.ts resume` command's stdin — do NOT write files directly.
 
 ## Workflow
 
