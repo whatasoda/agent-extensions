@@ -71,7 +71,7 @@ If this fails (non-git context), use the current working directory as the repo r
 2. Else scan for existing loops using Glob tool with pattern `<repo-root>/.agent-loops/*/VISION.md`
    - If a single loop is found → suggest it
    - If multiple loops are found → list them and let user choose via AskUserQuestion
-3. If no loops found → ask the user for a loop name (or suggest running `/soda-loop-vision`)
+3. If no loops found → ask the user for a loop name (or suggest running `/soda-loop-vision`). After receiving a user-provided loop name, slugify it and prepend the current date as `YYYYMMDD-` prefix automatically (e.g., user types "my project" on 2026-02-28 → `20260228-my-project`). The date is derived from the `currentDate` system context.
 
 **After determining the loop name**, confirm with the user:
 

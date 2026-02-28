@@ -572,7 +572,16 @@ function discoverLoopDir(): string | { multiple: { name: string; dir: string }[]
         existsSync(resolve(dirPath, "PROGRESS.md"))
       );
     })
-    .map((d) => ({ name: d, dir: resolve(agentLoopsDir, d) }));
+    .map((d) => ({ name: d, dir: resolve(agentLoopsDir, d) }))
+    .sort((a, b) => {
+      // Date-prefixed names (YYYYMMDD-*) sort newest first; legacy names sort last
+      const dateA = a.name.match(/^(\d{8})-/)?.[1] ?? "";
+      const dateB = b.name.match(/^(\d{8})-/)?.[1] ?? "";
+      if (dateA && dateB) return dateB.localeCompare(dateA);
+      if (dateA) return -1;
+      if (dateB) return 1;
+      return a.name.localeCompare(b.name);
+    });
 
   if (loops.length === 0) return null;
   if (loops.length === 1) return loops[0].dir;
