@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-import { existsSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, openSync, writeFileSync, readFileSync, unlinkSync, closeSync } from "node:fs";
 import { resolve } from "node:path";
 
 // === Configuration (env vars with defaults) ===
@@ -21,6 +21,43 @@ const PROGRESS_FILE = resolve(config.loopDir, "PROGRESS.md");
 const PROMPT_FILE = resolve(config.loopDir, "AGENT_PROMPT.md");
 const STOP_FILE = resolve(config.loopDir, "STOP");
 const LOG_DIR = resolve(config.loopDir, ".loop-logs");
+const LOCK_FILE = resolve(config.loopDir, "run-loop.lock");
+
+// === Lock File (single-instance guard) ===
+let lockAcquired = false;
+
+function acquireLock(): void {
+  if (existsSync(LOCK_FILE)) {
+    try {
+      const pid = parseInt(readFileSync(LOCK_FILE, "utf-8").trim(), 10);
+      process.kill(pid, 0); // throws ESRCH if process is dead
+      console.error(`Another loop is running (PID ${pid}). Exiting.`);
+      process.exit(1);
+    } catch (e: any) {
+      if (e.code === "ESRCH") {
+        log("Removing stale lock file.");
+        unlinkSync(LOCK_FILE);
+      } else {
+        throw e;
+      }
+    }
+  }
+  const fd = openSync(LOCK_FILE, "wx");
+  writeFileSync(fd, String(process.pid));
+  closeSync(fd);
+  lockAcquired = true;
+  process.on("exit", releaseLock);
+}
+
+function releaseLock(): void {
+  if (!lockAcquired) return;
+  try {
+    const content = readFileSync(LOCK_FILE, "utf-8").trim();
+    if (content === String(process.pid)) {
+      unlinkSync(LOCK_FILE);
+    }
+  } catch {}
+}
 
 // === Stream-JSON Event Types ===
 // Handle both legacy CLI format (type:"init") and SDK format (type:"system", subtype:"init")
@@ -755,6 +792,7 @@ async function main(): Promise<void> {
     process.exit(1);
   }
   mkdirSync(LOG_DIR, { recursive: true });
+  acquireLock();
 
   // Capture HEAD SHA before loop starts (for summary diff)
   let loopStartSha = "";
