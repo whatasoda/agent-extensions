@@ -3,7 +3,7 @@ name: soda-propose
 description: Compare approaches with sub-agent investigation
 user-invocable: true
 argument-hint: [problem description]
-allowed-tools: Bash(git *), Bash(codex *), Read, Write, Grep, Glob, Task, AskUserQuestion
+allowed-tools: Bash(git *), Bash(codex *), Bash(bun *), Read, Write, Grep, Glob, Task, AskUserQuestion
 ---
 
 Investigate and propose multiple approaches for the given problem or goal.
@@ -155,23 +155,20 @@ If the user rejects all approaches, return to Phase 1. Use AskUserQuestion to de
 
 ### Codex Review (pre-emission)
 
-Before emitting the Proposal Summary, run an external review:
+Delegate codex review to a subagent. The subagent handles revision internally if critical issues are found.
 
-1. Generate a session-unique review file path: run `mktemp /tmp/codex-review-soda-propose-XXXXXXXX` via Bash and capture the output path (referred to as `REVIEW_FILE` below). Use this path for all codex review steps below.
-2. Write the composed Proposal Summary to `REVIEW_FILE` using the Write tool
-3. Determine the project root:
-   ```bash
-   git rev-parse --show-toplevel
-   ```
-4. Run codex review. Capture the `session id:` value from codex output (referred to as `CODEX_SESSION` below):
-   ```bash
-   codex exec -m gpt-5.3-codex "Review this proposal. Focus on trade-off validity, missing risk assessments, and impact accuracy — only flag critical problems: REVIEW_FILE (ref: <repo-root>/CLAUDE.md)"
-   ```
-5. If codex identifies critical issues, revise the Proposal Summary and re-review using the captured session:
-   ```bash
-   codex exec resume -m gpt-5.3-codex CODEX_SESSION "Proposal updated — review again. Only flag critical problems: REVIEW_FILE (ref: <repo-root>/CLAUDE.md)"
-   ```
-5. If the codex command fails, skip with warning: "⚠ codex レビューをスキップします（コマンド実行失敗）" and continue.
+1. Launch a codex review subagent:
+   - Tool: `Task(subagent_type: dev-workflow:codex-review)`
+   - Prompt: Include the Bash command with composed content via heredoc.
+   - Bash command:
+     ```bash
+     bun ${CLAUDE_PLUGIN_ROOT}/scripts/codex-review.ts init "Review this proposal. Focus on trade-off validity, missing risk assessments, and impact accuracy — only flag critical problems" <<'CODEX_REVIEW_EOF'
+     [composed Proposal Summary]
+     CODEX_REVIEW_EOF
+     ```
+2. Use the subagent's response:
+   - If **Revision Applied: Yes**: use the `Revised Content` from the response as the Proposal Summary.
+   - If **Status: Skipped** or subagent failure: continue without review.
 
 Emit the reviewed Proposal Summary.
 

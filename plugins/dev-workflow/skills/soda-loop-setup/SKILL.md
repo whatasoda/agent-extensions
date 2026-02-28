@@ -2,7 +2,7 @@
 name: soda-loop-setup
 description: Generate autonomous loop harness from vision blueprint
 user-invocable: true
-allowed-tools: Bash(git *), Bash(bun *), Bash(codex *), Read, Grep, Glob, Write, AskUserQuestion
+allowed-tools: Bash(git *), Bash(bun *), Bash(codex *), Read, Grep, Glob, Write, Task, AskUserQuestion
 ---
 
 Generate an autonomous multi-session loop harness for a project. The harness consists of three files: PROGRESS.md, AGENT_PROMPT.md, and run-loop.ts. It consumes a VISION.md produced by `/soda-loop-vision` (or provided inline).
@@ -231,25 +231,22 @@ If the user requests adjustments, incorporate feedback and re-present. Do NOT pr
 
 ### Codex Review (pre-confirmation)
 
-After the user confirms the phase proposal in Step 3, compose a preview of the PROGRESS.md content and review it:
+Delegate codex review to a subagent. The subagent handles revision internally if critical issues are found.
 
 1. Compose the PROGRESS.md content by substituting all template placeholders (phases, items, validation criteria, dependencies)
-2. Generate a session-unique review file path: run `mktemp /tmp/codex-review-soda-loop-setup-XXXXXXXX` via Bash and capture the output path (referred to as `REVIEW_FILE` below). Use this path for all codex review steps below.
-3. Write to `REVIEW_FILE` using the Write tool
-4. Determine the project root:
-   ```bash
-   git rev-parse --show-toplevel
-   ```
-5. Run codex review:
-   ```bash
-   codex exec -m gpt-5.3-codex "Review this loop progress configuration. Focus on phase structure, item dependency chains, and validation specificity — only flag critical problems: REVIEW_FILE (ref: <repo-root>/CLAUDE.md)"
-   ```
-6. If codex identifies critical issues, revise and re-review with a **fresh** session:
-   ```bash
-   codex exec -m gpt-5.3-codex "Review this updated loop progress configuration. Focus on phase structure, item dependency chains, and validation specificity — only flag critical problems: REVIEW_FILE (ref: <repo-root>/CLAUDE.md)"
-   ```
-7. Include codex feedback (if any) in the Step 4 confirmation presentation.
-8. If the codex command fails, skip with warning: "⚠ codex レビューをスキップします（コマンド実行失敗）" and continue.
+2. Launch a codex review subagent:
+   - Tool: `Task(subagent_type: dev-workflow:codex-review)`
+   - Prompt: Include the Bash command with composed content via heredoc.
+   - Bash command:
+     ```bash
+     bun ${CLAUDE_PLUGIN_ROOT}/scripts/codex-review.ts init "Review this loop progress configuration. Focus on phase structure, item dependency chains, and validation specificity — only flag critical problems" <<'CODEX_REVIEW_EOF'
+     [composed PROGRESS.md content]
+     CODEX_REVIEW_EOF
+     ```
+3. Use the subagent's response:
+   - If **Revision Applied: Yes**: use the `Revised Content` from the response as the PROGRESS.md content.
+   - If **Status: Skipped** or subagent failure: continue without review.
+4. Include codex feedback (if any) in the Step 4 confirmation presentation.
 
 ### Step 4: Confirmation
 
