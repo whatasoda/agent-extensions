@@ -32,9 +32,14 @@ function acquireLock(): void {
   if (existsSync(LOCK_FILE)) {
     try {
       const pid = parseInt(readFileSync(LOCK_FILE, "utf-8").trim(), 10);
-      process.kill(pid, 0); // throws ESRCH if process is dead
-      console.error(`Another loop is running (PID ${pid}). Exiting.`);
-      process.exit(1);
+      if (isNaN(pid)) {
+        log("Removing corrupt lock file.");
+        unlinkSync(LOCK_FILE);
+      } else {
+        process.kill(pid, 0); // throws ESRCH if process is dead
+        console.error(`Another loop is running (PID ${pid}). Exiting.`);
+        process.exit(1);
+      }
     } catch (e: any) {
       if (e.code === "ESRCH") {
         log("Removing stale lock file.");

@@ -164,8 +164,8 @@ Provide the selected detail view, then return to Step 3 for further follow-up.
 **セッション履歴を見る:**
 Present a table from `sessions.entries`:
 ```
-| # | 日時 | 終了理由 | 完了項目 | コスト |
-|---|------|----------|----------|--------|
+| # | 日時 | 終了理由 | 完了項目 | コスト | 時間 | ターン数 |
+|---|------|----------|----------|--------|------|----------|
 | {{number}} | {{timestamp}} | {{exitReason}} | {{completedItems.join(", ") || "—"}} | ${{costUsd ?? "N/A"}} | {{durationMs ? Math.round(durationMs/60000) + "分" : "N/A"}} | {{numTurns ?? "N/A"}} |
 ```
 Add a summary line: total sessions, total cost, average cost/session, average duration, breakdown by exit reason (e.g., "normal: 5, budget-exceeded: 2, timeout: 1").
