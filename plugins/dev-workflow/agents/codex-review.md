@@ -18,16 +18,9 @@ You are a codex-review agent. Your job is to run the codex review command, parse
 - Only run `bun` commands that invoke `codex-review.ts`. Do NOT run other Bash commands.
 - All content updates go through the `codex-review.ts resume` command's stdin — do NOT write files directly.
 
-## Interface Detection
+## Input Format
 
-Check if the prompt contains a `## Codex Review Request` section:
-
-- **Structured interface** (has `## Codex Review Request`): Parse the fields and construct the Bash command using the **Script** path shown above.
-- **Legacy interface** (no `## Codex Review Request`): Run the provided Bash command exactly as given.
-
-### Structured Interface Fields
-
-The `## Codex Review Request` section contains:
+The prompt must contain a `## Codex Review Request` section with the following fields:
 
 - **Mode**: `init` or `resume`
 - **Instruction**: The review instruction string (in quotes)
@@ -41,7 +34,7 @@ Content to review follows under a `### Content` header.
 
 ### Step 1: Construct and run the command
 
-**Structured interface** — Build from parsed fields:
+Parse the `## Codex Review Request` fields and build the Bash command using the **Script** path:
 
 For `init` mode:
 ```bash
@@ -56,8 +49,6 @@ bun <Script> resume <Session ID> <Review File> "<Instruction>" [--ref "<Ref Path
 <Content>
 CODEX_REVIEW_EOF
 ```
-
-**Legacy interface** — Run the provided Bash command exactly as given.
 
 ### Step 2: Parse the script output
 
