@@ -162,9 +162,15 @@ async function main() {
       ]);
 
       if (exitCode !== 0) {
-        console.error(
-          "⚠ codex レビューをスキップします（コマンド実行失敗）"
-        );
+        if (exitCode === 126 || exitCode === 127) {
+          console.error(
+            `⚠ codex レビューをスキップします（codex コマンドが見つからない、または実行権限がありません — exit code: ${exitCode}）`
+          );
+        } else {
+          console.error(
+            `⚠ codex レビューをスキップします（コマンド実行失敗 — exit code: ${exitCode}）`
+          );
+        }
         console.log(`review_file: ${reviewFile}`);
         process.exit(0);
       }
@@ -205,9 +211,15 @@ async function main() {
       ]);
 
       if (exitCode !== 0) {
-        console.error(
-          "⚠ codex 再レビューをスキップします（コマンド実行失敗）"
-        );
+        if (exitCode === 126 || exitCode === 127) {
+          console.error(
+            `⚠ codex 再レビューをスキップします（codex コマンドが見つからない、または実行権限がありません — exit code: ${exitCode}）`
+          );
+        } else {
+          console.error(
+            `⚠ codex 再レビューをスキップします（コマンド実行失敗 — exit code: ${exitCode}）`
+          );
+        }
         process.exit(0);
       }
 
