@@ -27,6 +27,8 @@ interface SessionEntry {
   exitReason: string;
   sessionId: string | null;
   costUsd: number | null;
+  durationMs: number | null;
+  numTurns: number | null;
   completedItems: string[];
   changedFiles: string[];
 }
@@ -77,6 +79,8 @@ interface LoopStatusOutput {
     count: number;
     entries: SessionEntry[];
     totalCostUsd: number | null;
+    averageCostUsd: number | null;
+    averageDurationMs: number | null;
   };
   vision: VisionInfo | null;
   plans: PlansStatus | null;
@@ -303,15 +307,19 @@ function parseSessionLogs(
     completedItems: string[];
     changedFiles: string[];
   }>,
-): { entries: SessionEntry[]; totalCostUsd: number | null } {
+): { entries: SessionEntry[]; totalCostUsd: number | null; averageCostUsd: number | null; averageDurationMs: number | null } {
   if (!existsSync(logDir)) {
     // Fall back to PROGRESS.md session log entries only (no cost data)
     return {
       entries: sessionLogEntries.map((e) => ({
         ...e,
         costUsd: e.costUsd ?? null,
+        durationMs: null,
+        numTurns: null,
       })),
       totalCostUsd: null,
+      averageCostUsd: null,
+      averageDurationMs: null,
     };
   }
 
@@ -323,15 +331,17 @@ function parseSessionLogs(
       return numA - numB;
     });
 
-  // Build a map of session number → {sessionId, costUsd} from log files
+  // Build a map of session number → {sessionId, costUsd, durationMs, numTurns} from log files
   const logData = new Map<
     number,
-    { sessionId: string | null; costUsd: number | null }
+    { sessionId: string | null; costUsd: number | null; durationMs: number | null; numTurns: number | null }
   >();
   for (const file of logFiles) {
     const num = parseInt(file.match(/session-(\d+)/)?.[1] ?? "0", 10);
     let sessionId: string | null = null;
     let costUsd: number | null = null;
+    let durationMs: number | null = null;
+    let numTurns: number | null = null;
 
     try {
       const content = readFileSync(resolve(logDir, file), "utf-8");
@@ -342,8 +352,16 @@ function parseSessionLogs(
           if (event.type === "init" && event.session_id) {
             sessionId = event.session_id;
           }
-          if (event.type === "result" && event.cost_usd !== undefined) {
-            costUsd = event.cost_usd;
+          if (event.type === "result") {
+            if (event.cost_usd !== undefined) {
+              costUsd = event.cost_usd;
+            }
+            if (event.duration_ms !== undefined) {
+              durationMs = event.duration_ms;
+            }
+            if (event.num_turns !== undefined) {
+              numTurns = event.num_turns;
+            }
           }
         } catch {
           // Skip malformed NDJSON lines
@@ -353,7 +371,7 @@ function parseSessionLogs(
       // Skip unreadable log files
     }
 
-    logData.set(num, { sessionId, costUsd });
+    logData.set(num, { sessionId, costUsd, durationMs, numTurns });
   }
 
   // Merge PROGRESS.md session log with .loop-logs data
@@ -368,6 +386,8 @@ function parseSessionLogs(
       exitReason: entry.exitReason,
       sessionId: logInfo?.sessionId ?? entry.sessionId,
       costUsd: logInfo?.costUsd ?? entry.costUsd ?? null,
+      durationMs: logInfo?.durationMs ?? null,
+      numTurns: logInfo?.numTurns ?? null,
       completedItems: entry.completedItems,
       changedFiles: entry.changedFiles,
     });
@@ -382,6 +402,8 @@ function parseSessionLogs(
         exitReason: "unknown",
         sessionId: info.sessionId,
         costUsd: info.costUsd,
+        durationMs: info.durationMs,
+        numTurns: info.numTurns,
         completedItems: [],
         changedFiles: [],
       });
@@ -392,8 +414,12 @@ function parseSessionLogs(
 
   const costs = entries.map((e) => e.costUsd).filter((c): c is number => c !== null);
   const totalCostUsd = costs.length > 0 ? costs.reduce((a, b) => a + b, 0) : null;
+  const averageCostUsd = costs.length > 0 ? totalCostUsd! / costs.length : null;
 
-  return { entries, totalCostUsd };
+  const durations = entries.map((e) => e.durationMs).filter((d): d is number => d !== null);
+  const averageDurationMs = durations.length > 0 ? durations.reduce((a, b) => a + b, 0) / durations.length : null;
+
+  return { entries, totalCostUsd, averageCostUsd, averageDurationMs };
 }
 
 function parseVision(visionPath: string): VisionInfo | null {
@@ -553,51 +579,18 @@ function discoverLoopDir(): string | { multiple: { name: string; dir: string }[]
   return { multiple: loops };
 }
 
-// === Main ===
+// === Status Builder ===
 
-function main(): void {
-  const explicitArg = process.argv[2];
-  let loopDir: string;
-
-  if (explicitArg && explicitArg !== ".") {
-    // Explicit path provided — use directly
-    loopDir = resolve(process.cwd(), explicitArg);
-  } else {
-    // Auto-discover from .agent-loops/
-    const discovered = discoverLoopDir();
-
-    if (discovered === null) {
-      // No loops found in .agent-loops/ — fall back to cwd check
-      loopDir = resolve(process.cwd(), explicitArg ?? ".");
-    } else if (typeof discovered === "string") {
-      // Single loop found
-      loopDir = discovered;
-    } else {
-      // Multiple loops found — output selection prompt
-      console.log(
-        JSON.stringify({
-          multipleLoops: true,
-          available: discovered.multiple.map((l) => l.name),
-          agentLoopsDir: resolve(findRepoRoot()!, ".agent-loops"),
-          warnings: [],
-        }),
-      );
-      return;
-    }
-  }
-
+function buildStatus(loopDir: string): LoopStatusOutput | { loopDir: string; error: string; warnings: string[] } {
   const warnings: string[] = [];
 
   const progressPath = resolve(loopDir, "PROGRESS.md");
   if (!existsSync(progressPath)) {
-    console.log(
-      JSON.stringify({
-        loopDir,
-        error: `No PROGRESS.md found in ${loopDir}. This may not be a loop directory.`,
-        warnings: [],
-      }),
-    );
-    return;
+    return {
+      loopDir,
+      error: `No PROGRESS.md found in ${loopDir}. This may not be a loop directory.`,
+      warnings: [],
+    };
   }
 
   try {
@@ -646,7 +639,7 @@ function main(): void {
       ? { exists: true }
       : null;
 
-    const output: LoopStatusOutput = {
+    return {
       loopDir,
       projectName: progress.projectName,
       isRunning,
@@ -670,16 +663,78 @@ function main(): void {
       sessionHandoff,
       warnings,
     };
-
-    console.log(JSON.stringify(output));
   } catch (e) {
-    console.log(
-      JSON.stringify({
-        loopDir,
-        error: `Failed to parse loop status: ${e instanceof Error ? e.message : String(e)}`,
-        warnings: [],
-      }),
-    );
+    return {
+      loopDir,
+      error: `Failed to parse loop status: ${e instanceof Error ? e.message : String(e)}`,
+      warnings: [],
+    };
+  }
+}
+
+// === Main ===
+
+function resolveLoopDir(): string | null {
+  // Filter out flags from positional args
+  const positionalArgs = process.argv.slice(2).filter(a => !a.startsWith("--"));
+  const explicitArg = positionalArgs[0];
+
+  if (explicitArg && explicitArg !== ".") {
+    return resolve(process.cwd(), explicitArg);
+  }
+
+  const discovered = discoverLoopDir();
+  if (discovered === null) {
+    return resolve(process.cwd(), explicitArg ?? ".");
+  }
+  if (typeof discovered === "string") {
+    return discovered;
+  }
+
+  // Multiple loops — output selection prompt
+  console.log(
+    JSON.stringify({
+      multipleLoops: true,
+      available: discovered.multiple.map((l) => l.name),
+      agentLoopsDir: resolve(findRepoRoot()!, ".agent-loops"),
+      warnings: [],
+    }),
+  );
+  return null;
+}
+
+async function main(): Promise<void> {
+  const loopDir = resolveLoopDir();
+  if (!loopDir) return;
+
+  const watchMode = process.argv.includes("--watch");
+  const intervalArg = process.argv.find(a => a.startsWith("--interval="));
+  const interval = parseInt(intervalArg?.split("=")[1] ?? "30", 10);
+
+  if (watchMode) {
+    const progressPath = resolve(loopDir, "PROGRESS.md");
+    const stopPath = resolve(loopDir, "STOP");
+    let lastMtime = 0;
+
+    while (true) {
+      const stopExists = existsSync(stopPath);
+      const mtime = existsSync(progressPath) ? statSync(progressPath).mtimeMs : 0;
+
+      if (mtime !== lastMtime || stopExists) {
+        lastMtime = mtime;
+        const output = buildStatus(loopDir);
+        console.log(JSON.stringify(output));
+
+        // Exit watch when loop is done
+        if ("isStopped" in output && (output.isStopped || output.progress.percentComplete === 100 || !output.isRunning)) break;
+        if ("error" in output) break;
+      }
+
+      await Bun.sleep(interval * 1000);
+    }
+  } else {
+    const output = buildStatus(loopDir);
+    console.log(JSON.stringify(output));
   }
 }
 

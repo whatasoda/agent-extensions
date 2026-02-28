@@ -317,6 +317,12 @@ Disable loop-end summary (enabled by default):
 Customize summary budget:
   SUMMARY_BUDGET_USD=2 .agent-loops/{{LOOP_NAME}}/run-loop.ts
 
+Circuit breaker (stop after N consecutive stagnant sessions):
+  STAGNATION_THRESHOLD=3 .agent-loops/{{LOOP_NAME}}/run-loop.ts
+
+Discovery quota (max discovered items):
+  DISCOVERY_QUOTA_MAX=10 .agent-loops/{{LOOP_NAME}}/run-loop.ts
+
 Stop:
   touch .agent-loops/{{LOOP_NAME}}/STOP
 
@@ -325,4 +331,16 @@ View logs:
 
 Check status:
   /soda-loop-status
+
+Watch status (live monitoring):
+  /soda-loop-status  (then select "ライブモニタリング")
 ```
+
+## Safeguards
+
+The loop harness includes the following safeguards:
+
+- **Lock file**: Only one loop instance can run per loop directory. A `run-loop.lock` file with the PID is created at startup and cleaned up on exit. Stale lock files (from crashed processes) are detected and removed automatically.
+- **Circuit breaker**: If `STAGNATION_THRESHOLD` (default 3) consecutive sessions produce no progress (no completed items, no blocked items, no changed files), the loop halts automatically. Grace sessions (for discovery) are excluded from stagnation detection.
+- **Discovery quota**: The `DISCOVERY_QUOTA_MAX` env var (default 10) caps the number of discovered items (D-* prefix). Grace sessions are skipped when the quota is reached.
+- **Section-balanced LEARNINGS.md**: The LEARNINGS.md truncation algorithm preserves a minimum of 10 lines per section (Environment, Patterns, Pitfalls), preventing one bloated section from eliminating others.

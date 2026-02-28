@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-import { existsSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, openSync, writeFileSync, readFileSync, unlinkSync, closeSync } from "node:fs";
 import { resolve } from "node:path";
 
 // === Configuration (env vars with defaults) ===
@@ -15,12 +15,56 @@ const config = {
   summaryEnabled: process.env.LOOP_SUMMARY !== "0",
   summaryBudgetUsd: parseFloat(process.env.SUMMARY_BUDGET_USD ?? "1"),
   qualityGate: process.env.QUALITY_GATE !== "0",
+  stagnationThreshold: parseInt(process.env.STAGNATION_THRESHOLD ?? "3", 10),
+  discoveryQuotaMax: parseInt(process.env.DISCOVERY_QUOTA_MAX ?? "10", 10),
 };
 
 const PROGRESS_FILE = resolve(config.loopDir, "PROGRESS.md");
 const PROMPT_FILE = resolve(config.loopDir, "AGENT_PROMPT.md");
 const STOP_FILE = resolve(config.loopDir, "STOP");
 const LOG_DIR = resolve(config.loopDir, ".loop-logs");
+const LOCK_FILE = resolve(config.loopDir, "run-loop.lock");
+
+// === Lock File (single-instance guard) ===
+let lockAcquired = false;
+
+function acquireLock(): void {
+  if (existsSync(LOCK_FILE)) {
+    try {
+      const pid = parseInt(readFileSync(LOCK_FILE, "utf-8").trim(), 10);
+      if (isNaN(pid)) {
+        log("Removing corrupt lock file.");
+        unlinkSync(LOCK_FILE);
+      } else {
+        process.kill(pid, 0); // throws ESRCH if process is dead
+        console.error(`Another loop is running (PID ${pid}). Exiting.`);
+        process.exit(1);
+      }
+    } catch (e: any) {
+      if (e.code === "ESRCH") {
+        log("Removing stale lock file.");
+        unlinkSync(LOCK_FILE);
+      } else {
+        throw e;
+      }
+    }
+  }
+  const fd = openSync(LOCK_FILE, "wx");
+  writeFileSync(fd, String(process.pid));
+  closeSync(fd);
+  lockAcquired = true;
+  process.on("exit", releaseLock);
+}
+
+function releaseLock(): void {
+  if (!lockAcquired) return;
+  try {
+    const content = readFileSync(LOCK_FILE, "utf-8").trim();
+    if (content === String(process.pid)) {
+      unlinkSync(LOCK_FILE);
+    }
+  } catch {}
+}
 
 // === Stream-JSON Event Types ===
 // Handle both legacy CLI format (type:"init") and SDK format (type:"system", subtype:"init")
@@ -425,6 +469,9 @@ async function generateSessionHandoff(
     `## Suggested Next Priority`,
     ...(nextPending.length > 0 ? nextPending.map((id) => `- ${id}`) : ["- (none remaining)"]),
     ``,
+    `## Discovery Quota`,
+    `- ${[...delta.postSnapshot.itemStates.keys()].filter(id => id.startsWith("D-")).length}/${config.discoveryQuotaMax} items used`,
+    ``,
   ];
 
   await Bun.write(SESSION_HANDOFF_FILE, lines.join("\n"));
@@ -451,26 +498,76 @@ async function initLearnings(): Promise<void> {
 async function truncateLearnings(): Promise<void> {
   if (!existsSync(LEARNINGS_FILE)) return;
   try {
-    const content = await Bun.file(LEARNINGS_FILE).text();
-    const lines = content.split("\n");
+    const text = await Bun.file(LEARNINGS_FILE).text();
+    const lines = text.split("\n");
     if (lines.length <= LEARNINGS_MAX_LINES) return;
 
-    // Keep header (template structure) + most recent content
     const header = lines.slice(0, LEARNINGS_TEMPLATE_LINES.length);
     const body = lines.slice(LEARNINGS_TEMPLATE_LINES.length);
-    const keepCount = LEARNINGS_MAX_LINES - header.length;
-    const truncatedBody = body.slice(-keepCount);
 
-    // Find first section boundary for clean cut
-    let cutIdx = 0;
-    for (let i = 0; i < truncatedBody.length; i++) {
-      if (truncatedBody[i].startsWith("## ")) {
-        cutIdx = i;
-        break;
+    // Parse body into sections by ## headers
+    const sections: Array<{ header: string; lines: string[] }> = [];
+    let current: { header: string; lines: string[] } | null = null;
+    for (const line of body) {
+      if (line.startsWith("## ")) {
+        if (current) sections.push(current);
+        current = { header: line, lines: [] };
+      } else if (current) {
+        current.lines.push(line);
+      }
+    }
+    if (current) sections.push(current);
+
+    if (sections.length === 0) {
+      // No sections — fall back to simple tail truncation
+      const keepCount = LEARNINGS_MAX_LINES - header.length;
+      await Bun.write(LEARNINGS_FILE, [...header, ...body.slice(-keepCount)].join("\n"));
+      return;
+    }
+
+    // Budget: total - header lines - section header lines = content lines
+    const sectionHeaderCost = sections.length;
+    const contentBudget = LEARNINGS_MAX_LINES - header.length - sectionHeaderCost;
+
+    if (contentBudget <= 0) {
+      // Edge case: too many sections to fit any content
+      const result = [...header];
+      for (const s of sections) result.push(s.header);
+      await Bun.write(LEARNINGS_FILE, result.slice(0, LEARNINGS_MAX_LINES).join("\n"));
+      return;
+    }
+
+    // First pass: allocate minimum per section (keep newest lines)
+    const minPerSection = Math.min(10, Math.floor(contentBudget / sections.length));
+    let remaining = contentBudget;
+    const allocations = sections.map(s => {
+      const alloc = Math.min(s.lines.length, minPerSection);
+      remaining -= alloc;
+      return alloc;
+    });
+
+    // Second pass: distribute remaining lines, biased toward later sections (newest)
+    if (remaining > 0) {
+      const unallocated = sections.map((s, i) => s.lines.length - allocations[i]);
+      let totalUnalloc = unallocated.reduce((a, b) => a + b, 0);
+      for (let i = sections.length - 1; i >= 0 && remaining > 0; i--) {
+        const extra = totalUnalloc > 0
+          ? Math.min(Math.round(remaining * unallocated[i] / totalUnalloc), unallocated[i])
+          : Math.min(remaining, unallocated[i]);
+        allocations[i] += extra;
+        remaining -= extra;
+        totalUnalloc -= unallocated[i];
       }
     }
 
-    const result = [...header, ...truncatedBody.slice(cutIdx)];
+    // Build result: header + each section's header + tail lines
+    const result = [...header];
+    for (let i = 0; i < sections.length; i++) {
+      result.push(sections[i].header);
+      if (allocations[i] > 0) {
+        result.push(...sections[i].lines.slice(-allocations[i]));
+      }
+    }
     await Bun.write(LEARNINGS_FILE, result.join("\n"));
   } catch {}
 }
@@ -755,6 +852,7 @@ async function main(): Promise<void> {
     process.exit(1);
   }
   mkdirSync(LOG_DIR, { recursive: true });
+  acquireLock();
 
   // Capture HEAD SHA before loop starts (for summary diff)
   let loopStartSha = "";
@@ -774,13 +872,14 @@ async function main(): Promise<void> {
     `Dir: ${config.loopDir} | Model: ${config.claudeModel} | Budget: $${config.maxBudgetUsd}/session`,
   );
   log(
-    `Max sessions: ${config.maxSessions} | Idle timeout: ${config.idleTimeout}s | Cooldown: ${config.cooldownSecs}s`,
+    `Max sessions: ${config.maxSessions} | Idle timeout: ${config.idleTimeout}s | Cooldown: ${config.cooldownSecs}s | Stagnation threshold: ${config.stagnationThreshold}`,
   );
 
   let sessionCount = 0;
   let zeroItemRuns = 0;
   let preGraceTotal = 0;
   let consecutiveQualityFailures = 0;
+  let consecutiveStagnantSessions = 0;
   const verifyCommands = config.qualityGate ? await parseVerifyCommands() : [];
 
   await initLearnings();
@@ -819,6 +918,15 @@ async function main(): Promise<void> {
         log("No pending or in-progress items after grace session. Loop complete.");
         break;
       }
+
+      // Check discovery quota before grace session
+      const preGraceSnapshot = await captureSnapshot();
+      const discoveredCount = [...preGraceSnapshot.itemStates.keys()].filter(id => id.startsWith("D-")).length;
+      if (discoveredCount >= config.discoveryQuotaMax) {
+        log(`Discovery quota reached (${discoveredCount}/${config.discoveryQuotaMax}). Skipping grace session.`);
+        break;
+      }
+
       preGraceTotal =
         progress.pending + progress.inProgress + progress.done + progress.blocked;
       log("No pending or in-progress items. Running grace session for discovery...");
@@ -853,6 +961,24 @@ async function main(): Promise<void> {
     // Generate cross-session intelligence files
     await generateSessionHandoff(sessionCount, delta);
     await truncateLearnings();
+
+    // Circuit breaker: stagnation detection
+    // Skip during grace sessions — they legitimately produce zero item changes
+    if (zeroItemRuns === 0) {
+      const isStagnant = delta.completedItems.length === 0
+        && delta.blockedItems.length === 0
+        && delta.changedFiles.length === 0;
+      if (isStagnant) {
+        consecutiveStagnantSessions++;
+        log(`Stagnant session (${consecutiveStagnantSessions}/${config.stagnationThreshold})`);
+      } else {
+        consecutiveStagnantSessions = 0;
+      }
+      if (consecutiveStagnantSessions >= config.stagnationThreshold) {
+        log(`Circuit breaker: ${config.stagnationThreshold} consecutive stagnant sessions. Stopping.`);
+        break;
+      }
+    }
 
     // Run between-session quality gate
     if (verifyCommands.length > 0) {

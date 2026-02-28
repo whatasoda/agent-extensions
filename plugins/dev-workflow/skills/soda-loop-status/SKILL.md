@@ -28,7 +28,7 @@ The above JSON provides the full loop status. See the schema description below f
 - `discoveredItems` — Items added by agent discovery protocol (D-* prefix)
 - `blockedItems[]` — Items in blocked state with `id` and `title`
 - `inProgressItems[]` — Items in in-progress state with `id` and `title`
-- `sessions` — Session history: `count`, `entries[]` with `number`, `timestamp`, `exitReason`, `sessionId`, `costUsd`, `completedItems`, `changedFiles`, and `totalCostUsd`
+- `sessions` — Session history: `count`, `entries[]` with `number`, `timestamp`, `exitReason`, `sessionId`, `costUsd`, `durationMs`, `numTurns`, `completedItems`, `changedFiles`; aggregates: `totalCostUsd`, `averageCostUsd`, `averageDurationMs`
 - `vision` — VISION.md data: `purpose`, `goalCount`, `goals[]` with `text` and `status`
 - `plans` — PLAN-*.md data: `count`, `files[]` with `filename`, `name`, `goalsCovered`, `stepCount`, `created`; `coveredGoalCount`, `totalGoalCount` (null if no plan files exist)
 - `learnings` — LEARNINGS.md status: `exists`, `lineCount` (null if file doesn't exist)
@@ -70,7 +70,7 @@ Present a dashboard using the parsed JSON data. Format in Japanese:
 
 状態: {{STATUS_LABEL}}
 進捗: {{done}}/{{total}} ({{percentComplete}}%)
-セッション: {{sessions.count}}回 | 総コスト: ${{sessions.totalCostUsd ?? "N/A"}}
+セッション: {{sessions.count}}回 | 総コスト: ${{sessions.totalCostUsd ?? "N/A"}} | 平均: ${{sessions.averageCostUsd ?? "N/A"}}/回 | 平均時間: {{sessions.averageDurationMs ?? "N/A"}}ms
 
 {{PROGRESS_BAR}}
 ```
@@ -128,6 +128,7 @@ Add coverage summary: `ゴールカバレッジ: {{coveredGoalCount}}/{{totalGoa
 
 Use AskUserQuestion with options selected based on context. Always include "終了". Choose up to 3 other options from the following list, prioritizing options relevant to the current state:
 
+- "ライブモニタリング" — start watch mode for periodic status updates (include if `isRunning` is true). See Watch Mode below.
 - "セッション履歴を見る" — show session history table (include if `sessions.count > 0`)
 - "ブロック項目を詳しく見る" — investigate blocked items in PROGRESS.md (include if `blockedItems.length > 0`)
 - "ビジョンの達成状況を確認" — show vision goals vs progress (include if `vision` is not null)
@@ -139,6 +140,23 @@ Use AskUserQuestion with options selected based on context. Always include "終�
 - "最新セッションのログを見る" — read the most recent .loop-logs/session-N.log (include if `sessions.count > 0`)
 - "終了" — end the skill
 
+### Watch Mode
+
+When the user selects "ライブモニタリング", run the parser in watch mode:
+
+```bash
+bun ${CLAUDE_PLUGIN_ROOT}/skills/soda-loop-status/scripts/parse-loop-status.ts {{loopDir}} --watch --interval=30
+```
+
+This outputs one JSON line per check interval (default 30 seconds). The script checks PROGRESS.md mtime and STOP file on each tick, and automatically exits when the loop completes or stops.
+
+Present each update as a compact status line:
+```
+[{{timestamp}}] {{percentComplete}}% ({{done}}/{{total}}) | セッション: {{sessions.count}} | コスト: ${{totalCostUsd}}
+```
+
+When watch mode exits, return to Step 3 for follow-up options.
+
 ### Step 4: Detail Views
 
 Provide the selected detail view, then return to Step 3 for further follow-up.
@@ -146,11 +164,11 @@ Provide the selected detail view, then return to Step 3 for further follow-up.
 **セッション履歴を見る:**
 Present a table from `sessions.entries`:
 ```
-| # | 日時 | 終了理由 | 完了項目 | コスト |
-|---|------|----------|----------|--------|
-| {{number}} | {{timestamp}} | {{exitReason}} | {{completedItems.join(", ") || "—"}} | ${{costUsd ?? "N/A"}} |
+| # | 日時 | 終了理由 | 完了項目 | コスト | 時間 | ターン数 |
+|---|------|----------|----------|--------|------|----------|
+| {{number}} | {{timestamp}} | {{exitReason}} | {{completedItems.join(", ") || "—"}} | ${{costUsd ?? "N/A"}} | {{durationMs ? Math.round(durationMs/60000) + "分" : "N/A"}} | {{numTurns ?? "N/A"}} |
 ```
-Add a summary line: total sessions, total cost, breakdown by exit reason (e.g., "normal: 5, budget-exceeded: 2, timeout: 1").
+Add a summary line: total sessions, total cost, average cost/session, average duration, breakdown by exit reason (e.g., "normal: 5, budget-exceeded: 2, timeout: 1").
 
 **ブロック項目を詳しく見る:**
 For each blocked item, use Grep to find the item in PROGRESS.md by its ID (e.g., `**{{id}}**`), read the surrounding context (item description, dependencies, validation criteria), and present:
