@@ -159,12 +159,15 @@ Delegate codex review to a subagent. The subagent handles revision internally if
 
 1. Launch a codex review subagent:
    - Tool: `Task(subagent_type: dev-workflow:codex-review)`
-   - Prompt: Include the Bash command with composed content via heredoc.
-   - Bash command:
-     ```bash
-     bun ${CLAUDE_PLUGIN_ROOT}/scripts/codex-review.ts init "Review this proposal. Focus on trade-off validity, missing risk assessments, and impact accuracy — only flag critical problems" <<'CODEX_REVIEW_EOF'
+   - Prompt: Include the review request with composed content.
+   - Review request:
+     ```
+     ## Codex Review Request
+     - **Mode**: init
+     - **Instruction**: "Review this proposal. Focus on trade-off validity, missing risk assessments, and impact accuracy — only flag critical problems"
+
+     ### Content
      [composed Proposal Summary]
-     CODEX_REVIEW_EOF
      ```
 2. Use the subagent's response:
    - If **Revision Applied: Yes**: use the `Revised Content` from the response as the Proposal Summary.
