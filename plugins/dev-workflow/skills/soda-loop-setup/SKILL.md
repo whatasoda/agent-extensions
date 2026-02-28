@@ -236,12 +236,15 @@ Delegate codex review to a subagent. The subagent handles revision internally if
 1. Compose the PROGRESS.md content by substituting all template placeholders (phases, items, validation criteria, dependencies)
 2. Launch a codex review subagent:
    - Tool: `Task(subagent_type: dev-workflow:codex-review)`
-   - Prompt: Include the Bash command with composed content via heredoc.
-   - Bash command:
-     ```bash
-     bun ${CLAUDE_PLUGIN_ROOT}/scripts/codex-review.ts init "Review this loop progress configuration. Focus on phase structure, item dependency chains, and validation specificity — only flag critical problems" <<'CODEX_REVIEW_EOF'
+   - Prompt: Include the review request with composed content.
+   - Review request:
+     ```
+     ## Codex Review Request
+     - **Mode**: init
+     - **Instruction**: "Review this loop progress configuration. Focus on phase structure, item dependency chains, and validation specificity — only flag critical problems"
+
+     ### Content
      [composed PROGRESS.md content]
-     CODEX_REVIEW_EOF
      ```
 3. Use the subagent's response:
    - If **Revision Applied: Yes**: use the `Revised Content` from the response as the PROGRESS.md content.

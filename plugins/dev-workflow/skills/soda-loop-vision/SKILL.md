@@ -156,22 +156,30 @@ Delegate codex review to a subagent. The subagent handles revision internally if
 
 1. Launch a codex review subagent:
    - Tool: `Task(subagent_type: dev-workflow:codex-review)`
-   - Prompt: Include the Bash command with composed content via heredoc.
-   - Bash command:
-     ```bash
-     bun ${CLAUDE_PLUGIN_ROOT}/scripts/codex-review.ts init "Review this vision definition. Focus on goal verifiability, constraint validity, and scope clarity — only flag critical problems" <<'CODEX_REVIEW_EOF'
+   - Prompt: Include the review request with composed content.
+   - Review request:
+     ```
+     ## Codex Review Request
+     - **Mode**: init
+     - **Instruction**: "Review this vision definition. Focus on goal verifiability, constraint validity, and scope clarity — only flag critical problems"
+
+     ### Content
      [composed VISION.md content]
-     CODEX_REVIEW_EOF
      ```
    - Capture `review_file`, `session_id` from the subagent's response.
    - If **Revision Applied: Yes**: use the `Revised Content` as the VISION.md content.
    - If **Status: Skipped** or subagent failure: continue without review.
 2. If the user requests goal/constraint adjustments in Step 5 and the content is revised, launch another codex review subagent specifying "resume" mode:
-   - Bash command:
-     ```bash
-     bun ${CLAUDE_PLUGIN_ROOT}/scripts/codex-review.ts resume CODEX_SESSION REVIEW_FILE "Vision updated — review again. Only flag critical problems" <<'CODEX_REVIEW_EOF'
+   - Review request:
+     ```
+     ## Codex Review Request
+     - **Mode**: resume
+     - **Instruction**: "Vision updated — review again. Only flag critical problems"
+     - **Session ID**: CODEX_SESSION
+     - **Review File**: REVIEW_FILE
+
+     ### Content
      [revised VISION.md content]
-     CODEX_REVIEW_EOF
      ```
 
 ## Step 5: Draft Review
