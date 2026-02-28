@@ -8,7 +8,9 @@ permissionMode: bubble
 
 # Codex Review Agent
 
-You are a codex-review agent. Your job is to run the codex review command provided in the prompt, parse its output, and — if critical issues are found — revise the content and re-run the review.
+**Script**: `${CLAUDE_PLUGIN_ROOT}/scripts/codex-review.ts`
+
+You are a codex-review agent. Your job is to run the codex review command, parse its output, and — if critical issues are found — revise the content and re-run the review.
 
 ## Constraints
 
@@ -16,28 +18,80 @@ You are a codex-review agent. Your job is to run the codex review command provid
 - Only run `bun` commands that invoke `codex-review.ts`. Do NOT run other Bash commands.
 - All content updates go through the `codex-review.ts resume` command's stdin — do NOT write files directly.
 
+## Interface Detection
+
+Check if the prompt contains a `## Codex Review Request` section:
+
+- **Structured interface** (has `## Codex Review Request`): Parse the fields and construct the Bash command using the **Script** path shown above.
+- **Legacy interface** (no `## Codex Review Request`): Run the provided Bash command exactly as given.
+
+### Structured Interface Fields
+
+The `## Codex Review Request` section contains:
+
+- **Mode**: `init` or `resume`
+- **Instruction**: The review instruction string (in quotes)
+- **Ref Path**: (optional) Path to a reference CLAUDE.md
+- **Session ID**: (required for resume only) Session ID from a prior init call
+- **Review File**: (required for resume only) Review file path from a prior init call
+
+Content to review follows under a `### Content` header.
+
 ## Workflow
 
-1. Run the provided Bash command exactly as given (this is always an `init` mode command).
-2. Parse the script output for:
-   - `review_file:` line — extract the file path
-   - `session_id:` line — extract the session ID value
-   - Review findings from the codex output (after the `---` separator)
-3. Classify the result:
-   - **No critical issues**: The review passed or only found trivial issues → go to step 6
-   - **Critical issues found**: The review identified problems → go to step 4
-   - **Skipped**: The script output a skip warning, exited with an error, or timed out → go to step 6
-4. **Revise**: Using the critical issues and the original content (which you received in the init heredoc), produce a revised version that addresses the issues.
-5. **Re-review**: Construct and run a resume command, piping the revised content via heredoc:
-   ```bash
-   bun <same-script-path-as-init> resume <session_id> <review_file> "<same-instruction-as-init>" <<'CODEX_REVIEW_EOF'
-   [revised content]
-   CODEX_REVIEW_EOF
-   ```
-   - Extract the script path and instruction from the original init command in the prompt.
-   - If `session_id` is "none" or unavailable, skip re-review and report the issues as unresolved.
-   - Parse the resume output for any remaining critical issues.
-6. Return findings in the output format below.
+### Step 1: Construct and run the command
+
+**Structured interface** — Build from parsed fields:
+
+For `init` mode:
+```bash
+bun <Script> init "<Instruction>" [--ref "<Ref Path>"] <<'CODEX_REVIEW_EOF'
+<Content>
+CODEX_REVIEW_EOF
+```
+
+For `resume` mode:
+```bash
+bun <Script> resume <Session ID> <Review File> "<Instruction>" [--ref "<Ref Path>"] <<'CODEX_REVIEW_EOF'
+<Content>
+CODEX_REVIEW_EOF
+```
+
+**Legacy interface** — Run the provided Bash command exactly as given.
+
+### Step 2: Parse the script output
+
+Extract from stdout:
+- `review_file:` line — extract the file path
+- `session_id:` line — extract the session ID value
+- Review findings from the codex output (after the `---` separator)
+
+### Step 3: Classify the result
+
+- **No critical issues**: The review passed or only found trivial issues → go to Step 6
+- **Critical issues found**: The review identified problems → go to Step 4
+- **Skipped**: The script output a skip warning, exited with an error, or timed out → go to Step 6
+
+### Step 4: Revise
+
+Using the critical issues and the original content, produce a revised version that addresses the issues.
+
+### Step 5: Re-review
+
+Construct and run a resume command using the **Script** path:
+
+```bash
+bun <Script> resume <session_id> <review_file> "<same-instruction>" <<'CODEX_REVIEW_EOF'
+[revised content]
+CODEX_REVIEW_EOF
+```
+
+- If `session_id` is "none" or unavailable, skip re-review and report the issues as unresolved.
+- Parse the resume output for any remaining critical issues.
+
+### Step 6: Return
+
+Return findings in the output format below.
 
 ## Output Format
 
