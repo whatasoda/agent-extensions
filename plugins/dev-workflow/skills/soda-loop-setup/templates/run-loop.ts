@@ -549,13 +549,14 @@ async function truncateLearnings(): Promise<void> {
     // Second pass: distribute remaining lines, biased toward later sections (newest)
     if (remaining > 0) {
       const unallocated = sections.map((s, i) => s.lines.length - allocations[i]);
-      const totalUnalloc = unallocated.reduce((a, b) => a + b, 0);
+      let totalUnalloc = unallocated.reduce((a, b) => a + b, 0);
       for (let i = sections.length - 1; i >= 0 && remaining > 0; i--) {
         const extra = totalUnalloc > 0
           ? Math.min(Math.round(remaining * unallocated[i] / totalUnalloc), unallocated[i])
           : Math.min(remaining, unallocated[i]);
         allocations[i] += extra;
         remaining -= extra;
+        totalUnalloc -= unallocated[i];
       }
     }
 
@@ -563,7 +564,9 @@ async function truncateLearnings(): Promise<void> {
     const result = [...header];
     for (let i = 0; i < sections.length; i++) {
       result.push(sections[i].header);
-      result.push(...sections[i].lines.slice(-allocations[i]));
+      if (allocations[i] > 0) {
+        result.push(...sections[i].lines.slice(-allocations[i]));
+      }
     }
     await Bun.write(LEARNINGS_FILE, result.join("\n"));
   } catch {}

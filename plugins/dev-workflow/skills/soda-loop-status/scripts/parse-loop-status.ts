@@ -726,7 +726,7 @@ async function main(): Promise<void> {
         console.log(JSON.stringify(output));
 
         // Exit watch when loop is done
-        if ("isStopped" in output && (output.isStopped || output.progress.percentComplete === 100)) break;
+        if ("isStopped" in output && (output.isStopped || output.progress.percentComplete === 100 || !output.isRunning)) break;
         if ("error" in output) break;
       }
 
