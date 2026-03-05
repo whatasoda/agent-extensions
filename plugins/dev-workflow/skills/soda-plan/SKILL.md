@@ -223,7 +223,7 @@ When the plan includes a subagent utilization plan, annotate each step with one 
 
 ## Task Scale Classification
 
-After investigation (Step 1) and before planning (Step 3), classify the task scale based on investigation results. The classification determines which conditional elements to include and how subagent utilization is structured.
+Immediately after investigation (Step 1) completes and before presenting Step 2, classify the task scale based on investigation results. The classification result is presented to the user in the Investigation Digest (Step 2). The classification determines which conditional elements to include and how subagent utilization is structured.
 
 **Classification criteria** (use the first matching category):
 
