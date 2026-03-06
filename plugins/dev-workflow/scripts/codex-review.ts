@@ -163,7 +163,7 @@ async function main() {
       const { output, exitCode } = await runCodex([
         "exec",
         "-m",
-        "gpt-5.3-codex",
+        "gpt-5.4",
         prompt,
       ]);
 
@@ -211,7 +211,7 @@ async function main() {
         "exec",
         "resume",
         "-m",
-        "gpt-5.3-codex",
+        "gpt-5.4",
         parsed.sessionId,
         prompt,
       ]);
