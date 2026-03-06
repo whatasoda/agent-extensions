@@ -173,7 +173,19 @@ For each sub-agent, include:
 
 If only 1-2 goals are selected, use a single sub-agent. If 3+ goals are selected covering distinct areas, use 2 sub-agents with divided goal assignments.
 
-Present a brief summary of investigation findings in Japanese before proceeding to Step 4.
+After sub-agent investigation completes, present findings as an **Investigation Digest** in Japanese:
+
+> **Investigation Digest**
+> - **調査要約**: [3 lines max — key findings, affected files, relevant patterns]
+> - **予想ステップ数**: [estimated number of plan steps with brief rationale]
+> - **設計判断** (if any): [anticipated design decisions with trade-offs]
+
+Use AskUserQuestion:
+- "この方針でプラン作成に進む" (recommended)
+- "方針を調整" — incorporate user feedback, re-investigate if needed, then re-present digest
+- "さらに調査を深める" — launch 1-2 additional focused sub-agents, update digest, re-present (available at most once)
+
+Do NOT proceed to Step 4 until the user confirms.
 
 ### Step 4: Plan Composition
 
@@ -215,6 +227,24 @@ Delegate codex review to a subagent. The subagent handles revision internally if
 2. Use the subagent's response:
    - If **Revision Applied: Yes**: use the `Revised Content` from the response as the plan content.
    - If **Status: Skipped** or subagent failure: continue without review.
+
+### Step 4b: Plan Content Review
+
+Present the composed plan content to the user in the conversation. Identify 1-3 **レビューポイント** — areas where user domain knowledge would most improve plan quality:
+
+> **レビューポイント**: 以下の箇所はドメイン知識による補足があると精度が向上します：
+> - Step X: {{annotation point description}}
+> - Step Y: {{annotation point description}}
+
+Use AskUserQuestion:
+- "このプランでファイルに書き出す" (recommended)
+- "プラン内容を修正" — incorporate user feedback, revise plan content, re-present
+- "キャンセル" — stop without writing
+
+If the user provides corrections, mark them in the plan as:
+> **User Context**: {{correction or additional information}}
+
+Do NOT proceed to Step 5 until the user confirms.
 
 ### Step 5: Write Plan File
 
