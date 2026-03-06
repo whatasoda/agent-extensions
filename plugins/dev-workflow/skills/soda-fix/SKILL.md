@@ -12,7 +12,7 @@ Use English for internal reasoning (thinking). All user-facing output must be in
 
 ## Phase 1: Collect Changes
 
-1. Determine the base branch by running `git log --oneline --merges -1` or defaulting to `main`.
+1. Run `bun ${CLAUDE_PLUGIN_ROOT}/skills/soda-review/scripts/detect-base-branch.ts` and use the `baseBranch` and `mergeBase` from its JSON output. If the script fails, default to `main`.
 2. Run `git diff <base>...HEAD` to collect the current branch's changes.
 3. If the diff is empty, inform the user and stop.
 4. Present a brief summary to the user:
@@ -85,6 +85,10 @@ Use AskUserQuestion with the following options:
 
 If the user selects "中止", stop immediately.
 
+If the user selects "すべて進める", proceed to Phase 5, then Phase 6 for any remaining User-confirm issues.
+
+If the user selects "自動修正のみ先に適用", proceed to Phase 5, then skip Phase 6 and go directly to Phase 7.
+
 If the user selects "すべて個別に確認", reclassify all Auto-fix issues as User-confirm and proceed to Phase 6 (skip Phase 5).
 
 ## Phase 5: Apply Auto-fixes
@@ -97,7 +101,7 @@ For each Auto-fix issue (in file order to minimize conflicts):
 
 If an edit fails (e.g., the target code has changed), skip the issue and add it to the User-confirm list with a note explaining the failure.
 
-After all auto-fixes are applied, proceed to Phase 6 if there are User-confirm issues remaining.
+After all auto-fixes are applied, follow the routing selected in Phase 4 (Phase 6 for "すべて進める", or Phase 7 for "自動修正のみ先に適用").
 
 ## Phase 6: User Decision Gates
 

@@ -73,10 +73,10 @@ Extract from stdout:
 
 ### Step 3: Classify the result
 
+- **Skipped**: The script output a skip warning, exited with an error, or timed out → go to Step 6
 - **Mode is `findings`**: Skip revision entirely → go to Step 6 with Status: "Findings only"
 - **No critical issues**: The review passed or only found trivial issues → go to Step 6
 - **Critical issues found**: The review identified problems → go to Step 4
-- **Skipped**: The script output a skip warning, exited with an error, or timed out → go to Step 6
 
 ### Step 4: Revise
 
