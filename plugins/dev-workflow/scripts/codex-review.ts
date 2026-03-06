@@ -12,6 +12,9 @@
  *   # Initial review (uses existing file directly)
  *   bun codex-review.ts init "instruction" --file <path> [--ref <path>]
  *
+ *   # Findings-only review (same as init, but agent skips auto-revision)
+ *   bun codex-review.ts findings "instruction" [--file <path>] [--ref <path>]
+ *
  *   # Resume review (reads updated content from stdin)
  *   bun codex-review.ts resume <session-id> <review-file> "instruction" [--ref <path>] < content
  *
@@ -32,9 +35,9 @@ import { isatty } from "node:tty";
 
 function parseArgs(argv: string[]) {
   const args = argv.slice(2);
-  const mode = args[0] as "init" | "resume" | undefined;
+  const mode = args[0] as "init" | "resume" | "findings" | undefined;
 
-  if (!mode || !["init", "resume"].includes(mode)) {
+  if (!mode || !["init", "resume", "findings"].includes(mode)) {
     return null;
   }
 
@@ -57,7 +60,7 @@ function parseArgs(argv: string[]) {
   }
   const positional = args.filter((_, i) => !flagIndices.has(i));
 
-  if (mode === "init") {
+  if (mode === "init" || mode === "findings") {
     return { mode, instruction: positional[1], refPath, filePath } as const;
   } else {
     return {
@@ -117,6 +120,9 @@ function printUsage() {
     '  bun codex-review.ts init "instruction" [--file <path>] [--ref <path>]'
   );
   console.error(
+    '  bun codex-review.ts findings "instruction" [--file <path>] [--ref <path>]'
+  );
+  console.error(
     '  bun codex-review.ts resume <session-id> <review-file> "instruction" [--ref <path>]'
   );
 }
@@ -130,7 +136,7 @@ async function main() {
 
   const refPath = await getRefPath(parsed.refPath);
 
-  if (parsed.mode === "init") {
+  if (parsed.mode === "init" || parsed.mode === "findings") {
     if (!parsed.instruction) {
       printUsage();
       process.exit(1);

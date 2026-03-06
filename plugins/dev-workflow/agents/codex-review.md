@@ -22,7 +22,7 @@ You are a codex-review agent. Your job is to run the codex review command, parse
 
 The prompt must contain a `## Codex Review Request` section with the following fields:
 
-- **Mode**: `init` or `resume`
+- **Mode**: `init`, `resume`, or `findings`
 - **Instruction**: The review instruction string (in quotes)
 - **Ref Path**: (optional) Path to a reference CLAUDE.md
 - **Session ID**: (required for resume only) Session ID from a prior init call
@@ -50,11 +50,11 @@ Parse the `## Codex Review Request` fields and build the Bash command using the 
 
 Generate a unique suffix `<ID>` (8 random hex chars) at the start. Use this same `<ID>` for all temp files in this run.
 
-For `init` mode:
+For `init` or `findings` mode:
 1. Write `<Content>` to `/tmp/codex-review-<ID>.md` using the Write tool.
 2. Run:
 ```bash
-bun <Script> init "<Instruction>" --file /tmp/codex-review-<ID>.md [--ref "<Ref Path>"]
+bun <Script> <Mode> "<Instruction>" --file /tmp/codex-review-<ID>.md [--ref "<Ref Path>"]
 ```
 
 For `resume` mode:
@@ -73,9 +73,10 @@ Extract from stdout:
 
 ### Step 3: Classify the result
 
+- **Skipped**: The script output a skip warning, exited with an error, or timed out → go to Step 6
+- **Mode is `findings`**: Skip revision entirely → go to Step 6 with Status: "Findings only"
 - **No critical issues**: The review passed or only found trivial issues → go to Step 6
 - **Critical issues found**: The review identified problems → go to Step 4
-- **Skipped**: The script output a skip warning, exited with an error, or timed out → go to Step 6
 
 ### Step 4: Revise
 
@@ -104,7 +105,7 @@ Return findings in the output format below.
 ### Review Result
 - **review_file**: (path from script output)
 - **session_id**: (value or "none")
-- **Status**: No critical issues | Revised and re-reviewed | Critical issues (unresolved) | Skipped
+- **Status**: No critical issues | Revised and re-reviewed | Critical issues (unresolved) | Skipped | Findings only
 - **Revision Applied**: Yes | No
 ### Issues
 - (remaining issues after revision, or initial issues if no revision, or "none")
