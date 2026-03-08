@@ -3,7 +3,7 @@ name: soda-discuss
 description: Interactive design discussion for exploring ideas when details aren't solidified
 user-invocable: true
 argument-hint: "<topic or goal to discuss>"
-allowed-tools: Read, Grep, Glob, Task, AskUserQuestion, Write
+allowed-tools: Read, Grep, Glob, Task, AskUserQuestion
 ---
 
 Use English for internal reasoning (thinking). User interaction (AskUserQuestion options, discussion, presentations) must be in Japanese. Discussion Summary content must be in English.
