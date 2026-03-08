@@ -81,25 +81,29 @@ Priority order: Proposal Summary (approach decision) > Research Summary (codebas
 
    **S-task condensed format**: When estimated scale is S, condense the digest to a single line: "推定スケール: S — [one-sentence summary]". Omit the 予想設計判断 section entirely.
 
-   Use a single AskUserQuestion with these options:
+   **Step 2a — Direction Confirmation**: Use an AskUserQuestion to confirm direction:
    - **When a Proposal Summary exists**:
-     - "この方針で新ブランチ作成"
-     - "この方針で現ブランチ続行"
+     - "この方針で進める"
      - "方針を調整"
    - **When no Proposal Summary exists**:
-     - "この方針で新ブランチ作成"
-     - "この方針で現ブランチ続行"
+     - "この方針で進める"
      - "方針を調整"
      - "さらに調査を深める" (max 1 round — see re-entry rule below)
      - "/soda-propose で代替案を比較"
 
-   **Deeper investigation re-entry rule**: When the user selects "さらに調査を深める", launch additional focused sub-agents (1-2) based on the user's feedback, update the Common Context block, then re-present Step 2 with an updated Investigation Digest. This option is available at most once. If the user selects it again after re-presentation, present only: "この方針で新ブランチ作成" / "この方針で現ブランチ続行" / "方針を調整" / "/soda-propose で代替案を比較". This hard cap limits worst-case interaction increase to +1 round-trip.
+   **Deeper investigation re-entry rule**: When the user selects "さらに調査を深める", launch additional focused sub-agents (1-2) based on the user's feedback, update the Common Context block, then re-present Step 2a with an updated Investigation Digest. This option is available at most once. If the user selects it again after re-presentation, present only: "この方針で進める" / "方針を調整" / "/soda-propose で代替案を比較". This hard cap limits worst-case interaction increase to +1 round-trip.
 
    **No-Proposal-Summary approach boundary**: In the no-Proposal-Summary path, the Investigation Digest's 予想設計判断 section must be limited to implementation-level decisions only. Do NOT include approach comparisons or alternative strategies — those belong to `/soda-propose`. If investigation findings raise fundamental questions about the task's premise or scope, include a note in the digest recommending `/soda-propose` escalation rather than embedding approach-level analysis.
 
+   If the user wants to adjust, incorporate their feedback and re-present Step 2a. If they choose /soda-propose, stop planning and suggest the user invoke it.
+   Do NOT proceed to Step 2b until the user confirms direction.
+
+   **Step 2b — Branch Strategy**: After direction is confirmed, use a separate AskUserQuestion to determine branch strategy:
+   - "新ブランチ作成"
+   - "現ブランチ続行"
+
    If the user chooses a new branch, derive the branch name from the task description.
-   If the user wants to adjust, incorporate their feedback and re-present. If they choose /soda-propose, stop planning and suggest the user invoke it.
-   Do NOT proceed to Step 3 until the user confirms.
+   Do NOT proceed to Step 3 until the user confirms branch strategy.
 3. **Plan**:
 
    **Technical Pre-Gathering (M/L tasks only)**: After task scale classification, if the task is scale M or L, pre-gather technical details before entering plan mode:
@@ -210,7 +214,7 @@ This ensures domain knowledge survives context compaction as a labeled callout.
 ## Constraints
 
 - Do NOT begin implementation until the user approves the plan.
-- Branch strategy is determined by the user in the Strategy Confirmation + Branch Strategy step. If the user chooses a new branch, create it from the current branch unless a different base is specified.
+- Branch strategy is determined by the user in Step 2b (Branch Strategy). If the user chooses a new branch, create it from the current branch unless a different base is specified.
 - The plan must include incremental commits throughout the work.
 - The plan must be self-contained: include enough technical context (as code snippets and structured data, not prose) that implementation can proceed from the plan alone, even after context compaction.
 - Each step must define a commit with an imperative-mood message, explicit dependencies on prior steps, and validation criteria.
