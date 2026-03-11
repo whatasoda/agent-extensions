@@ -764,7 +764,7 @@ async function runSummarySession(loopStartSha: string): Promise<void> {
       cwd: process.cwd(),
       stdout: "inherit",
       stderr: "inherit",
-      env: { ...process.env, CLAUDECODE: undefined, SODA_LOOP_ACTIVE: "1", LOOP_DIR: resolve(config.loopDir) },
+      env: { ...process.env, CLAUDECODE: undefined },
     },
   );
   activeProcess = proc;
