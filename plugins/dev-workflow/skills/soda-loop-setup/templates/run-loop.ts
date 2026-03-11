@@ -522,24 +522,25 @@ async function runSession(sessionNum: number): Promise<SessionResult> {
   // Inject loop file paths so the agent can find them from any cwd
   const loopDirAbsolute = resolve(config.loopDir);
 
-  const firstSessionBlock =
-    sessionNum === 1
-      ? [
-          `## First Session`,
-          `This is the first session. Before starting items:`,
-          `1. Run verification commands to confirm the environment works.`,
-          `2. Briefly explore the codebase structure relevant to VISION.md goals.`,
-          `3. Then proceed to the first item.`,
-          ``,
-        ]
-      : [];
+  // Detect first session by checking if SESSION_HANDOFF.md has content
+  const hasHandoff = existsSync(SESSION_HANDOFF_FILE) &&
+    (await Bun.file(SESSION_HANDOFF_FILE).text()).trim().length > 0;
+  const firstSessionBlock = !hasHandoff
+    ? [
+        `## First Session`,
+        `This is the first session. Before starting items:`,
+        `1. Run verification commands to confirm the environment works.`,
+        `2. Briefly explore the codebase structure relevant to VISION.md goals.`,
+        `3. Then proceed to the first item.`,
+        ``,
+      ]
+    : [];
 
   let handoffBlock: string[] = [];
-  const handoffFile = resolve(loopDirAbsolute, "SESSION_HANDOFF.md");
-  if (existsSync(handoffFile)) {
+  if (hasHandoff) {
     try {
-      const c = await Bun.file(handoffFile).text();
-      if (c.trim()) handoffBlock = [`## Previous Session Handoff`, c.trim(), ``];
+      const c = await Bun.file(SESSION_HANDOFF_FILE).text();
+      handoffBlock = [`## Previous Session Handoff`, c.trim(), ``];
     } catch {}
   }
 
@@ -547,6 +548,9 @@ async function runSession(sessionNum: number): Promise<SessionResult> {
     `## Loop Files`,
     `- PROGRESS.md: ${resolve(loopDirAbsolute, "PROGRESS.md")}`,
     `- VISION.md: ${resolve(loopDirAbsolute, "VISION.md")}`,
+    `- SESSION_HANDOFF.md: ${resolve(loopDirAbsolute, "SESSION_HANDOFF.md")}`,
+    `- LEARNINGS.md: ${resolve(loopDirAbsolute, "LEARNINGS.md")}`,
+    `- session-log.md: ${resolve(loopDirAbsolute, "session-log.md")}`,
     `- Working directory: ${process.cwd()}`,
     ``,
     ...firstSessionBlock,

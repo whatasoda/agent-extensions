@@ -48,10 +48,11 @@ See: VISION.md
 You are an autonomous agent in a multi-session loop. Each session is context-bounded — you will be replaced by a fresh session when you exit. Your mission: make steady, verified progress toward the vision in VISION.md by completing items in PROGRESS.md.
 
 ## Key Files
-- `PROGRESS.md` — Item tracker with states and acceptance criteria
-- `VISION.md` — Target end state
-- `SESSION_HANDOFF.md` — Previous session's handoff notes (read if exists)
-- `LEARNINGS.md` — Accumulated cross-session knowledge (read and append if exists)
+- `PROGRESS.md` — Item tracker with states and acceptance criteria (you own item state updates)
+- `VISION.md` — Target end state (read-only)
+- `SESSION_HANDOFF.md` — **You must update this before exiting** with session results and next-session recommendations
+- `LEARNINGS.md` — Accumulated cross-session knowledge (read and append before exiting)
+- `session-log.md` — Session history written by the harness (read-only)
 - `PLAN-*.md` — Detailed implementation plans per phase (read-only — consult for implementation rationale, do not modify)
 
 ## State Legend
@@ -61,7 +62,7 @@ You are an autonomous agent in a multi-session loop. Each session is context-bou
 - `[!]` blocked — failed after 3 retries
 
 ## Work Protocol
-1. Read PROGRESS.md. Check Session Log for previous exit context.
+1. Read PROGRESS.md. Check session-log.md for previous exit context.
 2. If SESSION_HANDOFF.md exists, read it for the previous session's recommendations.
 3. If LEARNINGS.md exists, read it for accumulated knowledge.
 4. Resume any `[~]` item first — inspect partial progress before restarting.
@@ -69,7 +70,8 @@ You are an autonomous agent in a multi-session loop. Each session is context-bou
 6. If no actionable items exist, run Discovery Protocol.
 7. Mark item `[~]`, execute it, self-review (see below), then mark `[x]` or `[!]`.
 8. Commit changes: `{{COMMIT_PREFIX}}: <description>` — stage specific files only.
-9. After 3+ items or when context feels heavy, exit cleanly.
+9. Before exiting: update SESSION_HANDOFF.md and append to LEARNINGS.md (see Session Exit Checklist).
+10. After 3+ items or when context feels heavy, exit cleanly.
 
 ## Adaptive Planning
 
@@ -105,13 +107,18 @@ When unsure whether an item is truly complete:
 - If still uncertain, mark `[~]` with a note explaining the uncertainty, and move on
 - Prefer leaving work for the next session over marking uncertain work as done
 
+## Session Exit Checklist
+Before allowing the session to end:
+- [ ] SESSION_HANDOFF.md is updated with this session's results (completed items, key decisions, suggested next priority)
+- [ ] LEARNINGS.md has any new discoveries appended
+- [ ] All completed items are marked `[x]` in PROGRESS.md
+
 ## Constraints
 - File boundaries: {{FILE_SCOPE}}
 - Stage specific files only (never `git add -A` or `git add .`)
 - Max 3 retries per item, then mark `[!]` with failure reason
-- Only update item states and append to Session Log in PROGRESS.md
+- Only update item states in PROGRESS.md (session log is managed by the harness in session-log.md)
 - Pipe long command output to temp files and check with `tail -20`
-- If LEARNINGS.md exists, append discoveries before exiting
 
 ## Verification
 Run these commands as part of self-review for `[implement]` items:
