@@ -436,8 +436,10 @@ async function truncateLearnings(): Promise<void> {
     const lines = text.split("\n");
     if (lines.length <= LEARNINGS_MAX_LINES) return;
 
-    const header = lines.slice(0, LEARNINGS_TEMPLATE_LINES.length);
-    const body = lines.slice(LEARNINGS_TEMPLATE_LINES.length);
+    // Dynamic header detection: everything before the first ## section
+    const firstSectionIdx = lines.findIndex((l, i) => i > 0 && l.startsWith("## "));
+    const header = firstSectionIdx > 0 ? lines.slice(0, firstSectionIdx) : lines.slice(0, 1);
+    const body = lines.slice(header.length);
 
     // Parse body into sections by ## headers
     const sections: Array<{ header: string; lines: string[] }> = [];
@@ -577,7 +579,7 @@ async function runSession(sessionNum: number): Promise<SessionResult> {
       cwd: process.cwd(),
       stdout: "pipe",
       stderr: "pipe",
-      env: { ...process.env, CLAUDECODE: undefined, SODA_LOOP_ACTIVE: "1" },
+      env: { ...process.env, CLAUDECODE: undefined, SODA_LOOP_ACTIVE: "1", LOOP_DIR: resolve(config.loopDir) },
     },
   );
 
@@ -762,7 +764,7 @@ async function runSummarySession(loopStartSha: string): Promise<void> {
       cwd: process.cwd(),
       stdout: "inherit",
       stderr: "inherit",
-      env: { ...process.env, CLAUDECODE: undefined, SODA_LOOP_ACTIVE: "1" },
+      env: { ...process.env, CLAUDECODE: undefined, SODA_LOOP_ACTIVE: "1", LOOP_DIR: resolve(config.loopDir) },
     },
   );
   activeProcess = proc;
