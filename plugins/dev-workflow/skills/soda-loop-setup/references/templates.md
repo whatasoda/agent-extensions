@@ -37,9 +37,6 @@ See: VISION.md
 
 ## Discovered Items
 <!-- Max 10 items. Format: D-N prefix. Agent adds when vision gaps found. -->
-
-## Session Log
-<!-- Append-only. Harness appends after each session. -->
 ````
 
 ## AGENT_PROMPT.md Template

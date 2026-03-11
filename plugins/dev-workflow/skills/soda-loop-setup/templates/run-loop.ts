@@ -24,6 +24,7 @@ const PROMPT_FILE = resolve(config.loopDir, "AGENT_PROMPT.md");
 const STOP_FILE = resolve(config.loopDir, "STOP");
 const LOG_DIR = resolve(config.loopDir, ".loop-logs");
 const LOCK_FILE = resolve(config.loopDir, "run-loop.lock");
+const SESSION_LOG_FILE = resolve(config.loopDir, "session-log.md");
 
 // === Lock File (single-instance guard) ===
 let lockAcquired = false;
@@ -366,9 +367,9 @@ async function appendSessionLog(
   delta: SessionDelta | null,
 ): Promise<void> {
   const ts = new Date().toISOString().slice(0, 16).replace("T", " ");
-  const content = await Bun.file(PROGRESS_FILE).text();
+  const progressContent = await Bun.file(PROGRESS_FILE).text();
 
-  const inProgressItems = content
+  const inProgressItems = progressContent
     .split("\n")
     .filter((l) => l.startsWith("- [~]"))
     .map((l) => l.replace(/^- \[~\] /, "  - "));
@@ -397,7 +398,12 @@ async function appendSessionLog(
     "",
   ].join("\n");
 
-  await Bun.write(PROGRESS_FILE, content + entry);
+  // Write to separate session-log.md (append-only)
+  if (!existsSync(SESSION_LOG_FILE)) {
+    await Bun.write(SESSION_LOG_FILE, "# Session Log\n");
+  }
+  const existing = await Bun.file(SESSION_LOG_FILE).text();
+  await Bun.write(SESSION_LOG_FILE, existing + entry);
 }
 
 // === Cross-Session Intelligence ===
