@@ -411,78 +411,6 @@ const SESSION_HANDOFF_FILE = resolve(config.loopDir, "SESSION_HANDOFF.md");
 const LEARNINGS_FILE = resolve(config.loopDir, "LEARNINGS.md");
 const LEARNINGS_MAX_LINES = 100;
 
-function areDepsSatisfied(
-  depsValue: string,
-  selfId: string,
-  itemStates: Map<string, string>,
-): boolean {
-  if (depsValue === "none") return true;
-
-  const phaseMatch = depsValue.match(/^all items in Phase (\d+)$/i);
-  if (phaseMatch) {
-    const phaseNum = phaseMatch[1];
-    const prefix = `${phaseNum}.`;
-    const vPrefix = `V-${phaseNum}.`;
-    for (const [id, state] of itemStates) {
-      if (id === selfId) continue;
-      if ((id.startsWith(prefix) || id.startsWith(vPrefix)) && state !== "done") return false;
-    }
-    return true;
-  }
-
-  // Single or comma-separated IDs
-  const depIds = depsValue.split(",").map((s) => s.trim());
-  return depIds.every((id) => itemStates.get(id) === "done");
-}
-
-async function generateSessionHandoff(
-  sessionNum: number,
-  delta: SessionDelta,
-): Promise<void> {
-  const completed = delta.completedItems;
-  const changedFiles = delta.changedFiles;
-
-  // Suggested next priority: first pending items whose deps are done
-  const nextPending: string[] = [];
-  const content = await Bun.file(PROGRESS_FILE).text();
-  const contentLines = content.split("\n");
-  const { itemStates } = delta.postSnapshot;
-
-  let currentPendingId: string | null = null;
-  for (const line of contentLines) {
-    if (line.match(/^- \[/)) {
-      // New item line — check if it's pending
-      const m = line.startsWith("- [ ]") ? line.match(ITEM_RE) : null;
-      currentPendingId = m ? m[2] : null;
-    } else if (currentPendingId && /^\s+- Deps:\s*/.test(line)) {
-      const depsValue = line.replace(/^\s+- Deps:\s*/, "").trim();
-      if (areDepsSatisfied(depsValue, currentPendingId, itemStates)) {
-        if (nextPending.length < 3) nextPending.push(currentPendingId);
-      }
-      currentPendingId = null;
-    }
-  }
-
-  const lines = [
-    `# Session ${sessionNum} Handoff`,
-    ``,
-    `## Completed This Session`,
-    ...(completed.length > 0 ? completed.map((id) => `- ${id}`) : ["- (none)"]),
-    ``,
-    `## Key Files Changed`,
-    ...(changedFiles.length > 0 ? changedFiles.map((f) => `- ${f}`) : ["- (none)"]),
-    ``,
-    `## Suggested Next Priority`,
-    ...(nextPending.length > 0 ? nextPending.map((id) => `- ${id}`) : ["- (none remaining)"]),
-    ``,
-    `## Discovery Quota`,
-    `- ${[...delta.postSnapshot.itemStates.keys()].filter(id => id.startsWith("D-")).length}/${config.discoveryQuotaMax} items used`,
-    ``,
-  ];
-
-  await Bun.write(SESSION_HANDOFF_FILE, lines.join("\n"));
-}
-
 const LEARNINGS_TEMPLATE_LINES = [
   `# Loop Learnings`,
   ``,
@@ -645,7 +573,7 @@ async function runSession(sessionNum: number): Promise<SessionResult> {
       cwd: process.cwd(),
       stdout: "pipe",
       stderr: "pipe",
-      env: { ...process.env, CLAUDECODE: undefined },
+      env: { ...process.env, CLAUDECODE: undefined, SODA_LOOP_ACTIVE: "1" },
     },
   );
 
@@ -830,7 +758,7 @@ async function runSummarySession(loopStartSha: string): Promise<void> {
       cwd: process.cwd(),
       stdout: "inherit",
       stderr: "inherit",
-      env: { ...process.env, CLAUDECODE: undefined },
+      env: { ...process.env, CLAUDECODE: undefined, SODA_LOOP_ACTIVE: "1" },
     },
   );
   activeProcess = proc;
@@ -964,8 +892,7 @@ async function main(): Promise<void> {
       result.activity.costUsd, delta,
     );
 
-    // Generate cross-session intelligence files
-    await generateSessionHandoff(sessionCount, delta);
+    // Truncate learnings if needed (agent owns content, harness caps size)
     await truncateLearnings();
 
     // Circuit breaker: stagnation detection
