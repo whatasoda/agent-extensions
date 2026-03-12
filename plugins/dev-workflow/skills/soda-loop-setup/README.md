@@ -159,7 +159,7 @@ All loop artifacts are placed in `.agent-loops/<loop-name>/` at the repo root. T
 |----------|---------|-------------|
 | `LOOP_DIR` | `import.meta.dir` (`.agent-loops/<loop-name>/`) | Directory containing loop files (PROGRESS.md, AGENT_PROMPT.md) |
 | `CLAUDE_MODEL` | `sonnet` | Model to use for agent sessions |
-| `MAX_SESSIONS` | `10` | Maximum number of sessions before halting |
+| `MAX_SESSIONS` | `30` | Maximum number of sessions before halting |
 | `MAX_BUDGET_USD` | `10` | Per-session cost cap in USD |
 | `COOLDOWN_SECS` | `5` | Seconds to wait between sessions |
 | `IDLE_TIMEOUT` | `1800` | Seconds of inactivity before killing session |
