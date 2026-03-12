@@ -24,6 +24,7 @@ const PROMPT_FILE = resolve(config.loopDir, "AGENT_PROMPT.md");
 const STOP_FILE = resolve(config.loopDir, "STOP");
 const LOG_DIR = resolve(config.loopDir, ".loop-logs");
 const LOCK_FILE = resolve(config.loopDir, "run-loop.lock");
+const SESSION_LOG_FILE = resolve(config.loopDir, "session-log.md");
 
 // === Lock File (single-instance guard) ===
 let lockAcquired = false;
@@ -366,9 +367,9 @@ async function appendSessionLog(
   delta: SessionDelta | null,
 ): Promise<void> {
   const ts = new Date().toISOString().slice(0, 16).replace("T", " ");
-  const content = await Bun.file(PROGRESS_FILE).text();
+  const progressContent = await Bun.file(PROGRESS_FILE).text();
 
-  const inProgressItems = content
+  const inProgressItems = progressContent
     .split("\n")
     .filter((l) => l.startsWith("- [~]"))
     .map((l) => l.replace(/^- \[~\] /, "  - "));
@@ -397,85 +398,18 @@ async function appendSessionLog(
     "",
   ].join("\n");
 
-  await Bun.write(PROGRESS_FILE, content + entry);
+  // Write to separate session-log.md (append-only)
+  if (!existsSync(SESSION_LOG_FILE)) {
+    await Bun.write(SESSION_LOG_FILE, "# Session Log\n");
+  }
+  const existing = await Bun.file(SESSION_LOG_FILE).text();
+  await Bun.write(SESSION_LOG_FILE, existing + entry);
 }
 
 // === Cross-Session Intelligence ===
 const SESSION_HANDOFF_FILE = resolve(config.loopDir, "SESSION_HANDOFF.md");
 const LEARNINGS_FILE = resolve(config.loopDir, "LEARNINGS.md");
 const LEARNINGS_MAX_LINES = 100;
-
-function areDepsSatisfied(
-  depsValue: string,
-  selfId: string,
-  itemStates: Map<string, string>,
-): boolean {
-  if (depsValue === "none") return true;
-
-  const phaseMatch = depsValue.match(/^all items in Phase (\d+)$/i);
-  if (phaseMatch) {
-    const phaseNum = phaseMatch[1];
-    const prefix = `${phaseNum}.`;
-    const vPrefix = `V-${phaseNum}.`;
-    for (const [id, state] of itemStates) {
-      if (id === selfId) continue;
-      if ((id.startsWith(prefix) || id.startsWith(vPrefix)) && state !== "done") return false;
-    }
-    return true;
-  }
-
-  // Single or comma-separated IDs
-  const depIds = depsValue.split(",").map((s) => s.trim());
-  return depIds.every((id) => itemStates.get(id) === "done");
-}
-
-async function generateSessionHandoff(
-  sessionNum: number,
-  delta: SessionDelta,
-): Promise<void> {
-  const completed = delta.completedItems;
-  const changedFiles = delta.changedFiles;
-
-  // Suggested next priority: first pending items whose deps are done
-  const nextPending: string[] = [];
-  const content = await Bun.file(PROGRESS_FILE).text();
-  const contentLines = content.split("\n");
-  const { itemStates } = delta.postSnapshot;
-
-  let currentPendingId: string | null = null;
-  for (const line of contentLines) {
-    if (line.match(/^- \[/)) {
-      // New item line — check if it's pending
-      const m = line.startsWith("- [ ]") ? line.match(ITEM_RE) : null;
-      currentPendingId = m ? m[2] : null;
-    } else if (currentPendingId && /^\s+- Deps:\s*/.test(line)) {
-      const depsValue = line.replace(/^\s+- Deps:\s*/, "").trim();
-      if (areDepsSatisfied(depsValue, currentPendingId, itemStates)) {
-        if (nextPending.length < 3) nextPending.push(currentPendingId);
-      }
-      currentPendingId = null;
-    }
-  }
-
-  const lines = [
-    `# Session ${sessionNum} Handoff`,
-    ``,
-    `## Completed This Session`,
-    ...(completed.length > 0 ? completed.map((id) => `- ${id}`) : ["- (none)"]),
-    ``,
-    `## Key Files Changed`,
-    ...(changedFiles.length > 0 ? changedFiles.map((f) => `- ${f}`) : ["- (none)"]),
-    ``,
-    `## Suggested Next Priority`,
-    ...(nextPending.length > 0 ? nextPending.map((id) => `- ${id}`) : ["- (none remaining)"]),
-    ``,
-    `## Discovery Quota`,
-    `- ${[...delta.postSnapshot.itemStates.keys()].filter(id => id.startsWith("D-")).length}/${config.discoveryQuotaMax} items used`,
-    ``,
-  ];
-
-  await Bun.write(SESSION_HANDOFF_FILE, lines.join("\n"));
-}
 
 const LEARNINGS_TEMPLATE_LINES = [
   `# Loop Learnings`,
@@ -502,8 +436,10 @@ async function truncateLearnings(): Promise<void> {
     const lines = text.split("\n");
     if (lines.length <= LEARNINGS_MAX_LINES) return;
 
-    const header = lines.slice(0, LEARNINGS_TEMPLATE_LINES.length);
-    const body = lines.slice(LEARNINGS_TEMPLATE_LINES.length);
+    // Dynamic header detection: everything before the first ## section
+    const firstSectionIdx = lines.findIndex((l, i) => i > 0 && l.startsWith("## "));
+    const header = firstSectionIdx > 0 ? lines.slice(0, firstSectionIdx) : lines.slice(0, 1);
+    const body = lines.slice(header.length);
 
     // Parse body into sections by ## headers
     const sections: Array<{ header: string; lines: string[] }> = [];
@@ -588,24 +524,25 @@ async function runSession(sessionNum: number): Promise<SessionResult> {
   // Inject loop file paths so the agent can find them from any cwd
   const loopDirAbsolute = resolve(config.loopDir);
 
-  const firstSessionBlock =
-    sessionNum === 1
-      ? [
-          `## First Session`,
-          `This is the first session. Before starting items:`,
-          `1. Run verification commands to confirm the environment works.`,
-          `2. Briefly explore the codebase structure relevant to VISION.md goals.`,
-          `3. Then proceed to the first item.`,
-          ``,
-        ]
-      : [];
+  // Detect first session by checking if SESSION_HANDOFF.md has content
+  const hasHandoff = existsSync(SESSION_HANDOFF_FILE) &&
+    (await Bun.file(SESSION_HANDOFF_FILE).text()).trim().length > 0;
+  const firstSessionBlock = !hasHandoff
+    ? [
+        `## First Session`,
+        `This is the first session. Before starting items:`,
+        `1. Run verification commands to confirm the environment works.`,
+        `2. Briefly explore the codebase structure relevant to VISION.md goals.`,
+        `3. Then proceed to the first item.`,
+        ``,
+      ]
+    : [];
 
   let handoffBlock: string[] = [];
-  const handoffFile = resolve(loopDirAbsolute, "SESSION_HANDOFF.md");
-  if (existsSync(handoffFile)) {
+  if (hasHandoff) {
     try {
-      const c = await Bun.file(handoffFile).text();
-      if (c.trim()) handoffBlock = [`## Previous Session Handoff`, c.trim(), ``];
+      const c = await Bun.file(SESSION_HANDOFF_FILE).text();
+      handoffBlock = [`## Previous Session Handoff`, c.trim(), ``];
     } catch {}
   }
 
@@ -613,6 +550,9 @@ async function runSession(sessionNum: number): Promise<SessionResult> {
     `## Loop Files`,
     `- PROGRESS.md: ${resolve(loopDirAbsolute, "PROGRESS.md")}`,
     `- VISION.md: ${resolve(loopDirAbsolute, "VISION.md")}`,
+    `- SESSION_HANDOFF.md: ${resolve(loopDirAbsolute, "SESSION_HANDOFF.md")}`,
+    `- LEARNINGS.md: ${resolve(loopDirAbsolute, "LEARNINGS.md")}`,
+    `- session-log.md: ${resolve(loopDirAbsolute, "session-log.md")}`,
     `- Working directory: ${process.cwd()}`,
     ``,
     ...firstSessionBlock,
@@ -639,7 +579,7 @@ async function runSession(sessionNum: number): Promise<SessionResult> {
       cwd: process.cwd(),
       stdout: "pipe",
       stderr: "pipe",
-      env: { ...process.env, CLAUDECODE: undefined },
+      env: { ...process.env, CLAUDECODE: undefined, SODA_LOOP_ACTIVE: "1", LOOP_DIR: resolve(config.loopDir) },
     },
   );
 
@@ -958,8 +898,7 @@ async function main(): Promise<void> {
       result.activity.costUsd, delta,
     );
 
-    // Generate cross-session intelligence files
-    await generateSessionHandoff(sessionCount, delta);
+    // Truncate learnings if needed (agent owns content, harness caps size)
     await truncateLearnings();
 
     // Circuit breaker: stagnation detection

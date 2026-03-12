@@ -346,4 +346,30 @@ The loop harness includes the following safeguards:
 - **Lock file**: Only one loop instance can run per loop directory. A `run-loop.lock` file with the PID is created at startup and cleaned up on exit. Stale lock files (from crashed processes) are detected and removed automatically.
 - **Circuit breaker**: If `STAGNATION_THRESHOLD` (default 3) consecutive sessions produce no progress (no completed items, no blocked items, no changed files), the loop halts automatically. Grace sessions (for discovery) are excluded from stagnation detection.
 - **Discovery quota**: The `DISCOVERY_QUOTA_MAX` env var (default 10) caps the number of discovered items (D-* prefix). Grace sessions are skipped when the quota is reached.
-- **Section-balanced LEARNINGS.md**: The LEARNINGS.md truncation algorithm preserves a minimum of 10 lines per section (Environment, Patterns, Pitfalls), preventing one bloated section from eliminating others.
+- **Section-balanced LEARNINGS.md**: The LEARNINGS.md truncation algorithm preserves a minimum of 10 lines per section, preventing one bloated section from eliminating others. Header detection is dynamic (finds the first `##` line) so agent-added sections are handled correctly.
+
+## Post-Setup: Stop Hook (Recommended)
+
+To prevent the agent from exiting without writing SESSION_HANDOFF.md, add a Claude Code Stop hook. The hook only activates inside loop sessions (via `SODA_LOOP_ACTIVE` env var set by the harness).
+
+Add the following to `.claude/settings.json` (project or user level):
+
+```json
+{
+  "hooks": {
+    "Stop": [{
+      "hooks": [{
+        "type": "command",
+        "command": "test -z \"$SODA_LOOP_ACTIVE\" && exit 0; HANDOFF=\"$LOOP_DIR/SESSION_HANDOFF.md\"; PROGRESS=\"$LOOP_DIR/PROGRESS.md\"; test -f \"$HANDOFF\" && test \"$HANDOFF\" -nt \"$PROGRESS\" && exit 0; echo 'SESSION_HANDOFF.md not updated — agent must write handoff before exiting'; exit 1"
+      }]
+    }]
+  }
+}
+```
+
+**Behavior**:
+- Outside loop context (`SODA_LOOP_ACTIVE` unset): always passes (exit 0)
+- Inside loop: checks that SESSION_HANDOFF.md exists and is newer than PROGRESS.md
+- If SESSION_HANDOFF.md is stale or missing: blocks the exit with an error message
+
+**Note**: `LOOP_DIR` must be passed to the subprocess env. The harness sets `SODA_LOOP_ACTIVE=1` automatically; ensure `LOOP_DIR` is also available (it is read from `process.env.LOOP_DIR` by the harness).

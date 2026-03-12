@@ -112,21 +112,58 @@ function parseItemStatus(marker: string): ItemInfo["status"] {
   }
 }
 
+type SessionLogEntry = {
+  number: number;
+  timestamp: string;
+  exitReason: string;
+  sessionId: string | null;
+  costUsd: number | null;
+  completedItems: string[];
+  changedFiles: string[];
+};
+
+function parseSessionLogContent(content: string): SessionLogEntry[] {
+  const lines = content.split("\n");
+  const entries: SessionLogEntry[] = [];
+
+  for (const line of lines) {
+    const sessionMatch = line.match(SESSION_LOG_RE);
+    if (sessionMatch) {
+      entries.push({
+        number: parseInt(sessionMatch[1], 10),
+        timestamp: sessionMatch[2],
+        exitReason: sessionMatch[3],
+        sessionId: sessionMatch[4] ?? null,
+        costUsd: sessionMatch[5] ? parseFloat(sessionMatch[5]) : null,
+        completedItems: [],
+        changedFiles: [],
+      });
+    } else if (entries.length > 0) {
+      const lastEntry = entries[entries.length - 1];
+      const completedMatch = line.match(/^- Completed: (.+)/);
+      if (completedMatch) {
+        lastEntry.completedItems = completedMatch[1].split(",").map((s) => s.trim());
+      }
+      const changedMatch = line.match(/^- Changed files: (.+)/);
+      if (changedMatch) {
+        lastEntry.changedFiles = changedMatch[1]
+          .replace(/\s*\(\+\d+ more\)/, "")
+          .split(",")
+          .map((s) => s.trim());
+      }
+    }
+  }
+
+  return entries;
+}
+
 function parseProgressFile(content: string): {
   projectName: string;
   phases: PhaseStatus[];
   discoveredItems: { count: number; items: ItemInfo[] };
   blockedItems: Array<{ id: string; title: string }>;
   inProgressItems: Array<{ id: string; title: string }>;
-  sessionLogEntries: Array<{
-    number: number;
-    timestamp: string;
-    exitReason: string;
-    sessionId: string | null;
-    costUsd: number | null;
-    completedItems: string[];
-    changedFiles: string[];
-  }>;
+  sessionLogEntries: SessionLogEntry[];
   counts: { pending: number; inProgress: number; done: number; blocked: number };
 } {
   const lines = content.split("\n");
@@ -152,25 +189,16 @@ function parseProgressFile(content: string): {
   const allItems: Array<ItemInfo & { phaseIndex: number }> = [];
   let currentPhaseIndex = -1;
   let inDiscoveredSection = false;
-  let inSessionLogSection = false;
+  let sessionLogStart = -1;
 
   const discoveredItems: ItemInfo[] = [];
-  const sessionLogEntries: Array<{
-    number: number;
-    timestamp: string;
-    exitReason: string;
-    sessionId: string | null;
-    costUsd: number | null;
-    completedItems: string[];
-    changedFiles: string[];
-  }> = [];
 
   for (const line of lines) {
     // Detect section boundaries
     const phaseMatch = line.match(PHASE_RE);
     if (phaseMatch) {
       inDiscoveredSection = false;
-      inSessionLogSection = false;
+
       currentPhaseIndex = phases.length;
       phases.push({
         number: parseInt(phaseMatch[1], 10),
@@ -182,21 +210,22 @@ function parseProgressFile(content: string): {
 
     if (line.startsWith("## Discovered Items")) {
       inDiscoveredSection = true;
-      inSessionLogSection = false;
+
       currentPhaseIndex = -1;
       continue;
     }
 
+    // Backward compat: old loops have ## Session Log in PROGRESS.md
     if (line.startsWith("## Session Log")) {
-      inSessionLogSection = true;
       inDiscoveredSection = false;
       currentPhaseIndex = -1;
-      continue;
+      sessionLogStart = lines.indexOf(line);
+      break; // Session Log is always at the end; delegate parsing to parseSessionLogContent
     }
 
     if (line.startsWith("## ") && !line.startsWith("## Phase")) {
       inDiscoveredSection = false;
-      inSessionLogSection = false;
+
       currentPhaseIndex = -1;
       continue;
     }
@@ -232,35 +261,13 @@ function parseProgressFile(content: string): {
       }
     }
 
-    // Parse session log entries
-    if (inSessionLogSection) {
-      const sessionMatch = line.match(SESSION_LOG_RE);
-      if (sessionMatch) {
-        sessionLogEntries.push({
-          number: parseInt(sessionMatch[1], 10),
-          timestamp: sessionMatch[2],
-          exitReason: sessionMatch[3],
-          sessionId: sessionMatch[4] ?? null,
-          costUsd: sessionMatch[5] ? parseFloat(sessionMatch[5]) : null,
-          completedItems: [],
-          changedFiles: [],
-        });
-      } else if (sessionLogEntries.length > 0) {
-        const lastEntry = sessionLogEntries[sessionLogEntries.length - 1];
-        const completedMatch = line.match(/^- Completed: (.+)/);
-        if (completedMatch) {
-          lastEntry.completedItems = completedMatch[1].split(",").map((s) => s.trim());
-        }
-        const changedMatch = line.match(/^- Changed files: (.+)/);
-        if (changedMatch) {
-          lastEntry.changedFiles = changedMatch[1]
-            .replace(/\s*\(\+\d+ more\)/, "")
-            .split(",")
-            .map((s) => s.trim());
-        }
-      }
-    }
   }
+
+  // Parse session log entries from PROGRESS.md (backward compat for old loops)
+  // Delegate to parseSessionLogContent to avoid duplicating parsing logic
+  const sessionLogEntries: SessionLogEntry[] = sessionLogStart >= 0
+    ? parseSessionLogContent(lines.slice(sessionLogStart).join("\n"))
+    : [];
 
   // Collect blocked items
   const blockedItems = allItems
@@ -606,11 +613,22 @@ function buildStatus(loopDir: string): LoopStatusOutput | { loopDir: string; err
     const progressContent = readFileSync(progressPath, "utf-8");
     const progress = parseProgressFile(progressContent);
 
+    // Prefer session-log.md; fall back to PROGRESS.md ## Session Log for old loops
+    const sessionLogPath = resolve(loopDir, "session-log.md");
+    let sessionLogEntries = progress.sessionLogEntries;
+    if (existsSync(sessionLogPath)) {
+      const sessionLogContent = readFileSync(sessionLogPath, "utf-8");
+      const parsed = parseSessionLogContent(sessionLogContent);
+      if (parsed.length > 0) {
+        sessionLogEntries = parsed;
+      }
+    }
+
     const logDir = resolve(loopDir, ".loop-logs");
     if (!existsSync(logDir)) {
       warnings.push("No .loop-logs directory found — session cost data unavailable");
     }
-    const sessions = parseSessionLogs(logDir, progress.sessionLogEntries);
+    const sessions = parseSessionLogs(logDir, sessionLogEntries);
 
     const visionPath = resolve(loopDir, "VISION.md");
     const vision = parseVision(visionPath);
