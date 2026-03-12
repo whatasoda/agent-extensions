@@ -189,17 +189,16 @@ function parseProgressFile(content: string): {
   const allItems: Array<ItemInfo & { phaseIndex: number }> = [];
   let currentPhaseIndex = -1;
   let inDiscoveredSection = false;
-  let inSessionLogSection = false;
+  let sessionLogStart = -1;
 
   const discoveredItems: ItemInfo[] = [];
-  const sessionLogEntries: SessionLogEntry[] = [];
 
   for (const line of lines) {
     // Detect section boundaries
     const phaseMatch = line.match(PHASE_RE);
     if (phaseMatch) {
       inDiscoveredSection = false;
-      inSessionLogSection = false;
+
       currentPhaseIndex = phases.length;
       phases.push({
         number: parseInt(phaseMatch[1], 10),
@@ -211,22 +210,22 @@ function parseProgressFile(content: string): {
 
     if (line.startsWith("## Discovered Items")) {
       inDiscoveredSection = true;
-      inSessionLogSection = false;
+
       currentPhaseIndex = -1;
       continue;
     }
 
     // Backward compat: old loops have ## Session Log in PROGRESS.md
     if (line.startsWith("## Session Log")) {
-      inSessionLogSection = true;
       inDiscoveredSection = false;
       currentPhaseIndex = -1;
-      continue;
+      sessionLogStart = lines.indexOf(line);
+      break; // Session Log is always at the end; delegate parsing to parseSessionLogContent
     }
 
     if (line.startsWith("## ") && !line.startsWith("## Phase")) {
       inDiscoveredSection = false;
-      inSessionLogSection = false;
+
       currentPhaseIndex = -1;
       continue;
     }
@@ -262,35 +261,13 @@ function parseProgressFile(content: string): {
       }
     }
 
-    // Parse session log entries from PROGRESS.md (backward compat for old loops)
-    if (inSessionLogSection) {
-      const sessionMatch = line.match(SESSION_LOG_RE);
-      if (sessionMatch) {
-        sessionLogEntries.push({
-          number: parseInt(sessionMatch[1], 10),
-          timestamp: sessionMatch[2],
-          exitReason: sessionMatch[3],
-          sessionId: sessionMatch[4] ?? null,
-          costUsd: sessionMatch[5] ? parseFloat(sessionMatch[5]) : null,
-          completedItems: [],
-          changedFiles: [],
-        });
-      } else if (sessionLogEntries.length > 0) {
-        const lastEntry = sessionLogEntries[sessionLogEntries.length - 1];
-        const completedMatch = line.match(/^- Completed: (.+)/);
-        if (completedMatch) {
-          lastEntry.completedItems = completedMatch[1].split(",").map((s) => s.trim());
-        }
-        const changedMatch = line.match(/^- Changed files: (.+)/);
-        if (changedMatch) {
-          lastEntry.changedFiles = changedMatch[1]
-            .replace(/\s*\(\+\d+ more\)/, "")
-            .split(",")
-            .map((s) => s.trim());
-        }
-      }
-    }
   }
+
+  // Parse session log entries from PROGRESS.md (backward compat for old loops)
+  // Delegate to parseSessionLogContent to avoid duplicating parsing logic
+  const sessionLogEntries: SessionLogEntry[] = sessionLogStart >= 0
+    ? parseSessionLogContent(lines.slice(sessionLogStart).join("\n"))
+    : [];
 
   // Collect blocked items
   const blockedItems = allItems
