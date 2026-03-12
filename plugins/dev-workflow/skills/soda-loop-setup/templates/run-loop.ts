@@ -6,7 +6,7 @@ import { resolve } from "node:path";
 const config = {
   loopDir: process.env.LOOP_DIR ?? import.meta.dir,
   claudeModel: process.env.CLAUDE_MODEL ?? "opus",
-  maxSessions: parseInt(process.env.MAX_SESSIONS ?? "10", 10),
+  maxSessions: parseInt(process.env.MAX_SESSIONS ?? "30", 10),
   maxBudgetUsd: parseFloat(process.env.MAX_BUDGET_USD ?? "20"),
   cooldownSecs: parseInt(process.env.COOLDOWN_SECS ?? "5", 10),
   idleTimeout: parseInt(process.env.IDLE_TIMEOUT ?? "1800", 10),

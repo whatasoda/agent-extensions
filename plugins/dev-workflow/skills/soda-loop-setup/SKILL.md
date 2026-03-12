@@ -115,7 +115,7 @@ Options:
 If "カスタマイズ" is selected, ask a follow-up AskUserQuestion with these fields:
 - Model (`opus` / `sonnet` / `haiku`)
 - Max budget per session USD (default: `20`)
-- Max sessions (default: `10`)
+- Max sessions (default: `30`)
 - Idle timeout seconds (default: `1800`)
 - Allowed tools (default: `Read,Write,Edit,Bash,Glob,Grep`)
 - File scope restriction (default: `.` — repo root)
