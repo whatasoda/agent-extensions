@@ -74,7 +74,7 @@ raw.jsonのexisting_skills, existing_commandsに既に存在するものは除�
 #### フォーマット
 #### 提案 A-N: `{skill-name}` (新規)
 **{日本語タイトル}**
-> **痛みスコア**: 頻度{N} × 時間消費{N} × 手動度{N} = **{合計}/9**
+> **痛みスコア**: 頻度{N} + 時間消費{N} + 手動度{N} = **{合計}/9**
 > **配置先**: `plugins/dev-workflow/skills/{name}/` or `.claude/skills/{name}/`
 > **なぜ提案**: {Phase 2aの分析データを引用した具体的な根拠。どのセッションで何が起きたか、累計何ターン消費したかを明記}
 
