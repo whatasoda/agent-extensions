@@ -144,6 +144,8 @@ export interface RepeatedCommand {
 
 export interface SessionMetrics {
   date: string
+  project: string
+  file: string
   num_turns: number
   subagent_count: number
   skill_count: number

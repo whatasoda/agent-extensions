@@ -27,6 +27,8 @@ function computeSessionMetrics(session: RawSession): SessionMetrics {
   if (numTurns === 0) {
     return {
       date: session.date ?? "",
+      project: session.project ?? "",
+      file: session.file ?? "",
       num_turns: 0,
       subagent_count: 0,
       skill_count: 0,
@@ -95,6 +97,8 @@ function computeSessionMetrics(session: RawSession): SessionMetrics {
 
   return {
     date: session.date ?? "",
+    project: session.project ?? "",
+    file: session.file ?? "",
     num_turns: numTurns,
     subagent_count: subagentCount,
     skill_count: skillCount,
