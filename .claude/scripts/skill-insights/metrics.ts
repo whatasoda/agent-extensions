@@ -51,12 +51,14 @@ function computeSessionMetrics(session: RawSession): SessionMetrics {
   const skillCount = turns.reduce((sum, t) => sum + (t.skills?.length ?? 0), 0)
   const clearCount = metadata?.clear_count ?? 0
 
-  // Quality Density = (SubAgent + Skill + /clear + SlashCommand + MCP) / turns * 100
+  // Quality Density = (SubAgent + Skill + SlashCommand + MCP) / turns * 100
+  // Note: /clear is already included in slashCommandCount via slash_commands array,
+  // so clearCount is not added separately to avoid double-counting.
   const slashCommandCount = (metadata?.slash_commands ?? []).length
   const mcpToolCount = Object.entries(metadata?.main_tool_counts ?? {})
     .filter(([tool]) => tool.startsWith("mcp__"))
     .reduce((sum, [, count]) => sum + count, 0)
-  const qualityDensity = ((subagentCount + skillCount + clearCount + slashCommandCount + mcpToolCount) / numTurns) * 100
+  const qualityDensity = ((subagentCount + skillCount + slashCommandCount + mcpToolCount) / numTurns) * 100
 
   // Main context Bash count vs total Bash
   const mainToolCounts = metadata?.main_tool_counts ?? {}
@@ -128,7 +130,7 @@ function computeOverallMetrics(
 
   const overallDensity =
     totalTurns > 0
-      ? ((totalSubagent + totalSkill + totalClear + totalSlashCommands + totalMcpTools) / totalTurns) * 100
+      ? ((totalSubagent + totalSkill + totalSlashCommands + totalMcpTools) / totalTurns) * 100
       : 0.0
 
   const totalMainBash = sessionMetrics.reduce((s, m) => s + m.main_bash_count, 0)
