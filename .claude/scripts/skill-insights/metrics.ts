@@ -1,13 +1,13 @@
 #!/usr/bin/env bun
 /**
- * Quantitative metrics calculator for my-insights.
+ * Quantitative metrics calculator for skill-insights.
  *
  * Reads the raw JSON output from analyze.ts and computes session-level
  * and overall metrics for quality density, main context load, repeated
  * commands, and unused skills.
  *
  * Usage:
- *   bun metrics.ts --input /tmp/my-insights-raw.json --output /tmp/my-insights-metrics.json
+ *   bun metrics.ts --input /tmp/skill-insights-raw.json --output /tmp/skill-insights-metrics.json
  */
 
 import type {

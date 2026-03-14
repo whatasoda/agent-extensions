@@ -677,7 +677,7 @@ interface BatchSplitResult {
   batchFilePaths: string[]
 }
 
-function buildBatchSplit(fullOutput: RawModeOutput, outputDir: string, batchPrefix = "my-insights"): BatchSplitResult {
+function buildBatchSplit(fullOutput: RawModeOutput, outputDir: string, batchPrefix: string): BatchSplitResult {
   const sessions = fullOutput.sessions
   const batches: RawSession[][] = []
   let currentBatch: RawSession[] = []
