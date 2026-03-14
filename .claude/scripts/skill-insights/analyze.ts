@@ -371,12 +371,12 @@ function filterSessionsByDays(files: string[], days: number): string[] {
   return filtered
 }
 
-function buildSessionTurns(filepath: string): { turns: Turn[]; sessionDate: string } {
+function buildSessionTurns(filepath: string, entries?: JsonlEntry[]): { turns: Turn[]; sessionDate: string } {
   const turns: Turn[] = []
   const timestamps: Date[] = []
   const fileMtime = new Date(statSync(filepath).mtimeMs)
 
-  const entries = parseJsonlFile(filepath)
+  entries ??= parseJsonlFile(filepath)
 
   let currentUserTexts: string[] = []
   let currentAiTexts: string[] = []
@@ -464,8 +464,8 @@ function buildSessionTurns(filepath: string): { turns: Turn[]; sessionDate: stri
   return { turns, sessionDate }
 }
 
-function buildSessionMetadata(filepath: string): SessionMetadata {
-  const entries = parseJsonlFile(filepath)
+function buildSessionMetadata(filepath: string, entries?: JsonlEntry[]): SessionMetadata {
+  entries ??= parseJsonlFile(filepath)
 
   let autoCompactCount = 0
   const compactTimestamps: string[] = []
@@ -603,10 +603,11 @@ function runRawMode(sessionsDirs: Array<{ sessionsDir: string; shortName: string
     jsonlFiles = filterSessionsByDays(jsonlFiles, days)
 
     for (const filepath of jsonlFiles) {
-      const { turns, sessionDate } = buildSessionTurns(filepath)
+      const entries = parseJsonlFile(filepath)
+      const { turns, sessionDate } = buildSessionTurns(filepath, entries)
       if (turns.length === 0) continue
       totalHumanTurns += turns.length
-      const metadata = buildSessionMetadata(filepath)
+      const metadata = buildSessionMetadata(filepath, entries)
       sessions.push({
         date: sessionDate,
         file: basename(filepath),
@@ -748,7 +749,11 @@ function parseArgs(): { days: number; output: string | null } {
   for (let i = 0; i < args.length; i++) {
     switch (args[i]) {
       case "--days":
-        days = parseInt(args[++i] ?? "3", 10)
+        const parsed = parseInt(args[++i] ?? "3", 10)
+        if (Number.isNaN(parsed)) {
+          throw new Error("Invalid --days value: expected a number")
+        }
+        days = parsed
         break
       case "--output":
         output = args[++i] ?? null
