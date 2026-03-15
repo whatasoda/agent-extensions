@@ -44,6 +44,7 @@ The six Interaction Principles were extracted from analysis of actual high-quali
 - **判断の保留は深掘りのシグナル**: When users deferred a premature question, effective sessions responded with deeper analysis rather than rephrasing. Deferral signals information gap, not indecision.
 - **議題は依存順に並べる**: Multi-topic discussions that followed dependency order progressed without backtracking. Those that didn't required revisiting earlier decisions.
 - **提示して委ねる**: AskUserQuestion の構造化選択肢UIは、明確な比較が必要な場面では有効だが、自由記述のコンテキスト付与を阻害する。soda-discuss は探索的な対話であり、ユーザーが想定外の視点やドメイン知識を自由に提供できることが重要。テキスト出力ベースの対話を基本とし、AskUserQuestion は3つ以上の具体的選択肢がある判断ポイントのみに限定する。
+- **対話に徹する**: Observed across multiple sessions where discussions drifted into producing detailed implementation proposals (file-by-file change lists, code diffs) without explicit user request. The guard distinguishes illustrative code snippets (which aid decisions) from proposal-framed implementation output (which bypasses the discuss→plan transition). Tool-level restrictions (`allowed-tools`) prevent file modifications but cannot prevent text-output-based implementation.
 
 ### Discussion Summary as Session Artifact
 
@@ -51,7 +52,7 @@ The Discussion Summary is a **session artifact** — downstream skills (soda-pla
 
 ### Skill Boundaries (formerly Anti-patterns)
 
-The bottom section of SKILL.md defines skill boundaries — what this skill is NOT for. This complements Interaction Principle anti-patterns (which define how NOT to interact) with scope anti-patterns (which define what NOT to produce). The separation keeps each concern focused.
+The bottom section of SKILL.md defines skill boundaries — what this skill is NOT for. This complements Interaction Principle anti-patterns (which define how NOT to interact) with scope anti-patterns (which define what NOT to produce). The separation keeps each concern focused. The fourth boundary was expanded to cover text-output implementation artifacts (not just file edits), aligning with the "対話に徹する" Interaction Principle.
 
 ## Skill Chain Position
 

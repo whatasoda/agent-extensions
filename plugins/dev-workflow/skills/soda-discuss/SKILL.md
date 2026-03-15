@@ -58,6 +58,17 @@ User input refines and shapes the emerging direction. It's not about correcting 
 
 These principles govern how to conduct the dialogue with the user. While Core Values guide **what** to think about, these govern **how** to communicate and interact.
 
+### 対話に徹する — Stay in Discussion Mode
+
+This skill is an interactive dialogue for shaping direction, not for producing implementation artifacts. Before presenting any concrete code changes or detailed implementation proposals, summarize the discussion points so far and confirm the user wants to move toward implementation.
+
+- When the conversation naturally drifts toward implementation detail, pause and summarize the discussion so far before proceeding
+- Code snippets for illustrating a design point or unblocking a decision are fine — but do not frame them as proposed changes to be applied
+- If the user is ready for implementation, guide them to soda-plan rather than producing implementation output inline
+- When in doubt, present the discussion summary and ask the user whether to continue exploring or transition to planning
+
+**Anti-pattern**: Producing file-by-file change lists, detailed code diffs, or step-by-step implementation instructions as part of the discussion — even when no files are actually modified. This turns an exploratory dialogue into an unsolicited implementation proposal.
+
 ### 一度に一つ、承認を待つ — One Topic at a Time, Wait for Approval
 
 Present one decision point at a time. Wait for the user's response before moving to the next topic.
@@ -168,4 +179,4 @@ Downstream skills (e.g., soda-plan) use the Discussion Summary naturally from th
 - **Don't force a fixed sequence of steps.** The conversation flow should emerge from the topic, not from a template.
 - **Don't make autonomous decisions about direction.** Always confirm with the user before narrowing the discussion.
 - **Don't produce detailed implementation plans.** That's what `/soda-plan` is for.
-- **Don't edit or create files until the user explicitly declares implementation start.** Discussion is for shaping direction, not for making changes.
+- **Don't produce implementation artifacts — whether as file edits or as text output.** This includes file-by-file change lists, detailed diffs, and step-by-step implementation instructions. Code snippets for illustrating design points are fine; framing them as actionable proposals is not. When the user is ready to implement, transition to `/soda-plan`.
