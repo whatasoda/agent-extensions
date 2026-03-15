@@ -12,9 +12,9 @@ Use English for internal reasoning (thinking). User interaction (discussion, pre
 
 This skill is for **designing new features, skills, or concepts when details are not yet solidified**. It facilitates an open-ended, interactive dialogue where the direction emerges through collaborative exploration rather than following a predetermined workflow.
 
-Unlike procedural skills (soda-plan, soda-propose), this skill defines **values and principles** that guide the conversation, not a fixed sequence of steps.
+Unlike procedural skills (soda-plan, soda-brief), this skill defines **values and principles** that guide the conversation, not a fixed sequence of steps.
 
-**Position in skill chain**: This skill naturally sits between research and proposal — `soda-research → soda-discuss → soda-propose → soda-plan` — but the Discussion Summary is a session artifact, not an auto-chaining block. Downstream skills do not detect it automatically. The user carries insights forward when invoking the next skill.
+**Position in skill chain**: `soda-research → soda-brief → soda-discuss → soda-plan`. The Discussion Summary is a session artifact. Downstream skills use it naturally from the conversation context.
 
 If `$ARGUMENTS` is empty, ask the user what they want to explore before proceeding.
 
@@ -44,7 +44,7 @@ Don't lock into a specific approach prematurely. Keep options open until underst
 
 - Avoid narrowing to a single option prematurely — present a recommendation, but keep other options visible
 - Frame observations as possibilities, not conclusions
-- It's fine for a discussion to end with open questions — that's what soda-propose and soda-plan are for
+- It's fine for a discussion to end with open questions — that's what soda-plan is for
 
 ### フィードバックは方向の精緻化 — Feedback Shapes Direction
 
@@ -161,11 +161,11 @@ When the discussion has reached sufficient clarity, produce a Discussion Summary
 - **Scope Sketch**: rough boundaries of what's in and out of scope
 ```
 
-This block is **not** automatically detected by downstream skills (`soda-propose` detects Research Summary; `soda-plan` detects Proposal Summary). The user references Discussion Summary content when invoking the next skill.
+Downstream skills (e.g., soda-plan) use the Discussion Summary naturally from the conversation context — no formal detection mechanism is needed.
 
 ## Skill Boundaries
 
 - **Don't force a fixed sequence of steps.** The conversation flow should emerge from the topic, not from a template.
 - **Don't make autonomous decisions about direction.** Always confirm with the user before narrowing the discussion.
 - **Don't produce detailed implementation plans.** That's what `/soda-plan` is for.
-- **Don't formally compare approaches.** That's what `/soda-propose` is for.
+- **Don't edit or create files until the user explicitly declares implementation start.** Discussion is for shaping direction, not for making changes.

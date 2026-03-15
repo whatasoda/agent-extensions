@@ -14,7 +14,7 @@ This pattern was implicit — embedded in how the user naturally works — and n
 
 ## Purpose
 
-Provide a value-based framework for open-ended design discussions. Unlike procedural skills (soda-plan, soda-propose), this skill deliberately avoids prescribing a fixed workflow. Instead, it defines the principles that make these discussions effective.
+Provide a value-based framework for open-ended design discussions. Unlike procedural skills (soda-plan, soda-brief), this skill deliberately avoids prescribing a fixed workflow. Instead, it defines the principles that make these discussions effective.
 
 ## Design Rationale
 
@@ -62,12 +62,12 @@ The bottom section of SKILL.md defines skill boundaries — what this skill is N
 ## Skill Chain Position
 
 ```
-soda-research → soda-discuss → soda-propose → soda-plan
+soda-research → soda-brief → soda-discuss → soda-plan
 ```
 
 - **After soda-research**: When research revealed interesting findings but the direction isn't clear yet
-- **Before soda-propose**: When the discussion has identified possible approaches worth comparing
-- **Before soda-plan**: When the discussion has converged enough to plan directly (skipping propose)
+- **After soda-brief**: When a briefing has framed the topic and key questions for discussion
+- **Before soda-plan**: When the discussion has converged enough to plan directly
 - **Standalone**: When exploring a new idea from scratch
 
 ## Typical Usage Scenarios
