@@ -47,13 +47,7 @@ The six Interaction Principles were extracted from analysis of actual high-quali
 
 ### Discussion Summary as Session Artifact
 
-The Discussion Summary is intentionally designed as a **session artifact** rather than a downstream-chaining block. Reasons:
-
-- Existing chaining blocks (Research Summary, Proposal Summary) have strict format contracts because downstream skills parse them programmatically
-- Discussion outcomes are inherently less structured — the value is in captured insights and emerging direction, not in parseable fields
-- Adding auto-detection to downstream skills would couple them to this skill's format, which may evolve as usage patterns become clearer
-
-This can be revisited once real usage patterns stabilize.
+The Discussion Summary is a **session artifact** — downstream skills (soda-plan) use it naturally from the conversation context rather than detecting it programmatically. This avoids format coupling and lets the Discussion Summary evolve freely.
 
 ### Skill Boundaries (formerly Anti-patterns)
 
