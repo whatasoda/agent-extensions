@@ -21,7 +21,7 @@ The typical flows:
 
 - **Sub-agent investigation strategy**: Uses the same two-step pattern as soda-plan and soda-propose: survey agent → focused agents. All sub-agent prompts include the standard constraint block and output contract. This consistency reduces maintenance burden and ensures predictable agent behavior across all skills.
 
-- **Research Summary as structured handoff**: The Research Summary block follows the same pattern as Proposal Summary (soda-propose → soda-plan) and Vision Blueprint (soda-loop-vision → soda-loop-setup). Detection is heading-based (`## Research Summary`). The format includes Domain Knowledge as a distinct section to preserve user-provided corrections through the handoff.
+- **Research Summary as structured handoff**: The Research Summary block follows the same pattern as Proposal Summary (soda-propose → soda-plan). Detection is heading-based (`## Research Summary`). The format includes Domain Knowledge as a distinct section to preserve user-provided corrections through the handoff.
 
 - **Read-only constraint**: Like soda-propose, this skill does not modify code. It exists purely in the investigation phase. The `Write` tool is intentionally excluded from `allowed-tools`.
 
