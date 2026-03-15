@@ -31,9 +31,15 @@ The user triggers each cycle manually. There is no autonomous loop.
 git rev-parse --show-toplevel
 ```
 
-Read `.agent-team/TASKS.md` and `.agent-team/ARCHITECTURE.md`.
+Read `.agent-team/TASKS.md`, `.agent-team/ARCHITECTURE.md`, and `.agent-team/CONFIG.md`.
 
 If `.agent-team/` does not exist or TASKS.md is missing, inform the user and suggest `/soda-team-init`. Stop.
+
+Extract the **Integration Branch** from CONFIG.md. All merge operations target this branch. Verify it exists:
+```bash
+git rev-parse --verify {{INTEGRATION_BRANCH}}
+```
+If missing, inform the user and stop.
 
 Parse TASKS.md to determine:
 - Total task count and status distribution
@@ -87,9 +93,9 @@ For each task in the batch, launch a Worker sub-agent in parallel.
 
 ### Worktree Setup
 
-For each Worker, create an isolated git worktree:
+For each Worker, create an isolated git worktree branching from the integration branch:
 ```bash
-git worktree add .worktrees/{{TASK-ID}} -b team/{{TASK-ID}}
+git worktree add .worktrees/{{TASK-ID}} -b task/{{TASK-ID}} {{INTEGRATION_BRANCH}}
 ```
 
 ### Worker Sub-agent
@@ -205,34 +211,51 @@ Limit re-implementation attempts to 2. If a task fails review twice, mark as `[!
 
 ### Merge (PASS)
 
-For each passed task:
+For each passed task, merge the Worker branch into the integration branch:
 
 ```bash
-git checkout main
-git merge team/{{TASK-ID}} --no-ff -m "{{task title}} (TASK-NNN)"
+git checkout {{INTEGRATION_BRANCH}}
+git merge task/{{TASK-ID}} --no-ff -m "{{task title}} (TASK-NNN)"
 ```
+
+**Merge conflict handling**: If the merge fails due to conflicts:
+- Abort the merge: `git merge --abort`
+- Report the conflict to the user with the affected files
+- Use AskUserQuestion:
+  - "コンフリクトを手動で解決する" — user resolves, then resume
+  - "このタスクを後回しにする" — mark `[!]`, proceed with other tasks
+- Do NOT attempt automatic conflict resolution.
 
 After successful merge, clean up:
 ```bash
 git worktree remove .worktrees/{{TASK-ID}}
-git branch -d team/{{TASK-ID}}
+git branch -d task/{{TASK-ID}}
 ```
 
 Update TASKS.md: `[~]` → `[x]` with merge commit SHA.
 
 ### Architect Escalation (ESCALATE)
 
-When a Reviewer flags a design-level issue:
+When a Reviewer flags a design-level issue, the Orchestrator switches to **Architect role**. This is a deliberate context shift — while in Architect role, progress concerns are set aside and the focus is entirely on design correctness.
 
-1. Present the escalation to the user with the Reviewer's findings
-2. The user decides:
-   - Invoke Architect discussion (user ↔ Architect dialogue to resolve the design issue)
-   - Override and accept the implementation as-is
-   - Defer the task (mark as `[!]`)
-3. If Architect discussion occurs:
-   - Update ARCHITECTURE.md with new/revised ADR
-   - Update affected TASK-NNN.md files with revised Design Constraints
-   - The task re-enters Step 3 with updated constraints
+**Entering Architect role**:
+1. Read ARCHITECTURE.md to load the full design decision history
+2. Read the Reviewer's ESCALATE findings
+3. Present the escalation to the user with the Reviewer's findings and relevant ADRs
+
+**Architect dialogue with user**:
+- Follow soda-discuss Interaction Principles (options with evidence and recommendation, one topic at a time)
+- The user decides:
+  - Resolve the design issue (user ↔ Architect dialogue)
+  - Override and accept the implementation as-is
+  - Defer the task (mark as `[!]`)
+
+**Exiting Architect role**:
+- If a design decision was made:
+  - Write new/revised ADR to ARCHITECTURE.md
+  - Update affected TASK-NNN.md files with revised Design Constraints (summarized, not just references)
+  - The task re-enters Step 3 with updated constraints
+- Resume Orchestrator role and continue the cycle
 
 ### User Escalation (BLOCKED)
 
@@ -279,7 +302,7 @@ Use AskUserQuestion:
 - Re-implementation is limited to 2 attempts per task before user escalation.
 - TASKS.md is the single source of truth for task status. Update it after every state change.
 - All coordination files must conform to `../soda-team-init/references/coordination-files.md`.
-- Merge target branch defaults to the branch that was active when soda-team-init was run. Do NOT assume `main`.
+- Merge target is the integration branch recorded in `.agent-team/CONFIG.md`. Do NOT assume `main`.
 
 ## Sub-agent Usage
 
@@ -289,4 +312,4 @@ Sub-agent types:
 - **Worker**: `Task` — implementation agent, runs on isolated worktree
 - **Reviewer**: `Task` — read-only review agent
 - **Investigator**: `Task(subagent_type: Explore)` — codebase investigation
-- **Architect**: Direct dialogue with user via AskUserQuestion (not a sub-agent — runs in main context)
+- **Architect**: Role switch within main context (not a sub-agent). Orchestrator loads ARCHITECTURE.md and enters design-focused dialogue with user via AskUserQuestion. See "Architect Escalation" in Step 5.

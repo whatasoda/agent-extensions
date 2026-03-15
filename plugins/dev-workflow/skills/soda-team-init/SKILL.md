@@ -28,7 +28,33 @@ git rev-parse --show-toplevel
   - "既存プロジェクトを上書きする"
   - "既存プロジェクトに追加する"（requirements を追加タスクとして取り込む）
   - "キャンセル"
-- If it does not exist, proceed to Step 2.
+- If it does not exist, proceed to branch strategy.
+
+**Branch Strategy**:
+
+Determine the integration branch where all Worker results will be merged. This branch is NOT main — it serves as a staging area for the entire team project.
+
+Use AskUserQuestion:
+- "新しい統合ブランチを作成" — create a new branch from current HEAD
+- "現在のブランチを統合ブランチとして使用 (`{{CURRENT_BRANCH}}`)"
+
+If creating a new branch:
+- Derive branch name as `team/{{project-name}}` (slugified from the project description)
+- Present the suggested name for confirmation
+- Create from current HEAD:
+  ```bash
+  git checkout -b {{BRANCH_NAME}}
+  ```
+
+Record the integration branch name in `.agent-team/CONFIG.md`:
+```markdown
+# Team Config
+- **Integration Branch**: {{branch name}}
+- **Created From**: {{base branch or commit SHA}}
+- **Created At**: {{ISO date}}
+```
+
+This branch name is used by soda-team-run for all merge operations.
 
 ## Step 2: Requirements Ingestion
 
@@ -267,7 +293,6 @@ Then print next steps:
 ```
 Next:
   /soda-team-run  — Execute tasks with agent team
-  /soda-team-status — Check progress
 ```
 
 ## Constraints

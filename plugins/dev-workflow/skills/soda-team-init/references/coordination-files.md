@@ -8,6 +8,7 @@ All coordination files live under `.agent-team/` in the repository root.
 
 ```
 .agent-team/
+├── CONFIG.md             — Project configuration (integration branch, creation metadata)
 ├── TASKS.md              — Task list and status (managed by Orchestrator)
 ├── ARCHITECTURE.md       — Architecture decision records (managed by Architect)
 ├── tasks/
@@ -18,6 +19,20 @@ All coordination files live under `.agent-team/` in the repository root.
     ├── REVIEW-001.md     — Review result for TASK-001 (managed by Reviewer)
     └── ...
 ```
+
+## CONFIG.md
+
+Project-level configuration set during soda-team-init. Read by soda-team-run to determine merge targets and project metadata.
+
+```markdown
+# Team Config
+- **Integration Branch**: {{branch name}}
+- **Created From**: {{base branch or commit SHA}}
+- **Created At**: {{ISO date}}
+```
+
+**Managed by**: soda-team-init (created), soda-team-run (read-only)
+**Updated when**: Initial creation only. If the integration branch needs to change, re-run soda-team-init.
 
 ## TASKS.md
 
