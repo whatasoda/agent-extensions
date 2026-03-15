@@ -149,8 +149,16 @@ As each Worker completes:
 
 - **DONE**: Proceed to Step 4 (Review)
 - **BLOCKED**: Read BLOCKER.md from worktree. Orchestrator decides:
-  - If this is the first block: launch an Investigator sub-agent to analyze the blocker, then create a new Worker with additional context
+  - If this is the first block: reset the worktree, launch an Investigator sub-agent to analyze the blocker, then create a new Worker with additional context on the same worktree
   - If this is the second block for the same task: escalate to user (see Step 5)
+
+**Worktree reset for retry**: When re-launching a Worker on the same task, reset the worktree to a clean state instead of creating a new one:
+```bash
+cd .worktrees/{{TASK-ID}}
+git clean -fd
+git reset --hard {{INTEGRATION_BRANCH}}
+```
+This maintains the disposable Worker principle (no stale state) while avoiding unnecessary disk usage from worktree recreation.
 
 Update TASKS.md status to `[~]` when Worker starts, and track completion.
 
@@ -185,6 +193,9 @@ If a fix requires judgment or is more than 2 lines, mark it as FAIL.
 ## Architecture Decisions
 [contents of ARCHITECTURE.md — or relevant ADRs only if file is large]
 
+## Working Directory
+{{worktree path}} — run validation commands and apply trivial fixes here
+
 ## Changes to Review
 [git diff of the Worker's worktree branch vs base]
 
@@ -215,7 +226,7 @@ Return your result in this exact format:
 
 - **PASS**: Write REVIEW-NNN.md → proceed to merge (Step 5)
 - **PASS_WITH_FIX**: Write REVIEW-NNN.md (including Trivial Fixes Applied) → proceed to merge (Step 5). The Reviewer has already committed the fix.
-- **FAIL**: Write REVIEW-NNN.md → append findings to TASK-NNN.md History → create new Worker (return to Step 3 for this task)
+- **FAIL**: Write REVIEW-NNN.md → append findings to TASK-NNN.md History → reset worktree (`git clean -fd && git reset --hard`) → create new Worker on the same worktree (return to Step 3 for this task)
 - **ESCALATE**: Write REVIEW-NNN.md → invoke Architect (Step 5)
 
 Limit re-implementation attempts to 2. If a task fails review twice, mark as `[!]` and escalate to user.
@@ -283,9 +294,31 @@ Present the situation to the user:
 
 Use AskUserQuestion:
 - "追加調査して再試行" — launch Investigator, update TASK-NNN.md context, retry
-- "タスクを分割する" — decompose into smaller tasks, add to TASKS.md
+- "タスクを分割する" — see Task Splitting below
 - "タスクをスキップ" — mark `[!]` with reason
 - "手動で対応する" — mark `[!]`, user handles outside the team
+
+### Task Splitting
+
+When the user chooses to split a failed task:
+
+1. **Analyze**: Read the failed TASK-NNN.md, BLOCKER.md (if any), and REVIEW-NNN.md (if any) to understand the failure
+2. **Investigate**: Launch an Investigator sub-agent with the failure context to propose a split strategy
+3. **Present**: Show the proposed sub-tasks to the user in table format (same as soda-team-init Step 5):
+   > | # | タスク | 受入条件 | 依存 |
+   > |---|--------|----------|------|
+   > | 1 | {{title}} | {{acceptance}} | なし |
+   > | 2 | {{title}} | {{acceptance}} | #1 |
+4. **Confirm**: Use AskUserQuestion for user approval
+5. **Generate**:
+   - Mark original task as `[!]` in TASKS.md with note: `split → TASK-XXX, TASK-YYY`
+   - Generate new TASK-XXX.md, TASK-YYY.md files:
+     - Inherit Context and Design Constraints from the original task
+     - Add failure insights to History: `- Split from TASK-NNN: "{{failure summary}}"`
+   - Add new tasks to TASKS.md
+   - New task numbers: `max(existing task numbers) + 1`, continuing zero-padded sequence
+6. **Clean up**: Remove the original task's worktree (`git worktree remove`, `git branch -D`)
+7. New tasks become actionable in the next cycle (or current cycle if user selects "次のサイクルを実行")
 
 ## Step 6: Cycle Report
 
