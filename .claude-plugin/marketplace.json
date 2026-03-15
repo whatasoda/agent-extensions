@@ -13,7 +13,7 @@
       "name": "dev-workflow",
       "source": "./plugins/dev-workflow",
       "description": "Development workflow skills: implementation planning, approach proposals, branch reviews, plan tracking, vision definition, and autonomous loop orchestration",
-      "version": "0.10.18"
+      "version": "0.11.0"
     }
   ]
 }
