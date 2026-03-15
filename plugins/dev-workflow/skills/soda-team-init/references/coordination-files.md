@@ -16,7 +16,7 @@ All coordination files live under `.agent-team/` in the repository root.
 │   ├── TASK-002.md
 │   └── ...
 └── reviews/
-    ├── REVIEW-001.md     — Review result for TASK-001 (managed by Reviewer)
+    ├── REVIEW-001-1.md   — Review result for TASK-001, attempt 1 (managed by Reviewer)
     └── ...
 ```
 
@@ -85,7 +85,7 @@ Self-contained instruction for a Worker. The Worker should be able to implement 
 
 ## History
 {{Only present for re-implementation. Contains previous Reviewer findings.}}
-- Attempt N: FAIL — "{{specific issue}}" (REVIEW-NNN)
+- Attempt N: FAIL — "{{specific issue}}" (REVIEW-NNN-N)
 ```
 
 **Managed by**: Orchestrator (Definition, Context, Validation) + Architect (Design Constraints)
@@ -130,12 +130,14 @@ Architecture Decision Records maintained by Architect. The primary mechanism for
 
 On soda-team-init execution, design decisions from the preceding soda-discuss Discussion Summary are transcribed as the initial set of ADRs.
 
-## REVIEW-NNN.md
+## REVIEW-NNN-A.md
 
-Review result for a completed task. Written by Reviewer, consumed by Orchestrator (for status updates) and by future Workers (via TASK-NNN.md History).
+Review result for a completed task. File naming: `REVIEW-{task number}-{attempt number}.md` (e.g., `REVIEW-001-1.md` for TASK-001's first review, `REVIEW-001-2.md` for the second). This preserves both the task correspondence and the full review history across retries.
+
+Written by Reviewer, consumed by Orchestrator (for status updates) and by future Workers (via TASK-NNN.md History).
 
 ```markdown
-# REVIEW-NNN: TASK-NNN
+# REVIEW-NNN-A: TASK-NNN (Attempt A)
 
 ## Verdict: {{PASS | PASS_WITH_FIX | FAIL | ESCALATE}}
 

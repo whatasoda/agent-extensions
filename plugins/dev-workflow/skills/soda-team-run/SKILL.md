@@ -224,12 +224,12 @@ Return your result in this exact format:
 
 ### Review Result Handling
 
-- **PASS**: Write REVIEW-NNN.md → proceed to merge (Step 5)
-- **PASS_WITH_FIX**: Write REVIEW-NNN.md (including Trivial Fixes Applied) → proceed to merge (Step 5). The Reviewer has already committed the fix.
-- **FAIL**: Write REVIEW-NNN.md → append findings to TASK-NNN.md History → reset worktree (`git clean -fd && git reset --hard`) → create new Worker on the same worktree (return to Step 3 for this task)
-- **ESCALATE**: Write REVIEW-NNN.md → invoke Architect (Step 5)
+- **PASS**: Write REVIEW-NNN-A.md → proceed to merge (Step 5)
+- **PASS_WITH_FIX**: Write REVIEW-NNN-A.md (including Trivial Fixes Applied) → proceed to merge (Step 5). The Reviewer has already committed the fix.
+- **FAIL**: Write REVIEW-NNN-A.md → append findings to TASK-NNN.md History → reset worktree (`git clean -fd && git reset --hard`) → create new Worker on the same worktree (return to Step 3 for this task)
+- **ESCALATE**: Write REVIEW-NNN-A.md → invoke Architect (Step 5). After Architect updates TASK-NNN.md Design Constraints, reset worktree (`git clean -fd && git reset --hard`) before re-entering Step 3.
 
-Limit re-implementation attempts to 2. If a task fails review twice, mark as `[!]` and escalate to user.
+Limit re-implementation attempts to 2 before user escalation. If a task fails review twice, mark as `[!]` and escalate to user. When the user explicitly chooses "追加調査して再試行" from User Escalation, the retry counter resets (the user has made an informed decision to continue).
 
 ## Step 5: Resolution
 
@@ -302,7 +302,7 @@ Use AskUserQuestion:
 
 When the user chooses to split a failed task:
 
-1. **Analyze**: Read the failed TASK-NNN.md, BLOCKER.md (if any), and REVIEW-NNN.md (if any) to understand the failure
+1. **Analyze**: Read the failed TASK-NNN.md, BLOCKER.md (if any), and latest REVIEW-NNN-A.md (if any) to understand the failure
 2. **Investigate**: Launch an Investigator sub-agent with the failure context to propose a split strategy
 3. **Present**: Show the proposed sub-tasks to the user in table format (same as soda-team-init Step 5):
    > | # | タスク | 受入条件 | 依存 |
@@ -356,6 +356,6 @@ Every sub-agent prompt MUST begin with the appropriate constraint block (Worker 
 
 Sub-agent types:
 - **Worker**: `Task` — implementation agent, runs on isolated worktree
-- **Reviewer**: `Task` — read-only review agent
+- **Reviewer**: `Task` — review agent with validation execution and trivial fix authority
 - **Investigator**: `Task(subagent_type: Explore)` — codebase investigation
 - **Architect**: Role switch within main context (not a sub-agent). Orchestrator loads ARCHITECTURE.md and enters design-focused dialogue with user via AskUserQuestion. See "Architect Escalation" in Step 5.
