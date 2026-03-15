@@ -36,6 +36,16 @@ The prompt must contain the following sections:
 - `## Working Directory` — absolute path to the worktree (run validation commands and apply trivial fixes here)
 - `## Changes to Review` — git diff of the Worker's worktree branch vs base
 
+## Workflow
+
+1. Change to the working directory
+2. Read the git diff from the `## Changes to Review` section to understand the scope of changes
+3. Run all validation commands from the task definition — if any fail, this is an immediate FAIL signal
+4. Evaluate the implementation against the Review Criteria below
+5. Check ADR compliance for each relevant ADR listed in the task's Design Constraints
+6. If trivial fixes are needed and eligible under the Trivial Fix Policy, apply them and commit
+7. Return results in the output format below
+
 ## Review Criteria
 
 1. Does the implementation satisfy all acceptance criteria in the task?
