@@ -54,5 +54,4 @@ Chained flow:
 ## Future Improvements
 
 - Consider adding a file output option (`research.md`) for cross-session persistence (currently relies on in-conversation structured block)
-- Consider integration with soda-plans for indexing research artifacts alongside plans
 - Explore automatic annotation point suggestions (areas where the AI's confidence is low)
