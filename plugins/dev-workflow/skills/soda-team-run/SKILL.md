@@ -167,8 +167,8 @@ For each completed Worker (status DONE), launch a Reviewer sub-agent via `Task(s
 
 - **PASS**: Write REVIEW-NNN-A.md → proceed to merge (Step 5)
 - **PASS_WITH_FIX**: Write REVIEW-NNN-A.md (including Trivial Fixes Applied) → proceed to merge (Step 5). The Reviewer has already committed the fix.
-- **FAIL**: Write REVIEW-NNN-A.md → append findings to TASK-NNN.md History → reset worktree (`git clean -fd && git reset --hard`) → create new Worker on the same worktree (return to Step 3 for this task)
-- **ESCALATE**: Write REVIEW-NNN-A.md → invoke Architect (Step 5). After Architect updates TASK-NNN.md Design Constraints, reset worktree (`git clean -fd && git reset --hard`) before re-entering Step 3.
+- **FAIL**: Write REVIEW-NNN-A.md → append findings to TASK-NNN.md History → reset worktree (`git clean -fd && git reset --hard {{INTEGRATION_BRANCH}}`) → create new Worker on the same worktree (return to Step 3 for this task)
+- **ESCALATE**: Write REVIEW-NNN-A.md → invoke Architect (Step 5). Worktree handling depends on Architect outcome — see Exiting Architect role.
 
 Limit re-implementation attempts to 2 before user escalation. If a task fails review twice, mark as `[!]` and escalate to user. When the user explicitly chooses "追加調査して再試行" from User Escalation, the retry counter resets (the user has made an informed decision to continue).
 
@@ -188,7 +188,7 @@ git merge task/{{TASK-ID}} --no-ff -m "{{task title}} (TASK-NNN)"
 - Report the conflict to the user with the affected files
 - Use AskUserQuestion:
   - "コンフリクトを手動で解決する" — user resolves, then resume
-  - "このタスクを後回しにする" — mark `[!]`, proceed with other tasks
+  - "このタスクを後回しにする" — mark `[!]`, clean up worktree (`git worktree remove .worktrees/{{TASK-ID}}` and `git branch -D task/{{TASK-ID}}`), proceed with other tasks
 - Do NOT attempt automatic conflict resolution.
 
 After successful merge, clean up:
@@ -219,7 +219,14 @@ When a Reviewer flags a design-level issue, the Orchestrator switches to **Archi
 - If a design decision was made:
   - Write new/revised ADR to ARCHITECTURE.md
   - Update affected TASK-NNN.md files with revised Design Constraints (summarized, not just references)
+  - Reset worktree (`git clean -fd && git reset --hard {{INTEGRATION_BRANCH}}`)
   - The task re-enters Step 3 with updated constraints
+- If the user chose to override:
+  - Do NOT reset the worktree — the Worker's implementation is accepted as-is
+  - Proceed directly to Merge (PASS) in Step 5
+- If the user chose to defer:
+  - Mark task as `[!]` in TASKS.md
+  - Clean up worktree (`git worktree remove .worktrees/{{TASK-ID}}` and `git branch -D task/{{TASK-ID}}`)
 - Resume Orchestrator role and continue the cycle
 
 ### User Escalation (BLOCKED)
@@ -234,10 +241,10 @@ Present the situation to the user:
 > - 試行履歴: {{brief history}}
 
 Use AskUserQuestion:
-- "追加調査して再試行" — launch Investigator, update TASK-NNN.md context, retry
+- "追加調査して再試行" — launch Investigator, update TASK-NNN.md context, retry (worktree is reset, retry counter resets)
 - "タスクを分割する" — see Task Splitting below
-- "タスクをスキップ" — mark `[!]` with reason
-- "手動で対応する" — mark `[!]`, user handles outside the team
+- "タスクをスキップ" — mark `[!]` with reason, clean up worktree (`git worktree remove .worktrees/{{TASK-ID}}` and `git branch -D task/{{TASK-ID}}`)
+- "手動で対応する" — mark `[!]`, clean up worktree, user handles outside the team
 
 ### Task Splitting
 
