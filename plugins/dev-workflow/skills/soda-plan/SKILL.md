@@ -130,7 +130,7 @@ If $ARGUMENTS is empty, ask the user what they want to implement before proceedi
 
 ### Codex Review (pre-plan-mode)
 
-Delegate codex review to a subagent. The subagent handles revision internally if critical issues are found.
+Delegate codex review to a subagent in findings-only mode. The subagent reports issues but does NOT revise the content — the plan author incorporates findings to preserve original intent.
 
 1. Launch a codex review subagent:
    - Tool: `Task(subagent_type: dev-workflow:codex-review)`
@@ -138,15 +138,15 @@ Delegate codex review to a subagent. The subagent handles revision internally if
    - Review request:
      ```
      ## Codex Review Request
-     - **Mode**: init
+     - **Mode**: findings
      - **Instruction**: "Review this plan. Skip trivial issues — only flag critical problems"
 
      ### Content
      [composed plan content]
      ```
 2. Use the subagent's response:
-   - If **Revision Applied: Yes**: use the `Revised Content` from the response as the plan content.
-   - If **Status: Skipped** or subagent failure: continue without review.
+   - If **critical issues found**: read the `Issues` section and revise the plan in the main context to address them, preserving the original intent and voice.
+   - If **no critical issues**, **Status: Skipped**, or subagent failure: continue without changes.
 
 After the codex review completes, use the EnterPlanMode tool to enter plan mode. Write the reviewed plan content to the plan file. Proceed with the Plan Annotation Guidance below, then exit plan mode via ExitPlanMode.
 
