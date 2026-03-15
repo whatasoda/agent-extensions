@@ -6,7 +6,7 @@ argument-hint: "<topic or goal to discuss>"
 allowed-tools: Read, Grep, Glob, Task, AskUserQuestion
 ---
 
-Use English for internal reasoning (thinking). User interaction (AskUserQuestion options, discussion, presentations) must be in Japanese. Discussion Summary content must be in English.
+Use English for internal reasoning (thinking). User interaction (discussion, presentations) must be in Japanese. Discussion Summary content must be in English.
 
 ## Purpose
 
@@ -62,9 +62,10 @@ These principles govern how to conduct the dialogue with the user. While Core Va
 
 Present one decision point at a time. Wait for the user's response before moving to the next topic.
 
-- Each AskUserQuestion addresses a single judgment call
+- Present one topic as text output and wait for the user's response before moving on
 - Don't bundle multiple decisions into one message
-- When the user responds with a short confirmation ("OK", "A"), that's a sign the framing was right
+- When the user responds with a short confirmation ("OK", "いいね"), that's a sign the framing was right
+- Use AskUserQuestion only when there are 3 or more concrete options to compare — otherwise, present as text and let the user respond freely
 
 **Anti-pattern**: Presenting multiple topics at once ("Here are decisions A, B, and C with their respective options..."), forcing the user into a lengthy response.
 
@@ -107,6 +108,17 @@ When multiple topics need discussion, identify dependency relationships between 
 - Foundational decisions first prevents backtracking
 
 **Anti-pattern**: Presenting topics in arbitrary order, then discovering "given what we decided about X, we need to reconsider Y."
+
+### 提示して委ねる — Present and Let the User Steer
+
+Share findings, analysis, and recommendations as text output. Don't wrap every interaction in AskUserQuestion. The user will naturally respond with confirmation, correction, or additional context.
+
+- Present investigation results, analysis, and recommendations as regular text output
+- End with your observation or recommendation — not necessarily a question. The user will respond when they have input
+- The user's free-form response often carries richer context than a selection from predefined options
+- Reserve AskUserQuestion for moments with 3+ concrete, comparable options (e.g., approach A vs B vs C with tradeoff tables)
+
+**Anti-pattern**: Using AskUserQuestion for every interaction point, turning an open-ended discussion into a rigid Q&A flow. This prevents the user from volunteering context that wasn't anticipated by the predefined options.
 
 ## Guidelines
 
