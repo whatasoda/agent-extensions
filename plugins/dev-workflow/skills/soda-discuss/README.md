@@ -14,7 +14,7 @@ This pattern was implicit — embedded in how the user naturally works — and n
 
 ## Purpose
 
-Provide a value-based framework for open-ended design discussions. Unlike procedural skills (soda-plan, soda-propose), this skill deliberately avoids prescribing a fixed workflow. Instead, it defines the principles that make these discussions effective.
+Provide a value-based framework for open-ended design discussions. Unlike procedural skills (soda-plan, soda-brief), this skill deliberately avoids prescribing a fixed workflow. Instead, it defines the principles that make these discussions effective.
 
 ## Design Rationale
 
@@ -47,13 +47,7 @@ The six Interaction Principles were extracted from analysis of actual high-quali
 
 ### Discussion Summary as Session Artifact
 
-The Discussion Summary is intentionally designed as a **session artifact** rather than a downstream-chaining block. Reasons:
-
-- Existing chaining blocks (Research Summary, Proposal Summary) have strict format contracts because downstream skills parse them programmatically
-- Discussion outcomes are inherently less structured — the value is in captured insights and emerging direction, not in parseable fields
-- Adding auto-detection to downstream skills would couple them to this skill's format, which may evolve as usage patterns become clearer
-
-This can be revisited once real usage patterns stabilize.
+The Discussion Summary is a **session artifact** — downstream skills (soda-plan) use it naturally from the conversation context rather than detecting it programmatically. This avoids format coupling and lets the Discussion Summary evolve freely.
 
 ### Skill Boundaries (formerly Anti-patterns)
 
@@ -62,12 +56,12 @@ The bottom section of SKILL.md defines skill boundaries — what this skill is N
 ## Skill Chain Position
 
 ```
-soda-research → soda-discuss → soda-propose → soda-plan
+soda-research → soda-brief → soda-discuss → soda-plan
 ```
 
 - **After soda-research**: When research revealed interesting findings but the direction isn't clear yet
-- **Before soda-propose**: When the discussion has identified possible approaches worth comparing
-- **Before soda-plan**: When the discussion has converged enough to plan directly (skipping propose)
+- **After soda-brief**: When a briefing has framed the topic and key questions for discussion
+- **Before soda-plan**: When the discussion has converged enough to plan directly
 - **Standalone**: When exploring a new idea from scratch
 
 ## Typical Usage Scenarios

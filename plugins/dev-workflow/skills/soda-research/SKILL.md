@@ -8,8 +8,6 @@ allowed-tools: Bash(git *), Read, Grep, Glob, Task, AskUserQuestion
 
 Perform deep, structured codebase research on the given topic and produce a reusable Research Summary artifact.
 
-For quick research without sub-agents, use `/soda-research-lite`.
-
 Use English for internal reasoning (thinking). All user-facing output — topic framing, findings presentation, and AskUserQuestion options — must be in Japanese. The Research Summary block must use the exact English template format for downstream compatibility.
 
 If $ARGUMENTS is empty, ask the user what they want to research before proceeding.
@@ -89,7 +87,7 @@ Use AskUserQuestion:
 
 ### Step 5: Research Summary
 
-Emit the following structured handoff block. This enables same-session chaining to `/soda-plan` or `/soda-propose`.
+Emit the following structured handoff block. This enables same-session chaining to `/soda-discuss` or `/soda-plan`.
 
 ```
 ## Research Summary
@@ -123,7 +121,7 @@ Research complete:
 - Research Summary emitted for handoff
 
 Next:
-  /soda-propose — Explore implementation approaches using this research
+  /soda-discuss — Discuss direction and explore approaches using this research
   /soda-plan — Plan implementation directly using this research
 ```
 
@@ -131,6 +129,6 @@ Next:
 
 - This skill only investigates. Do NOT modify any code.
 - Do NOT enter plan mode (no EnterPlanMode).
-- The Research Summary block format must be stable — `/soda-plan` and `/soda-propose` detect it by heading pattern.
+- The Research Summary block format should be stable — downstream skills use it as conversation context.
 - Findings presentation must be organized by theme, not by agent. Merge and deduplicate findings across agents.
 - Domain Knowledge entries from user annotations are authoritative — they override investigation findings when there is a conflict.

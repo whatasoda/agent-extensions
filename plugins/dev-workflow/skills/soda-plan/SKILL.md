@@ -10,36 +10,12 @@ Create a detailed implementation plan for the given task.
 
 Use English for internal reasoning (thinking). Plan content (written to plan mode file) must be in English — use structured data, code snippets, and technical English for maximum AI interpretability and compaction resilience. User interaction (AskUserQuestion options, confirmation messages, investigation summaries presented before plan mode) must be in Japanese.
 
-If $ARGUMENTS is empty and no Proposal Summary exists in the conversation, ask the user what they want to implement before proceeding.
-
-## Context Detection
-
-Before starting, check the conversation for a **Proposal Summary** block (produced by `/soda-propose`).
-
-- **If found**: Use it as the starting context.
-  - **Investigate**: Extract key findings and affected areas. Delegate verification to a sub-agent (Task, subagent_type: Explore, model: haiku) with the constraint block and the Verification output contract (both defined in Procedure Step 1). The sub-agent receives the Proposal Summary's Key Findings and Affected Areas and checks whether referenced files still exist and patterns haven't changed significantly. If the sub-agent reports discrepancies, investigate the gaps using focused sub-agents. Skip further investigation if no discrepancies are found.
-  - **Plan**: Incorporate Expected Impact (gains, losses, UX changes) and Risks into the plan's risk assessment. Use Affected Areas as the starting point for step breakdown. Leverage Rejected Alternatives context to avoid re-exploring ruled-out directions. If Implementation Hints are provided, use them to inform step ordering and architectural decisions. If a Scope Boundary is provided, constrain the plan to the defined scope and note deferred items.
-  - **Clarify**: Do not re-ask about approach selection (already decided). Clarify implementation-level ambiguities. Design decisions are handled as labeled callouts in the plan body.
-- **If not found**: Proceed normally using $ARGUMENTS as the task description.
-
-When both $ARGUMENTS and a Proposal Summary are present, $ARGUMENTS takes precedence for the task description, but the Proposal Summary provides investigation context.
-
-Also check for a **Research Summary** block (produced by `/soda-research`).
-
-- **If found**: Use it as supplementary investigation context.
-  - **Investigate**: Extract key findings, architecture insights, and code references. Use these as the starting point for investigation — skip survey-level sub-agent work and focus only on gaps not covered by the Research Summary. If the Research Summary includes Domain Knowledge, treat these as authoritative user-provided corrections.
-  - **Plan**: Reference specific file paths and code references from the Research Summary in step breakdowns. Use Open Questions as input for plan ambiguities.
-- **If not found**: No change to normal flow.
-
-When both a Proposal Summary and Research Summary are present, the Proposal Summary takes precedence for approach selection context. The Research Summary provides deeper codebase understanding that supplements both.
-
-Priority order: Proposal Summary (approach decision) > Research Summary (codebase understanding) > $ARGUMENTS (task description)
+If $ARGUMENTS is empty, ask the user what they want to implement before proceeding.
 
 ## Procedure
 
 1. **Investigate**: Explore the codebase to understand the scope, affected areas, and existing patterns.
-   - If no Proposal Summary is available, investigate from scratch using sub-agents:
-     - **Sub-agent output contract**: Every sub-agent prompt MUST end with the following output format requirement:
+   - **Sub-agent output contract**: Every sub-agent prompt MUST end with the following output format requirement:
        > Return findings in this exact format:
        > ### Files
        > - `path/to/file` — relevance to the task
@@ -54,16 +30,8 @@ Priority order: Proposal Summary (approach decision) > Research Summary (codebas
      - Based on findings, optionally launch 1-2 focused sub-agents in parallel. Each prompt must include the Common Context block (summarized, not raw output), the specific investigation question, and both the constraint block and output contract.
    - **Sub-agent prompt constraints**: Every sub-agent prompt (both survey and focused) MUST begin with the following constraint block:
      > You are a research-only agent. Do NOT use AskUserQuestion, EnterPlanMode, or any interactive/planning tools. Return your findings in the output format specified below.
-   - **Verification output contract**: When delegating Proposal Summary verification, the sub-agent prompt MUST end with the following output format:
-     > Return findings in this exact format:
-     > ### Verified
-     > - `path/to/file` — status (current | changed — description)
-     > ### Discrepancies
-     > - finding — what changed and how it affects the plan
-     > ### Current State
-     > - (brief summary of current state of affected areas)
    - Summarize investigation results before proceeding.
-   - If investigation reveals multiple fundamentally different approaches, use AskUserQuestion to let the user decide: "Run /soda-propose to compare approaches" / "Continue — I'll specify the approach". Do not choose an approach autonomously.
+   - If investigation reveals multiple fundamentally different approaches, use AskUserQuestion to let the user decide: "方針を調整して続行" / "ここで中断して方針を整理". Do not choose an approach autonomously.
 2. **Strategy Confirmation + Branch Strategy**: Present investigation findings as an **Investigation Digest** block, then confirm direction with the user.
 
    **Investigation Digest format**:
@@ -82,20 +50,13 @@ Priority order: Proposal Summary (approach decision) > Research Summary (codebas
    **S-task condensed format**: When estimated scale is S, condense the digest to a single line: "推定スケール: S — [one-sentence summary]". Omit the 予想設計判断 section entirely.
 
    **Step 2a — Direction Confirmation**: Use an AskUserQuestion to confirm direction:
-   - **When a Proposal Summary exists**:
-     - "この方針で進める"
-     - "方針を調整"
-   - **When no Proposal Summary exists**:
-     - "この方針で進める"
-     - "方針を調整"
-     - "さらに調査を深める" (max 1 round — see re-entry rule below)
-     - "/soda-propose で代替案を比較"
+   - "この方針で進める"
+   - "方針を調整"
+   - "さらに調査を深める" (max 1 round — see re-entry rule below)
 
-   **Deeper investigation re-entry rule**: When the user selects "さらに調査を深める", launch additional focused sub-agents (1-2) based on the user's feedback, update the Common Context block, then re-present Step 2a with an updated Investigation Digest. This option is available at most once. If the user selects it again after re-presentation, present only: "この方針で進める" / "方針を調整" / "/soda-propose で代替案を比較". This hard cap limits worst-case interaction increase to +1 round-trip.
+   **Deeper investigation re-entry rule**: When the user selects "さらに調査を深める", launch additional focused sub-agents (1-2) based on the user's feedback, update the Common Context block, then re-present Step 2a with an updated Investigation Digest. This option is available at most once. If the user selects it again after re-presentation, present only: "この方針で進める" / "方針を調整". This hard cap limits worst-case interaction increase to +1 round-trip.
 
-   **No-Proposal-Summary approach boundary**: In the no-Proposal-Summary path, the Investigation Digest's 予想設計判断 section must be limited to implementation-level decisions only. Do NOT include approach comparisons or alternative strategies — those belong to `/soda-propose`. If investigation findings raise fundamental questions about the task's premise or scope, include a note in the digest recommending `/soda-propose` escalation rather than embedding approach-level analysis.
-
-   If the user wants to adjust, incorporate their feedback and re-present Step 2a. If they choose /soda-propose, stop planning and suggest the user invoke it.
+   If the user wants to adjust, incorporate their feedback and re-present Step 2a.
    Do NOT proceed to Step 2b until the user confirms direction.
 
    **Step 2b — Branch Strategy**: After direction is confirmed, use a separate AskUserQuestion to determine branch strategy:
@@ -111,7 +72,6 @@ Priority order: Proposal Summary (approach decision) > Research Summary (codebas
    - For each area (up to 3), launch a sub-agent (Task, subagent_type: Explore, model: sonnet) in parallel with the Step Detail Template below
    - Sub-agent prompts must include the constraint block, the specific area to investigate, and the Step Detail Template
    - Use gathered details to write the plan with concrete technical context (type signatures, API contracts, test patterns) rather than re-investigating during plan writing
-   - If a Proposal Summary exists, use its Affected Areas to scope the pre-gathering areas
 
    **Step Detail Template**: When pre-gathering technical details for M/L tasks, each sub-agent prompt MUST end with the following output format:
    > Return findings in this exact format:
