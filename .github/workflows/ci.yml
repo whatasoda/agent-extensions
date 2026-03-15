@@ -81,7 +81,7 @@ jobs:
 
           git add .claude-plugin/marketplace.json
           git add plugins/*/.claude-plugin/plugin.json
-          git add plugins/*/dist/
+          git add plugins/*/dist/ 2>/dev/null || true
 
           if git diff --cached --quiet; then
             echo "No changes to commit"
