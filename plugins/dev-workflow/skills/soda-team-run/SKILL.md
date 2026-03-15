@@ -99,19 +99,11 @@ git worktree add .worktrees/{{TASK-ID}} -b task/{{TASK-ID}} {{INTEGRATION_BRANCH
 
 ### Worker Sub-agent
 
-Launch via `Task` tool. Worker allowed-tools: `Bash, Read, Write, Edit, Grep, Glob`. Do NOT include `AskUserQuestion`, `EnterPlanMode`, or any interactive tools.
+Launch via `Task(subagent_type: dev-workflow:team-worker)`. The agent definition handles constraints, tools, and output format.
 
-**Worker prompt construction**:
+**Dynamic prompt** — pass only these sections:
 
 ```
-You are an implementation agent (Worker). Your job is to implement exactly one task.
-
-## Constraints
-- Do NOT use AskUserQuestion or any interactive tools.
-- Do NOT modify files outside the scope defined in the task.
-- Commit your changes with the commit message specified below.
-- If you encounter a blocker you cannot resolve, write a BLOCKER.md file in the worktree root describing the issue, then stop.
-
 ## Task
 [contents of TASK-NNN.md]
 
@@ -120,17 +112,6 @@ You are an implementation agent (Worker). Your job is to implement exactly one t
 
 ## Working Directory
 {{worktree path}}
-
-When done, ensure all changes are committed. Run the validation commands specified in the task and include results in your final output.
-
-Return your result in this exact format:
-### Status: DONE | BLOCKED
-### Validation Results
-- `{{command}}` — {{PASS | FAIL: details}}
-### Files Changed
-- `{{path}}` — {{what was changed}}
-### Notes
-- {{anything the Reviewer should know}}
 ```
 
 ### Parallel Execution
@@ -164,29 +145,11 @@ Update TASKS.md status to `[~]` when Worker starts, and track completion.
 
 ## Step 4: Review
 
-For each completed Worker (status DONE), launch a Reviewer sub-agent.
+For each completed Worker (status DONE), launch a Reviewer sub-agent via `Task(subagent_type: dev-workflow:team-reviewer)`. The agent definition handles constraints, tools, Trivial Fix Policy, Review Criteria, and output format.
 
-Reviewer allowed-tools: `Bash, Read, Edit, Grep, Glob`. Do NOT include `Write`, `AskUserQuestion`, or `EnterPlanMode`. Edit is permitted only for trivial fixes (see Trivial Fix Policy below).
-
-**Reviewer prompt construction**:
+**Dynamic prompt** — pass only these sections:
 
 ```
-You are a code review agent (Reviewer). Your job is to evaluate whether a task implementation meets its acceptance criteria and adheres to architecture decisions.
-
-## Constraints
-- Do NOT use AskUserQuestion or any interactive tools.
-- Be specific in your findings — include file paths and line numbers.
-- Run all validation commands from the task definition and verify they pass.
-- You may apply trivial fixes (see Trivial Fix Policy) — but do NOT make non-trivial changes.
-
-## Trivial Fix Policy
-You may directly fix issues that meet ALL of these criteria:
-- The fix is 1-2 lines
-- The correct change is unambiguous (no judgment required)
-- Examples: typo, import path, config value, missing semicolon
-If you apply a trivial fix, commit it and record it in the Trivial Fixes Applied section.
-If a fix requires judgment or is more than 2 lines, mark it as FAIL.
-
 ## Task Definition
 [contents of TASK-NNN.md]
 
@@ -194,32 +157,10 @@ If a fix requires judgment or is more than 2 lines, mark it as FAIL.
 [contents of ARCHITECTURE.md — or relevant ADRs only if file is large]
 
 ## Working Directory
-{{worktree path}} — run validation commands and apply trivial fixes here
+{{worktree path}}
 
 ## Changes to Review
 [git diff of the Worker's worktree branch vs base]
-
-## Review Criteria
-1. Does the implementation satisfy all acceptance criteria in the task?
-2. Does it comply with the relevant ADRs listed in the task's Design Constraints?
-3. Do all validation commands pass? (Run them yourself — do not trust Worker's self-report)
-4. Are there obvious bugs, security vulnerabilities, or regressions?
-5. Is the implementation consistent with existing codebase patterns?
-
-Return your result in this exact format:
-### Verdict: PASS | PASS_WITH_FIX | FAIL | ESCALATE
-### Summary
-{{1-2 sentence overview}}
-### Findings
-- **[PASS|FAIL|WARN]** {{criterion}} — {{evidence with file paths}}
-### ADR Compliance
-- ADR-NNN: {{OK | VIOLATION — description}}
-### Trivial Fixes Applied
-{{PASS_WITH_FIX only — list each fix with file path and line number}}
-### For Next Worker
-{{FAIL only — concrete instructions for re-implementation}}
-### Escalation
-{{ESCALATE only — problem description for Architect}}
 ```
 
 ### Review Result Handling
@@ -355,7 +296,7 @@ Use AskUserQuestion:
 Every sub-agent prompt MUST begin with the appropriate constraint block (Worker constraints or Reviewer constraints as defined in Steps 3 and 4).
 
 Sub-agent types:
-- **Worker**: `Task` — implementation agent, runs on isolated worktree
-- **Reviewer**: `Task` — review agent with validation execution and trivial fix authority
+- **Worker**: `Task(subagent_type: dev-workflow:team-worker)` — implementation agent, runs on isolated worktree. See `agents/team-worker.md` for constraints and output format.
+- **Reviewer**: `Task(subagent_type: dev-workflow:team-reviewer)` — review agent with validation execution and trivial fix authority. See `agents/team-reviewer.md` for constraints, Trivial Fix Policy, Review Criteria, and output format.
 - **Investigator**: `Task(subagent_type: Explore)` — codebase investigation
 - **Architect**: Role switch within main context (not a sub-agent). Orchestrator loads ARCHITECTURE.md and enters design-focused dialogue with user via AskUserQuestion. See "Architect Escalation" in Step 5.
