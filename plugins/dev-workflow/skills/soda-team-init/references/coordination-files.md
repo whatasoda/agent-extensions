@@ -1,6 +1,6 @@
 # Coordination Files Specification
 
-This document defines the file-based coordination protocol shared by soda-team-init, soda-team-run, and soda-team-status.
+This document defines the file-based coordination protocol shared by soda-team-init and soda-team-run.
 
 All coordination files live under `.agent-team/` in the repository root.
 
@@ -137,7 +137,7 @@ Review result for a completed task. Written by Reviewer, consumed by Orchestrato
 ```markdown
 # REVIEW-NNN: TASK-NNN
 
-## Verdict: {{PASS | FAIL | ESCALATE}}
+## Verdict: {{PASS | PASS_WITH_FIX | FAIL | ESCALATE}}
 
 ## Summary
 {{1-2 sentence overview of the review result}}
@@ -149,6 +149,10 @@ Review result for a completed task. Written by Reviewer, consumed by Orchestrato
 
 ## ADR Compliance
 - ADR-NNN: {{OK | VIOLATION — description of what diverges}}
+
+## Trivial Fixes Applied
+{{PASS_WITH_FIX only. Each fix must be 1-2 lines and unambiguous.}}
+- `{{path/to/file}}:{{line}}` — {{what was fixed}}
 
 ## For Next Worker
 {{FAIL only. Concrete instructions for re-implementation.}}
@@ -165,5 +169,6 @@ Review result for a completed task. Written by Reviewer, consumed by Orchestrato
 ### Verdict Semantics
 
 - **PASS**: Task meets acceptance criteria and ADR compliance. Orchestrator proceeds to merge.
+- **PASS_WITH_FIX**: Task meets criteria after Reviewer applied trivial fixes (1-2 lines, unambiguous). Fixes are committed by Reviewer and recorded. Orchestrator proceeds to merge.
 - **FAIL**: Worker-level issue. Orchestrator creates a new Worker with the findings transcribed to TASK-NNN.md History.
 - **ESCALATE**: Design-level issue. Orchestrator routes to Architect for decision revision before re-assignment.

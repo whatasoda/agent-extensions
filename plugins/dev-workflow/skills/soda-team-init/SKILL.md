@@ -46,13 +46,7 @@ If creating a new branch:
   git checkout -b {{BRANCH_NAME}}
   ```
 
-Record the integration branch name in `.agent-team/CONFIG.md`:
-```markdown
-# Team Config
-- **Integration Branch**: {{branch name}}
-- **Created From**: {{base branch or commit SHA}}
-- **Created At**: {{ISO date}}
-```
+Record the integration branch name — CONFIG.md will be written together with other coordination files in Step 6.
 
 This branch name is used by soda-team-run for all merge operations.
 
@@ -247,11 +241,12 @@ mkdir -p .agent-team/tasks .agent-team/reviews
 
 Write the following files (refer to `references/coordination-files.md` for format specification):
 
-1. **`.agent-team/TASKS.md`** — Task list with group overview and all tasks in pending state
-2. **`.agent-team/ARCHITECTURE.md`** — Initial ADRs from:
+1. **`.agent-team/CONFIG.md`** — Integration branch name, base branch/commit, creation date (as determined in Step 1)
+2. **`.agent-team/TASKS.md`** — Task list with group overview and all tasks in pending state
+3. **`.agent-team/ARCHITECTURE.md`** — Initial ADRs from:
    - soda-discuss Discussion Summary (transcribed as ADRs)
    - Design decisions from Step 4 (design-critical group discussions)
-3. **`.agent-team/tasks/TASK-NNN.md`** — One file per task, with:
+4. **`.agent-team/tasks/TASK-NNN.md`** — One file per task, with:
    - Definition from Step 5 decomposition
    - Design Constraints summarized from relevant ADRs (not just references)
    - Context from investigation findings
@@ -275,6 +270,7 @@ Present the generated files:
 >
 > ```
 > .agent-team/
+> ├── CONFIG.md             — integration branch: {{BRANCH_NAME}}
 > ├── TASKS.md              — {{GROUP_COUNT}} groups, {{TASK_COUNT}} tasks
 > ├── ARCHITECTURE.md       — {{ADR_COUNT}} decisions
 > └── tasks/

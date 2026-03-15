@@ -50,7 +50,6 @@ Parse TASKS.md to determine:
 If in-progress tasks exist, use AskUserQuestion:
 - "中断タスクを再開する" — treat `[~]` tasks as this cycle's targets
 - "中断タスクをリセットして次を選ぶ" — reset `[~]` to `[ ]`, then select normally
-- "状況を確認する (`/soda-team-status`)"
 
 ## Step 2: Task Selection
 
@@ -100,7 +99,7 @@ git worktree add .worktrees/{{TASK-ID}} -b task/{{TASK-ID}} {{INTEGRATION_BRANCH
 
 ### Worker Sub-agent
 
-Launch via `Task` tool with `isolation: worktree` if available, otherwise use the created worktree path.
+Launch via `Task` tool. Worker allowed-tools: `Bash, Read, Write, Edit, Grep, Glob`. Do NOT include `AskUserQuestion`, `EnterPlanMode`, or any interactive tools.
 
 **Worker prompt construction**:
 
@@ -159,6 +158,8 @@ Update TASKS.md status to `[~]` when Worker starts, and track completion.
 
 For each completed Worker (status DONE), launch a Reviewer sub-agent.
 
+Reviewer allowed-tools: `Bash, Read, Edit, Grep, Glob`. Do NOT include `Write`, `AskUserQuestion`, or `EnterPlanMode`. Edit is permitted only for trivial fixes (see Trivial Fix Policy below).
+
 **Reviewer prompt construction**:
 
 ```
@@ -166,8 +167,17 @@ You are a code review agent (Reviewer). Your job is to evaluate whether a task i
 
 ## Constraints
 - Do NOT use AskUserQuestion or any interactive tools.
-- Do NOT modify any files. You are read-only.
 - Be specific in your findings — include file paths and line numbers.
+- Run all validation commands from the task definition and verify they pass.
+- You may apply trivial fixes (see Trivial Fix Policy) — but do NOT make non-trivial changes.
+
+## Trivial Fix Policy
+You may directly fix issues that meet ALL of these criteria:
+- The fix is 1-2 lines
+- The correct change is unambiguous (no judgment required)
+- Examples: typo, import path, config value, missing semicolon
+If you apply a trivial fix, commit it and record it in the Trivial Fixes Applied section.
+If a fix requires judgment or is more than 2 lines, mark it as FAIL.
 
 ## Task Definition
 [contents of TASK-NNN.md]
@@ -181,18 +191,20 @@ You are a code review agent (Reviewer). Your job is to evaluate whether a task i
 ## Review Criteria
 1. Does the implementation satisfy all acceptance criteria in the task?
 2. Does it comply with the relevant ADRs listed in the task's Design Constraints?
-3. Do validation commands pass?
+3. Do all validation commands pass? (Run them yourself — do not trust Worker's self-report)
 4. Are there obvious bugs, security vulnerabilities, or regressions?
 5. Is the implementation consistent with existing codebase patterns?
 
 Return your result in this exact format:
-### Verdict: PASS | FAIL | ESCALATE
+### Verdict: PASS | PASS_WITH_FIX | FAIL | ESCALATE
 ### Summary
 {{1-2 sentence overview}}
 ### Findings
 - **[PASS|FAIL|WARN]** {{criterion}} — {{evidence with file paths}}
 ### ADR Compliance
 - ADR-NNN: {{OK | VIOLATION — description}}
+### Trivial Fixes Applied
+{{PASS_WITH_FIX only — list each fix with file path and line number}}
 ### For Next Worker
 {{FAIL only — concrete instructions for re-implementation}}
 ### Escalation
@@ -202,6 +214,7 @@ Return your result in this exact format:
 ### Review Result Handling
 
 - **PASS**: Write REVIEW-NNN.md → proceed to merge (Step 5)
+- **PASS_WITH_FIX**: Write REVIEW-NNN.md (including Trivial Fixes Applied) → proceed to merge (Step 5). The Reviewer has already committed the fix.
 - **FAIL**: Write REVIEW-NNN.md → append findings to TASK-NNN.md History → create new Worker (return to Step 3 for this task)
 - **ESCALATE**: Write REVIEW-NNN.md → invoke Architect (Step 5)
 
@@ -298,7 +311,7 @@ Use AskUserQuestion:
 - Each invocation is one cycle. No autonomous looping.
 - Workers MUST run on isolated git worktrees — never on the working tree.
 - Workers MUST NOT use interactive tools (AskUserQuestion, EnterPlanMode).
-- Reviewers MUST NOT modify files — read-only evaluation.
+- Reviewers MUST NOT make non-trivial modifications. Trivial fixes (1-2 lines, unambiguous) are permitted and must be recorded.
 - Re-implementation is limited to 2 attempts per task before user escalation.
 - TASKS.md is the single source of truth for task status. Update it after every state change.
 - All coordination files must conform to `../soda-team-init/references/coordination-files.md`.
