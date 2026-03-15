@@ -36,13 +36,14 @@ Design discussions are different. The conversation's shape depends on the topic,
 
 ### Interaction Principles: Evidence and Origin
 
-The five Interaction Principles were extracted from analysis of actual high-quality discussion sessions:
+The six Interaction Principles were extracted from analysis of actual high-quality discussion sessions:
 
 - **一度に一つ、承認を待つ**: Users explicitly requested this pattern ("present one at a time, wait for OK") in multiple sessions. When followed, user responses shortened to 1-3 words, indicating reduced cognitive load.
 - **選択肢には根拠と推奨を添える**: Comparison tables with tradeoffs and recommendations consistently enabled fast decision-making. Recommendations reduce evaluation burden without limiting decision authority.
 - **データが先、判断が後**: Investigation data sometimes overturned initial assumptions, making data-first presentation essential to avoid wasted decisions.
 - **判断の保留は深掘りのシグナル**: When users deferred a premature question, effective sessions responded with deeper analysis rather than rephrasing. Deferral signals information gap, not indecision.
 - **議題は依存順に並べる**: Multi-topic discussions that followed dependency order progressed without backtracking. Those that didn't required revisiting earlier decisions.
+- **提示して委ねる**: AskUserQuestion の構造化選択肢UIは、明確な比較が必要な場面では有効だが、自由記述のコンテキスト付与を阻害する。soda-discuss は探索的な対話であり、ユーザーが想定外の視点やドメイン知識を自由に提供できることが重要。テキスト出力ベースの対話を基本とし、AskUserQuestion は3つ以上の具体的選択肢がある判断ポイントのみに限定する。
 
 ### Discussion Summary as Session Artifact
 
