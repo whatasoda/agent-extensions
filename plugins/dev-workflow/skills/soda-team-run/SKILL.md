@@ -31,9 +31,24 @@ The user triggers each cycle manually. There is no autonomous loop.
 git rev-parse --show-toplevel
 ```
 
-Read `.agent-team/TASKS.md`, `.agent-team/ARCHITECTURE.md`, and `.agent-team/CONFIG.md`.
+**Project resolution** — resolve which namespaced project to use:
 
-If `.agent-team/` does not exist or TASKS.md is missing, inform the user and suggest `/soda-team-init`. Stop.
+1. List subdirectories under `.agent-team/`.
+2. If `.agent-team/` does not exist or has no subdirectories:
+   - If `.agent-team/CONFIG.md` exists directly (legacy flat layout): warn the user that the old format is detected, suggest re-initializing with `/soda-team-init`. Stop.
+   - Otherwise: inform the user no projects found, suggest `/soda-team-init`. Stop.
+3. If exactly one subdirectory: use it as `{{PROJECT_DIR}}`.
+4. If multiple subdirectories:
+   a. Extract project-name from the current branch (e.g., `team/auth-refactor` → `auth-refactor`)
+   b. Find a subdirectory ending with `-<project-name>` → use it as `{{PROJECT_DIR}}`
+   c. Fallback: select the most recent by lexicographic sort (last entry, since `YYYYMMDD` prefix sorts chronologically)
+5. Present the selected project for user confirmation before proceeding.
+
+`{{PROJECT_DIR}}` is the resolved path (e.g., `.agent-team/20260320-auth-refactor`) used in all subsequent file references.
+
+Read `{{PROJECT_DIR}}/TASKS.md`, `{{PROJECT_DIR}}/ARCHITECTURE.md`, and `{{PROJECT_DIR}}/CONFIG.md`.
+
+If TASKS.md is missing in the selected project, inform the user and suggest `/soda-team-init`. Stop.
 
 Extract the **Integration Branch** from CONFIG.md. All merge operations target this branch. Verify it exists:
 ```bash
@@ -296,7 +311,7 @@ Use AskUserQuestion:
 - Re-implementation is limited to 2 attempts per task before user escalation.
 - TASKS.md is the single source of truth for task status. Update it after every state change.
 - All coordination files must conform to `../soda-team-init/references/coordination-files.md`.
-- Merge target is the integration branch recorded in `.agent-team/CONFIG.md`. Do NOT assume `main`.
+- Merge target is the integration branch recorded in `{{PROJECT_DIR}}/CONFIG.md`. Do NOT assume `main`.
 
 ## Sub-agent Usage
 

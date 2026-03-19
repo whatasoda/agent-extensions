@@ -23,12 +23,15 @@ If `$ARGUMENTS` is empty, ask the user to describe the requirements source befor
 git rev-parse --show-toplevel
 ```
 
-**Check for existing `.agent-team/` directory**:
-- If it exists and contains TASKS.md, use AskUserQuestion:
-  - "既存プロジェクトを上書きする"
-  - "既存プロジェクトに追加する"（requirements を追加タスクとして取り込む）
-  - "キャンセル"
-- If it does not exist, proceed to branch strategy.
+**Check for existing `.agent-team/` projects**:
+
+1. **Legacy flat layout detection**: If `.agent-team/CONFIG.md` exists directly (not inside a subdirectory), warn the user that the old flat format is detected and suggest manual cleanup before re-initializing. Stop.
+2. **Scan for namespaced projects**: Check for existing projects by scanning `.agent-team/*/TASKS.md`.
+3. If existing namespaced projects found, present the list and use AskUserQuestion:
+   - "既存プロジェクトを上書きする (対象を選択)" — present project list for selection, then overwrite that project's directory
+   - "新規プロジェクトとして作成" — proceed to branch strategy, create a new namespace
+   - "キャンセル"
+4. If no existing projects found, proceed to branch strategy.
 
 **Branch Strategy**:
 
@@ -49,6 +52,15 @@ If creating a new branch:
 Record the integration branch name — CONFIG.md will be written together with other coordination files in Step 6.
 
 This branch name is used by soda-team-run for all merge operations.
+
+**Derive namespace directory name**:
+```
+NAMESPACE = "<YYYYMMDD>-<project-name>"    # e.g., 20260320-auth-refactor
+# Collision check
+if .agent-team/NAMESPACE already exists:
+  append -2, -3, etc. until unique
+```
+The `NAMESPACE` variable is used in Step 6 for all file generation paths.
 
 ## Step 2: Requirements Ingestion
 
@@ -234,19 +246,19 @@ Before writing files, compose the full content of TASKS.md and ARCHITECTURE.md, 
 
 ### File Generation
 
-Initialize the directory:
+Initialize the namespaced directory:
 ```bash
-mkdir -p .agent-team/tasks .agent-team/reviews
+mkdir -p .agent-team/{{NAMESPACE}}/tasks .agent-team/{{NAMESPACE}}/reviews
 ```
 
 Write the following files (refer to `references/coordination-files.md` for format specification):
 
-1. **`.agent-team/CONFIG.md`** — Integration branch name, base branch/commit, creation date (as determined in Step 1)
-2. **`.agent-team/TASKS.md`** — Task list with group overview and all tasks in pending state
-3. **`.agent-team/ARCHITECTURE.md`** — Initial ADRs from:
+1. **`.agent-team/{{NAMESPACE}}/CONFIG.md`** — Integration branch name, base branch/commit, creation date (as determined in Step 1)
+2. **`.agent-team/{{NAMESPACE}}/TASKS.md`** — Task list with group overview and all tasks in pending state
+3. **`.agent-team/{{NAMESPACE}}/ARCHITECTURE.md`** — Initial ADRs from:
    - soda-discuss Discussion Summary (transcribed as ADRs)
    - Design decisions from Step 4 (design-critical group discussions)
-4. **`.agent-team/tasks/TASK-NNN.md`** — One file per task, with:
+4. **`.agent-team/{{NAMESPACE}}/tasks/TASK-NNN.md`** — One file per task, with:
    - Definition from Step 5 decomposition
    - Design Constraints summarized from relevant ADRs (not just references)
    - Context from investigation findings
@@ -270,13 +282,14 @@ Present the generated files:
 >
 > ```
 > .agent-team/
-> ├── CONFIG.md             — integration branch: {{BRANCH_NAME}}
-> ├── TASKS.md              — {{GROUP_COUNT}} groups, {{TASK_COUNT}} tasks
-> ├── ARCHITECTURE.md       — {{ADR_COUNT}} decisions
-> └── tasks/
->     ├── TASK-001.md
->     ├── TASK-002.md
->     └── ... ({{TASK_COUNT}} files)
+> └── {{NAMESPACE}}/
+>     ├── CONFIG.md             — integration branch: {{BRANCH_NAME}}
+>     ├── TASKS.md              — {{GROUP_COUNT}} groups, {{TASK_COUNT}} tasks
+>     ├── ARCHITECTURE.md       — {{ADR_COUNT}} decisions
+>     └── tasks/
+>         ├── TASK-001.md
+>         ├── TASK-002.md
+>         └── ... ({{TASK_COUNT}} files)
 > ```
 >
 > **実行順序**:
