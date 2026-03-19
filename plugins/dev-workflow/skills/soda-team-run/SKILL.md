@@ -6,7 +6,7 @@ argument-hint: "[task ID, group name, or 'next']"
 allowed-tools: Bash(git *), Bash(bun *), Read, Write, Edit, Grep, Glob, Task, AskUserQuestion
 ---
 
-Execute agent team tasks by orchestrating specialized agents (Worker, Reviewer, Architect, Investigator). Each invocation runs one cycle of task execution.
+Execute agent team tasks by orchestrating specialized agents (Worker, Reviewer, Architect, Investigator). Each invocation runs one or more cycles, auto-continuing when all tasks pass and actionable work remains.
 
 Use English for all generated file content and sub-agent communication. User interaction (AskUserQuestion options, status updates, summaries) must be in Japanese.
 
@@ -22,7 +22,7 @@ One cycle of `/soda-team-run` consists of:
 5. Update coordination files
 6. Report to user
 
-The user triggers each cycle manually. There is no autonomous loop.
+When all tasks in a cycle pass and actionable tasks remain, the next cycle begins automatically (auto-continue). The cycle pauses for user input when any task fails, escalates, or conflicts — or when no actionable tasks remain.
 
 ## Step 1: Load Project State
 
@@ -76,7 +76,7 @@ Group actionable tasks by parallelizability:
 - Tasks with no mutual file conflicts → can run in parallel
 - Tasks that modify overlapping files → must run sequentially
 
-Present the proposed batch:
+Display the proposed batch:
 
 > **今回のサイクル** ({{N}}タスク並列実行)
 >
@@ -87,19 +87,19 @@ Present the proposed batch:
 >
 > 順次実行待ち: TASK-002 (TASK-001 完了後)
 
-Use AskUserQuestion:
-- "このバッチで実行する"
-- "タスクを選び直す"
-- "特定のタスクだけ実行"
+**Auto-continue**: If actionable tasks were found via automatic selection, proceed directly to Step 3 after displaying the batch. Do NOT use AskUserQuestion.
+
+**Fallback** (use AskUserQuestion): If no actionable tasks are found, inform the user and present options:
+- "ブロック中のタスクを確認する"
+- "終了"
 
 ### Manual Selection
 
-If `$ARGUMENTS` specifies a task ID (e.g., "TASK-005"), group name (e.g., "GROUP-A"), or the user chose "特定のタスクだけ実行":
+If `$ARGUMENTS` specifies a task ID (e.g., "TASK-005"), group name (e.g., "GROUP-A"):
 - Task ID: execute that specific task (check deps are satisfied)
 - Group name: select all actionable tasks in that group
 - Present the selection for confirmation
-
-Do NOT proceed until the user confirms the batch.
+- Do NOT proceed until the user confirms the batch.
 
 ## Step 3: Worker Execution
 
@@ -287,24 +287,35 @@ When the user chooses to split a failed task:
 
 After all tasks in the batch are resolved, present a cycle summary:
 
-> **サイクル完了**
+> **サイクル完了** {{(自動続行) if auto-continuing}}
 >
 > | タスク | 結果 | 詳細 |
 > |--------|------|------|
 > | TASK-001 | ✅ マージ済み | {{commit SHA}} |
 > | TASK-003 | ✅ マージ済み | {{commit SHA}} |
-> | TASK-002 | ❌ ブロック | {{reason}} |
 >
 > **進捗**: {{done}}/{{total}} タスク完了 ({{percent}}%)
-> **次に実行可能**: TASK-004, TASK-005
+> **次のサイクル**: TASK-004, TASK-005 (並列実行)
 
-Use AskUserQuestion:
-- "次のサイクルを実行" — return to Step 2
-- "終了"
+**Auto-continue**: If ALL of the following are true, proceed directly to Step 2 without AskUserQuestion:
+- Every task in the batch resulted in PASS (merged successfully)
+- Actionable tasks remain (pending tasks with all deps satisfied)
+
+**Stop conditions** (use AskUserQuestion):
+- Any task had FAIL, ESCALATE, or merge conflict → present results and ask:
+  - "次のサイクルを実行" — return to Step 2
+  - "終了"
+- No remaining actionable tasks (all done or all blocked) → present final status and ask:
+  - "ブロック中のタスクを確認する" (if blocked tasks exist)
+  - "終了"
+- All tasks complete → present completion summary and exit:
+  > **全タスク完了**
+  > - 完了: {{total}} タスク
+  > - マージコミット: {{list of merge commit SHAs}}
 
 ## Constraints
 
-- Each invocation is one cycle. No autonomous looping.
+- Each invocation runs one or more cycles. Auto-continue to the next cycle when all tasks pass and actionable tasks remain. Pause for user input on any failure, escalation, conflict, or when no actionable tasks remain.
 - Workers MUST run on isolated git worktrees — never on the working tree.
 - Workers MUST NOT use interactive tools (AskUserQuestion, EnterPlanMode).
 - Reviewers MUST NOT make non-trivial modifications. Trivial fixes (1-2 lines, unambiguous) are permitted and must be recorded.
