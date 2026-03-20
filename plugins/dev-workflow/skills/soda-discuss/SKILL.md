@@ -3,10 +3,10 @@ name: soda-discuss
 description: Interactive design discussion for exploring ideas when details aren't solidified
 user-invocable: true
 argument-hint: "<topic or goal to discuss>"
-allowed-tools: Read, Grep, Glob, Task, AskUserQuestion
+allowed-tools: Read, Write, Edit, Grep, Glob, Task, AskUserQuestion
 ---
 
-Use English for internal reasoning (thinking). User interaction (discussion, presentations) must be in Japanese. Discussion Summary content must be in English.
+Use English for internal reasoning (thinking). User interaction (discussion, presentations) must be in Japanese. Living Discussion Document content must be in English.
 
 ## Purpose
 
@@ -14,7 +14,7 @@ This skill is for **designing new features, skills, or concepts when details are
 
 Unlike procedural skills (soda-plan, soda-brief), this skill defines **values and principles** that guide the conversation, not a fixed sequence of steps.
 
-**Position in skill chain**: `soda-research → soda-brief → soda-discuss → soda-plan`. The Discussion Summary is a session artifact. Downstream skills use it naturally from the conversation context.
+**Position in skill chain**: `soda-research → soda-brief → soda-discuss → soda-plan`. Discussion decisions are persisted to a Living Discussion Document file. Downstream skills read the file directly.
 
 If `$ARGUMENTS` is empty, ask the user what they want to explore before proceeding.
 
@@ -65,7 +65,7 @@ This skill is an interactive dialogue for shaping direction, not for producing i
 - When the conversation naturally drifts toward implementation detail, pause and summarize the discussion so far before proceeding
 - Code snippets for illustrating a design point or unblocking a decision are fine — but do not frame them as proposed changes to be applied
 - If the user is ready for implementation, guide them to soda-plan rather than producing implementation output inline
-- When in doubt, present the discussion summary and ask the user whether to continue exploring or transition to planning
+- When in doubt, summarize the discussion so far and ask the user whether to continue exploring or transition to planning
 
 **Anti-pattern**: Producing file-by-file change lists, detailed code diffs, or step-by-step implementation instructions as part of the discussion — even when no files are actually modified. This turns an exploratory dialogue into an unsolicited implementation proposal.
 
@@ -138,7 +138,7 @@ These are flexible guidance, not mandatory steps. Adapt to the conversation.
 - **Start with understanding**: Grasp what the user wants to explore. If `$ARGUMENTS` is vague, ask clarifying questions — but don't over-interrogate. One or two questions is usually enough to get started.
 - **Investigate with sub-agents**: Use sub-agents (Task, subagent_type: Explore) for codebase investigation. Apply the standard constraint block (below). Investigation informs the discussion but doesn't replace it.
 - **Iterate naturally**: Some discussions need multiple investigation rounds; others converge quickly. Follow the conversation's natural rhythm.
-- **Produce a Discussion Summary**: When the discussion reaches a point where the shape of the solution is understood — even if details remain open — produce a Discussion Summary to capture the session's insights.
+- **Maintain the Living Discussion Document**: Create the document at discussion start. Update it incrementally — Design Decisions immediately after user approval, other sections at topic boundaries. See the Living Discussion Document section for format and lifecycle.
 
 ## Sub-agent Usage
 
@@ -158,25 +158,62 @@ Every sub-agent prompt MUST end with the standard investigation output contract:
 > ### Open Questions
 > - question — what remains unclear from this investigation alone
 
-## Discussion Summary
+## Living Discussion Document
 
-When the discussion has reached sufficient clarity, produce a Discussion Summary block. This is a **session artifact** — a human-readable summary of what was explored and where the discussion landed.
+Persist discussion decisions to a file incrementally throughout the discussion, rather than summarizing at the end.
 
+**Why**: End-of-session summaries lose concrete design constraints through abstraction. Specific decisions like "return type must be union" get rounded into vague "directions." Incremental writing preserves full specificity because each decision is recorded immediately after approval.
+
+### Lifecycle
+
+1. **Discussion start**: Create `.agent-discussions/<YYYY-MM-DD>-<topic-slug>.md` with frontmatter and initial Context & Direction (create the `.agent-discussions/` directory if it does not exist)
+2. **After each topic approval**: Append the topic's Design Decisions (immediately) and Rejected Alternatives
+3. **When topics are deferred**: Add to Deferred Topics section
+4. **Discussion end**: Set `status: concluded` in frontmatter
+
+### Document Format
+
+```markdown
+---
+topic: <overall discussion topic>
+status: active | concluded
+date: <YYYY-MM-DD>
+---
+
+## Context & Direction
+<background, motivation, overall direction — updated throughout>
+
+## Topic 1: <topic name>
+### Design Decisions
+#### DD-1: <decision name>
+- **Constraint**: <specific constraint, e.g., "return type must be Result<T, E> union">
+- **Why**: <reasoning>
+- **Scope**: <where this applies>
+
+### Rejected Alternatives
+#### RA-1: <rejected option name>
+- **What**: <what was considered>
+- **Why rejected**: <reason for rejection>
+
+## Topic 2: <topic name>
+### Design Decisions
+#### DD-2: ...
+### Rejected Alternatives
+...
+
+## Deferred Topics
+- [ ] <topic> — <reason for deferral>
 ```
-## Discussion Summary
-- **Topic**: what was discussed
-- **Context**: relevant background and codebase findings
-- **Key Insights**: important discoveries and user-provided domain knowledge
-- **Direction**: the emerging direction (not a final decision)
-- **Open Questions**: what remains to be explored or decided
-- **Scope Sketch**: rough boundaries of what's in and out of scope
-```
 
-Downstream skills (e.g., soda-plan) use the Discussion Summary naturally from the conversation context — no formal detection mechanism is needed.
+**Numbering**: DD-N and RA-N are globally sequential across topics (DD-1, DD-2, DD-3...) so soda-plan steps can reference them uniquely.
+
+**File location**: `.agent-discussions/` at the repository root. This directory should be globally gitignored. Avoids `.claude/` to prevent permission prompts.
+
+Downstream skills (soda-plan, soda-team-init) read the document file directly. The file path is visible in conversation context for same-session transitions.
 
 ## Skill Boundaries
 
 - **Don't force a fixed sequence of steps.** The conversation flow should emerge from the topic, not from a template.
 - **Don't make autonomous decisions about direction.** Always confirm with the user before narrowing the discussion.
 - **Don't produce detailed implementation plans.** That's what `/soda-plan` is for.
-- **Don't produce implementation artifacts — whether as file edits or as text output.** This includes file-by-file change lists, detailed diffs, and step-by-step implementation instructions. Code snippets for illustrating design points are fine; framing them as actionable proposals is not. When the user is ready to implement, transition to `/soda-plan`.
+- **Don't produce implementation artifacts — whether as file edits or as text output.** The Living Discussion Document (`.agent-discussions/`) is a discussion artifact, not an implementation artifact — writing to it is expected. This boundary prohibits file-by-file change lists, detailed diffs, and step-by-step implementation instructions. Code snippets for illustrating design points are fine; framing them as actionable proposals is not. When the user is ready to implement, transition to `/soda-plan`.

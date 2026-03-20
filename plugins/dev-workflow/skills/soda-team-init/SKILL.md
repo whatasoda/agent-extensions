@@ -12,7 +12,7 @@ Initialize an agent team project by classifying requirements into groups, decomp
 
 Use English for all generated file content. User interaction (AskUserQuestion options, presentations, summaries) must be in Japanese.
 
-**Prerequisite**: A soda-discuss session should have been completed beforehand to establish design direction. The Discussion Summary provides the Architect's initial context.
+**Prerequisite**: A soda-discuss session should have been completed beforehand to establish design direction. The Living Discussion Document (`.agent-discussions/`) provides the Architect's initial context, including Design Decisions (DD-N) and Rejected Alternatives (RA-N).
 
 If `$ARGUMENTS` is empty, ask the user to describe the requirements source before proceeding.
 
@@ -68,7 +68,7 @@ Accept requirements from the user. Requirements can come from:
 
 - **Inline text**: User provides a list directly in `$ARGUMENTS` or as a follow-up message
 - **File reference**: User points to a file containing requirements (e.g., a gap analysis document, issue list)
-- **Discussion Summary**: Extract direction and scope from a preceding soda-discuss session
+- **Living Discussion Document**: Read `.agent-discussions/*.md` for direction, scope, and design constraints from a preceding soda-discuss session
 
 Parse the input into a normalized list of individual requirements. Each requirement should be a single, actionable item.
 
@@ -117,7 +117,7 @@ After investigation, classify requirements into groups. Each group should:
 - Contain 3-10 requirements (split or merge if outside this range)
 
 **Identify design-critical groups**: A group is design-critical if:
-- It involves architectural decisions not covered by the Discussion Summary
+- It involves architectural decisions not covered by the Living Discussion Document's Design Decisions
 - It affects multiple functional domains or cross-cutting concerns
 - Investigation revealed conflicting patterns or ambiguity in the existing codebase
 
@@ -256,7 +256,7 @@ Write the following files (refer to `references/coordination-files.md` for forma
 1. **`.agent-team/{{NAMESPACE}}/CONFIG.md`** — Integration branch name, base branch/commit, creation date (as determined in Step 1)
 2. **`.agent-team/{{NAMESPACE}}/TASKS.md`** — Task list with group overview and all tasks in pending state
 3. **`.agent-team/{{NAMESPACE}}/ARCHITECTURE.md`** — Initial ADRs from:
-   - soda-discuss Discussion Summary (transcribed as ADRs)
+   - Living Discussion Document DD-N entries (transcribed as ADRs with DD-N as Source reference)
    - Design decisions from Step 4 (design-critical group discussions)
 4. **`.agent-team/{{NAMESPACE}}/tasks/TASK-NNN.md`** — One file per task, with:
    - Definition from Step 5 decomposition

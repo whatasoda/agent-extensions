@@ -11,7 +11,7 @@ soda-brief separates this "gather initial context" phase from the "discuss inter
 Provides a lightweight, non-interactive investigation that produces a Discussion Briefing — a framing document that identifies the topic, relevant background, key questions, and constraints. This gives `/soda-discuss` a starting point so the conversation can focus on exploration and decision-making rather than basic fact-finding.
 
 The typical flow:
-- `/soda-brief` → Discussion Briefing → `/soda-discuss` → Discussion Summary → `/soda-plan`
+- `/soda-brief` → Discussion Briefing → `/soda-discuss` → Living Discussion Document → `/soda-plan`
 - `/soda-brief` standalone (quick context gathering before any discussion)
 
 ## Design Notes
@@ -20,7 +20,7 @@ The typical flow:
 
 - **Distinction from soda-research**: soda-research is deep (multi-round annotation cycle), interactive (user corrects and enriches findings), and produces a comprehensive Research Summary. soda-brief is shallow (max 2 sub-agents), non-interactive, and produces a lightweight Discussion Briefing. They are alternatives at the preparation stage: soda-brief for quick kickoff, soda-research for thorough investigation.
 
-- **Discussion Briefing as session artifact**: Like the Discussion Summary produced by soda-discuss, the Discussion Briefing is not formally detected by downstream skills. It provides context that soda-discuss uses naturally from the conversation.
+- **Discussion Briefing as session artifact**: The Discussion Briefing is not formally detected by downstream skills. It provides context that soda-discuss uses naturally from the conversation. (Note: soda-discuss itself now persists decisions to a Living Discussion Document file rather than keeping them in conversation context.)
 
 - **Key Questions as discussion guide**: The briefing's Key Questions are ordered by dependency (foundational questions first). This aligns with soda-discuss's interaction principle "議題は依存順に並べる" and gives the discussion a natural starting structure without being prescriptive.
 
