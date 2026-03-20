@@ -3,7 +3,7 @@ name: soda-discuss
 description: Interactive design discussion for exploring ideas when details aren't solidified
 user-invocable: true
 argument-hint: "<topic or goal to discuss>"
-allowed-tools: Read, Write, Grep, Glob, Task, AskUserQuestion
+allowed-tools: Read, Write, Edit, Grep, Glob, Task, AskUserQuestion
 ---
 
 Use English for internal reasoning (thinking). User interaction (discussion, presentations) must be in Japanese. Living Discussion Document content must be in English.
@@ -65,7 +65,7 @@ This skill is an interactive dialogue for shaping direction, not for producing i
 - When the conversation naturally drifts toward implementation detail, pause and summarize the discussion so far before proceeding
 - Code snippets for illustrating a design point or unblocking a decision are fine — but do not frame them as proposed changes to be applied
 - If the user is ready for implementation, guide them to soda-plan rather than producing implementation output inline
-- When in doubt, present the discussion summary and ask the user whether to continue exploring or transition to planning
+- When in doubt, summarize the discussion so far and ask the user whether to continue exploring or transition to planning
 
 **Anti-pattern**: Producing file-by-file change lists, detailed code diffs, or step-by-step implementation instructions as part of the discussion — even when no files are actually modified. This turns an exploratory dialogue into an unsolicited implementation proposal.
 
@@ -166,7 +166,7 @@ Persist discussion decisions to a file incrementally throughout the discussion, 
 
 ### Lifecycle
 
-1. **Discussion start**: Create `.agent-discussions/<YYYY-MM-DD>-<topic-slug>.md` with frontmatter and initial Context & Direction
+1. **Discussion start**: Create `.agent-discussions/<YYYY-MM-DD>-<topic-slug>.md` with frontmatter and initial Context & Direction (create the `.agent-discussions/` directory if it does not exist)
 2. **After each topic approval**: Append the topic's Design Decisions (immediately) and Rejected Alternatives
 3. **When topics are deferred**: Add to Deferred Topics section
 4. **Discussion end**: Set `status: concluded` in frontmatter
