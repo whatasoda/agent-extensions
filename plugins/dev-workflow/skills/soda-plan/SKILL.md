@@ -15,10 +15,11 @@ If $ARGUMENTS is empty, ask the user what they want to implement before proceedi
 ## Procedure
 
 1. **Investigate**: Explore the codebase to understand the scope, affected areas, and existing patterns.
-   - **Living Discussion Document check**: Before launching sub-agents, check for `.agent-discussions/*.md` files using Glob. If file(s) found:
-     - Present the found file(s) and ask the user which document applies to this task (always confirm, even if only one file — it may be stale or unrelated)
-     - Extract all DD-N entries as **mandatory constraints** — every DD-N must be traceable to a plan step
-     - Extract RA-N entries as **exclusion constraints** — approaches listed as rejected must not be re-proposed
+   - **Living Discussion Document check**: Before launching sub-agents, check for `.agent-discussions/*.md` files using Glob.
+     - If file(s) found:
+       - Present the found file(s) and ask the user which document applies to this task (always confirm, even if only one file — it may be stale or unrelated)
+       - Extract all DD-N entries as **mandatory constraints** — every DD-N must be traceable to a plan step
+       - Extract RA-N entries as **exclusion constraints** — approaches listed as rejected must not be re-proposed
      - If no files found: proceed normally (conversation-context-based input)
    - **Sub-agent output contract**: Every sub-agent prompt MUST end with the following output format requirement:
        > Return findings in this exact format:
