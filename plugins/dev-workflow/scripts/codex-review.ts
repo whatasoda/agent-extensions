@@ -146,18 +146,17 @@ async function preprocessSession(
   const turns: string[] = [];
 
   for (const line of lines) {
-    let entry;
     try {
-      entry = JSON.parse(line);
+      const entry = JSON.parse(line);
+      if (entry.type === "user" && entry.message) {
+        const content = extractTextBlocks(entry.message.content);
+        if (content) turns.push(`## User\n${content}`);
+      } else if (entry.type === "assistant" && entry.message) {
+        const content = extractTextBlocks(entry.message.content);
+        if (content) turns.push(`## Assistant\n${content}`);
+      }
     } catch {
       continue;
-    }
-    if (entry.type === "user" && entry.message) {
-      const content = extractTextBlocks(entry.message.content);
-      if (content) turns.push(`## User\n${content}`);
-    } else if (entry.type === "assistant" && entry.message) {
-      const content = extractTextBlocks(entry.message.content);
-      if (content) turns.push(`## Assistant\n${content}`);
     }
   }
 
