@@ -28,7 +28,7 @@ git rev-parse --show-toplevel
 1. **Legacy flat layout detection**: If `.agent-team/CONFIG.md` exists directly (not inside a subdirectory), warn the user that the old flat format is detected and suggest manual cleanup before re-initializing. Stop.
 2. **Scan for namespaced projects**: Check for existing projects by scanning `.agent-team/*/TASKS.md`.
 3. If existing namespaced projects found, present the list and use AskUserQuestion:
-   - "既存プロジェクトを上書きする (対象を選択)" — present project list for selection, then overwrite that project's directory
+   - "既存プロジェクトを上書きする (対象を選択)" — present project list for selection. Set `{{NAMESPACE}}` to the selected project's directory name, delete its contents (`rm -rf .agent-team/{{NAMESPACE}}/tasks .agent-team/{{NAMESPACE}}/reviews`), and skip the "Derive namespace directory name" step below. Proceed to Branch Strategy.
    - "新規プロジェクトとして作成" — proceed to branch strategy, create a new namespace
    - "キャンセル"
 4. If no existing projects found, proceed to branch strategy.

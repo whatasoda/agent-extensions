@@ -40,7 +40,7 @@ git rev-parse --show-toplevel
 3. If exactly one subdirectory: use it as `{{PROJECT_DIR}}`.
 4. If multiple subdirectories:
    a. Extract project-name from the current branch (e.g., `team/auth-refactor` → `auth-refactor`)
-   b. Find a subdirectory ending with `-<project-name>` → use it as `{{PROJECT_DIR}}`
+   b. Find a subdirectory whose name after the `YYYYMMDD-` prefix starts with `<project-name>` (e.g., `20260320-auth-refactor` and `20260320-auth-refactor-2` both match `auth-refactor`) → use it as `{{PROJECT_DIR}}`
    c. Fallback: select the most recent by lexicographic sort (last entry, since `YYYYMMDD` prefix sorts chronologically)
 5. Present the selected project for user confirmation before proceeding.
 
@@ -298,20 +298,20 @@ After all tasks in the batch are resolved, present a cycle summary:
 > **次のサイクル**: TASK-004, TASK-005 (並列実行)
 
 **Auto-continue**: If ALL of the following are true, proceed directly to Step 2 without AskUserQuestion:
-- Every task in the batch resulted in PASS (merged successfully)
+- Every task in the batch resulted in PASS or PASS_WITH_FIX (merged successfully)
 - Actionable tasks remain (pending tasks with all deps satisfied)
 
-**Stop conditions** (use AskUserQuestion):
-- Any task had FAIL, ESCALATE, or merge conflict → present results and ask:
-  - "次のサイクルを実行" — return to Step 2
-  - "終了"
-- No remaining actionable tasks (all done or all blocked) → present final status and ask:
-  - "ブロック中のタスクを確認する" (if blocked tasks exist)
-  - "終了"
-- All tasks complete → present completion summary and exit:
-  > **全タスク完了**
-  > - 完了: {{total}} タスク
-  > - マージコミット: {{list of merge commit SHAs}}
+**Stop conditions** (evaluated in this order):
+1. **All tasks complete** → present completion summary and exit (no AskUserQuestion):
+   > **全タスク完了**
+   > - 完了: {{total}} タスク
+   > - マージコミット: {{list of merge commit SHAs}}
+2. **Any task had FAIL, ESCALATE, or merge conflict** → present results and use AskUserQuestion:
+   - "次のサイクルを実行" — return to Step 2
+   - "終了"
+3. **No remaining actionable tasks but incomplete tasks exist** (all remaining are blocked) → present status and use AskUserQuestion:
+   - "ブロック中のタスクを確認する"
+   - "終了"
 
 ## Constraints
 
