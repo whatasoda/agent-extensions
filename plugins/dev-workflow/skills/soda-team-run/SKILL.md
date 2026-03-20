@@ -6,7 +6,7 @@ argument-hint: "[task ID, group name, or 'next']"
 allowed-tools: Bash(git *), Bash(bun *), Read, Write, Edit, Grep, Glob, Task, AskUserQuestion
 ---
 
-Execute agent team tasks by orchestrating specialized agents (Worker, Reviewer, Architect, Investigator). Each invocation runs one cycle of task execution.
+Execute agent team tasks by orchestrating specialized agents (Worker, Reviewer, Architect, Investigator). Each invocation runs one or more cycles, auto-continuing when all tasks pass and actionable work remains.
 
 Use English for all generated file content and sub-agent communication. User interaction (AskUserQuestion options, status updates, summaries) must be in Japanese.
 
@@ -22,7 +22,7 @@ One cycle of `/soda-team-run` consists of:
 5. Update coordination files
 6. Report to user
 
-The user triggers each cycle manually. There is no autonomous loop.
+When all tasks in a cycle pass and actionable tasks remain, the next cycle begins automatically (auto-continue). The cycle pauses for user input when any task fails, escalates, or conflicts — or when no actionable tasks remain.
 
 ## Step 1: Load Project State
 
@@ -31,9 +31,24 @@ The user triggers each cycle manually. There is no autonomous loop.
 git rev-parse --show-toplevel
 ```
 
-Read `.agent-team/TASKS.md`, `.agent-team/ARCHITECTURE.md`, and `.agent-team/CONFIG.md`.
+**Project resolution** — resolve which namespaced project to use:
 
-If `.agent-team/` does not exist or TASKS.md is missing, inform the user and suggest `/soda-team-init`. Stop.
+1. List subdirectories under `.agent-team/`.
+2. If `.agent-team/` does not exist or has no subdirectories:
+   - If `.agent-team/CONFIG.md` exists directly (legacy flat layout): warn the user that the old format is detected, suggest re-initializing with `/soda-team-init`. Stop.
+   - Otherwise: inform the user no projects found, suggest `/soda-team-init`. Stop.
+3. If exactly one subdirectory: use it as `{{PROJECT_DIR}}`.
+4. If multiple subdirectories:
+   a. Extract project-name from the current branch (e.g., `team/auth-refactor` → `auth-refactor`)
+   b. Find a subdirectory whose name after the `YYYYMMDD-` prefix starts with `<project-name>` (e.g., `20260320-auth-refactor` and `20260320-auth-refactor-2` both match `auth-refactor`) → use it as `{{PROJECT_DIR}}`
+   c. Fallback: select the most recent by lexicographic sort (last entry, since `YYYYMMDD` prefix sorts chronologically)
+5. Present the selected project for user confirmation before proceeding.
+
+`{{PROJECT_DIR}}` is the resolved path (e.g., `.agent-team/20260320-auth-refactor`) used in all subsequent file references.
+
+Read `{{PROJECT_DIR}}/TASKS.md`, `{{PROJECT_DIR}}/ARCHITECTURE.md`, and `{{PROJECT_DIR}}/CONFIG.md`.
+
+If TASKS.md is missing in the selected project, inform the user and suggest `/soda-team-init`. Stop.
 
 Extract the **Integration Branch** from CONFIG.md. All merge operations target this branch. Verify it exists:
 ```bash
@@ -61,7 +76,7 @@ Group actionable tasks by parallelizability:
 - Tasks with no mutual file conflicts → can run in parallel
 - Tasks that modify overlapping files → must run sequentially
 
-Present the proposed batch:
+Display the proposed batch:
 
 > **今回のサイクル** ({{N}}タスク並列実行)
 >
@@ -72,19 +87,19 @@ Present the proposed batch:
 >
 > 順次実行待ち: TASK-002 (TASK-001 完了後)
 
-Use AskUserQuestion:
-- "このバッチで実行する"
-- "タスクを選び直す"
-- "特定のタスクだけ実行"
+**Auto-continue**: If actionable tasks were found via automatic selection, proceed directly to Step 3 after displaying the batch. Do NOT use AskUserQuestion.
+
+**Fallback** (use AskUserQuestion): If no actionable tasks are found, inform the user and present options:
+- "ブロック中のタスクを確認する"
+- "終了"
 
 ### Manual Selection
 
-If `$ARGUMENTS` specifies a task ID (e.g., "TASK-005"), group name (e.g., "GROUP-A"), or the user chose "特定のタスクだけ実行":
+If `$ARGUMENTS` specifies a task ID (e.g., "TASK-005"), group name (e.g., "GROUP-A"):
 - Task ID: execute that specific task (check deps are satisfied)
 - Group name: select all actionable tasks in that group
 - Present the selection for confirmation
-
-Do NOT proceed until the user confirms the batch.
+- Do NOT proceed until the user confirms the batch.
 
 ## Step 3: Worker Execution
 
@@ -272,31 +287,42 @@ When the user chooses to split a failed task:
 
 After all tasks in the batch are resolved, present a cycle summary:
 
-> **サイクル完了**
+> **サイクル完了** {{(自動続行) if auto-continuing}}
 >
 > | タスク | 結果 | 詳細 |
 > |--------|------|------|
 > | TASK-001 | ✅ マージ済み | {{commit SHA}} |
 > | TASK-003 | ✅ マージ済み | {{commit SHA}} |
-> | TASK-002 | ❌ ブロック | {{reason}} |
 >
 > **進捗**: {{done}}/{{total}} タスク完了 ({{percent}}%)
-> **次に実行可能**: TASK-004, TASK-005
+> **次のサイクル**: TASK-004, TASK-005 (並列実行)
 
-Use AskUserQuestion:
-- "次のサイクルを実行" — return to Step 2
-- "終了"
+**Auto-continue**: If ALL of the following are true, proceed directly to Step 2 without AskUserQuestion:
+- Every task in the batch resulted in PASS or PASS_WITH_FIX (merged successfully)
+- Actionable tasks remain (pending tasks with all deps satisfied)
+
+**Stop conditions** (evaluated in this order):
+1. **All tasks complete** → present completion summary and exit (no AskUserQuestion):
+   > **全タスク完了**
+   > - 完了: {{total}} タスク
+   > - マージコミット: {{list of merge commit SHAs}}
+2. **Any task had FAIL, ESCALATE, or merge conflict** → present results and use AskUserQuestion:
+   - "次のサイクルを実行" — return to Step 2
+   - "終了"
+3. **No remaining actionable tasks but incomplete tasks exist** (all remaining are blocked) → present status and use AskUserQuestion:
+   - "ブロック中のタスクを確認する"
+   - "終了"
 
 ## Constraints
 
-- Each invocation is one cycle. No autonomous looping.
+- Each invocation runs one or more cycles. Auto-continue to the next cycle when all tasks pass and actionable tasks remain. Pause for user input on any failure, escalation, conflict, or when no actionable tasks remain.
 - Workers MUST run on isolated git worktrees — never on the working tree.
 - Workers MUST NOT use interactive tools (AskUserQuestion, EnterPlanMode).
 - Reviewers MUST NOT make non-trivial modifications. Trivial fixes (1-2 lines, unambiguous) are permitted and must be recorded.
 - Re-implementation is limited to 2 attempts per task before user escalation.
 - TASKS.md is the single source of truth for task status. Update it after every state change.
 - All coordination files must conform to `../soda-team-init/references/coordination-files.md`.
-- Merge target is the integration branch recorded in `.agent-team/CONFIG.md`. Do NOT assume `main`.
+- Merge target is the integration branch recorded in `{{PROJECT_DIR}}/CONFIG.md`. Do NOT assume `main`.
 
 ## Sub-agent Usage
 

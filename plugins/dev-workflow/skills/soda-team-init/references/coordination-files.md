@@ -2,23 +2,31 @@
 
 This document defines the file-based coordination protocol shared by soda-team-init and soda-team-run.
 
-All coordination files live under `.agent-team/` in the repository root.
+All coordination files live under `.agent-team/<YYYYMMDD>-<project-name>/` in the repository root. Each namespaced subdirectory represents an independent project, allowing multiple soda-team-init sessions to coexist in the same repository.
 
 ## Directory Structure
 
 ```
 .agent-team/
-├── CONFIG.md             — Project configuration (integration branch, creation metadata)
-├── TASKS.md              — Task list and status (managed by Orchestrator)
-├── ARCHITECTURE.md       — Architecture decision records (managed by Architect)
-├── tasks/
-│   ├── TASK-001.md       — Individual task instruction (managed by Orchestrator + Architect)
-│   ├── TASK-002.md
-│   └── ...
-└── reviews/
-    ├── REVIEW-001-1.md   — Review result for TASK-001, attempt 1 (managed by Reviewer)
-    └── ...
+└── <YYYYMMDD>-<project-name>/    — Namespaced project directory (e.g., 20260320-auth-refactor)
+    ├── CONFIG.md             — Project configuration (integration branch, creation metadata)
+    ├── TASKS.md              — Task list and status (managed by Orchestrator)
+    ├── ARCHITECTURE.md       — Architecture decision records (managed by Architect)
+    ├── tasks/
+    │   ├── TASK-001.md       — Individual task instruction (managed by Orchestrator + Architect)
+    │   ├── TASK-002.md
+    │   └── ...
+    └── reviews/
+        ├── REVIEW-001-1.md   — Review result for TASK-001, attempt 1 (managed by Reviewer)
+        └── ...
 ```
+
+### Namespace Convention
+
+- **Format**: `<YYYYMMDD>-<project-name>` (e.g., `20260320-auth-refactor`)
+- **Date prefix**: Creation date in `YYYYMMDD` format for chronological sorting
+- **Project name**: Slugified from the project description (same as the `team/<project-name>` integration branch)
+- **Collision handling**: If the directory already exists, append `-2`, `-3`, etc. until unique
 
 ## CONFIG.md
 
