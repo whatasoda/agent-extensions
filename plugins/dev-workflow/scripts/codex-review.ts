@@ -7,19 +7,19 @@
  *
  * Usage:
  *   # Initial review (reads content from stdin, creates temp file)
- *   bun codex-review.ts init "instruction" [--ref <path>] < content
+ *   bun codex-review.ts init "instruction" [--ref <path>] [--session <path>] < content
  *
  *   # Initial review (uses existing file directly)
- *   bun codex-review.ts init "instruction" --file <path> [--ref <path>]
+ *   bun codex-review.ts init "instruction" --file <path> [--ref <path>] [--session <path>]
  *
  *   # Findings-only review (same as init, but agent skips auto-revision)
- *   bun codex-review.ts findings "instruction" [--file <path>] [--ref <path>]
+ *   bun codex-review.ts findings "instruction" [--file <path>] [--ref <path>] [--session <path>]
  *
  *   # Resume review (reads updated content from stdin)
- *   bun codex-review.ts resume <session-id> <review-file> "instruction" [--ref <path>] < content
+ *   bun codex-review.ts resume <session-id> <review-file> "instruction" [--ref <path>] [--session <path>] < content
  *
  *   # Resume review (re-reads existing file)
- *   bun codex-review.ts resume <session-id> <review-file> "instruction" [--ref <path>]
+ *   bun codex-review.ts resume <session-id> <review-file> "instruction" [--ref <path>] [--session <path>]
  *
  * Output (init mode):
  *   review_file: /tmp/codex-review-XXXXX/review.md
@@ -49,6 +49,9 @@ function parseArgs(argv: string[]) {
   const fileIdx = flagIdx("--file");
   const filePath = fileIdx !== -1 ? args[fileIdx + 1] : undefined;
 
+  const sessionIdx = flagIdx("--session");
+  const sessionJsonlPath = sessionIdx !== -1 ? args[sessionIdx + 1] : undefined;
+
   const flagIndices = new Set<number>();
   if (refIdx !== -1) {
     flagIndices.add(refIdx);
@@ -58,10 +61,20 @@ function parseArgs(argv: string[]) {
     flagIndices.add(fileIdx);
     flagIndices.add(fileIdx + 1);
   }
+  if (sessionIdx !== -1) {
+    flagIndices.add(sessionIdx);
+    flagIndices.add(sessionIdx + 1);
+  }
   const positional = args.filter((_, i) => !flagIndices.has(i));
 
   if (mode === "init" || mode === "findings") {
-    return { mode, instruction: positional[1], refPath, filePath } as const;
+    return {
+      mode,
+      instruction: positional[1],
+      refPath,
+      filePath,
+      sessionJsonlPath,
+    } as const;
   } else {
     return {
       mode,
@@ -70,6 +83,7 @@ function parseArgs(argv: string[]) {
       instruction: positional[3],
       refPath,
       filePath,
+      sessionJsonlPath,
     } as const;
   }
 }
@@ -109,6 +123,42 @@ async function runCodex(
   return { output, exitCode };
 }
 
+function extractTextBlocks(
+  content: string | { type: string; text?: string }[]
+): string {
+  if (typeof content === "string") return content;
+  return content
+    .filter((b) => b.type === "text" && b.text)
+    .map((b) => b.text!)
+    .join("\n\n");
+}
+
+async function preprocessSession(
+  jsonlPath: string
+): Promise<string | null> {
+  const file = Bun.file(jsonlPath);
+  if (!(await file.exists())) {
+    console.error(`⚠ セッションファイルが見つかりません: ${jsonlPath}`);
+    return null;
+  }
+  const text = await file.text();
+  const lines = text.split("\n").filter(Boolean);
+  const turns: string[] = [];
+
+  for (const line of lines) {
+    const entry = JSON.parse(line);
+    if (entry.type === "user" && entry.message) {
+      const content = extractTextBlocks(entry.message.content);
+      if (content) turns.push(`## User\n${content}`);
+    } else if (entry.type === "assistant" && entry.message) {
+      const content = extractTextBlocks(entry.message.content);
+      if (content) turns.push(`## Assistant\n${content}`);
+    }
+  }
+
+  return turns.length > 0 ? turns.join("\n\n---\n\n") : null;
+}
+
 function extractSessionId(output: string): string | null {
   const match = output.match(/session id:\s*(\S+)/i);
   return match ? match[1] : null;
@@ -117,13 +167,13 @@ function extractSessionId(output: string): string | null {
 function printUsage() {
   console.error("Usage:");
   console.error(
-    '  bun codex-review.ts init "instruction" [--file <path>] [--ref <path>]'
+    '  bun codex-review.ts init "instruction" [--file <path>] [--ref <path>] [--session <path>]'
   );
   console.error(
-    '  bun codex-review.ts findings "instruction" [--file <path>] [--ref <path>]'
+    '  bun codex-review.ts findings "instruction" [--file <path>] [--ref <path>] [--session <path>]'
   );
   console.error(
-    '  bun codex-review.ts resume <session-id> <review-file> "instruction" [--ref <path>]'
+    '  bun codex-review.ts resume <session-id> <review-file> "instruction" [--ref <path>] [--session <path>]'
   );
 }
 
@@ -143,6 +193,7 @@ async function main() {
     }
 
     let reviewFile: string;
+    let tmpDir: string | undefined;
 
     if (parsed.filePath) {
       reviewFile = parsed.filePath;
@@ -152,12 +203,26 @@ async function main() {
         console.error("⚠ codex レビューをスキップします（入力なし）");
         process.exit(0);
       }
-      const tmpDir = await mkdtemp(join(tmpdir(), "codex-review-"));
+      tmpDir = await mkdtemp(join(tmpdir(), "codex-review-"));
       reviewFile = join(tmpDir, "review.md");
       await writeFile(reviewFile, content);
     }
 
-    const prompt = `${parsed.instruction}: ${reviewFile} (ref: ${refPath})`;
+    let sessionDigestFile: string | undefined;
+    if (parsed.sessionJsonlPath) {
+      const digest = await preprocessSession(parsed.sessionJsonlPath);
+      if (digest) {
+        const digestDir =
+          tmpDir ?? (await mkdtemp(join(tmpdir(), "codex-review-")));
+        sessionDigestFile = join(digestDir, "session.md");
+        await writeFile(sessionDigestFile, digest);
+      }
+    }
+
+    const sessionPart = sessionDigestFile
+      ? ` (session: ${sessionDigestFile})`
+      : "";
+    const prompt = `${parsed.instruction}: ${reviewFile} (ref: ${refPath})${sessionPart}`;
 
     try {
       const { output, exitCode } = await runCodex([
@@ -204,7 +269,20 @@ async function main() {
       await writeFile(parsed.reviewFile, content);
     }
 
-    const prompt = `${parsed.instruction}: ${parsed.reviewFile} (ref: ${refPath})`;
+    let sessionDigestFile: string | undefined;
+    if (parsed.sessionJsonlPath) {
+      const digest = await preprocessSession(parsed.sessionJsonlPath);
+      if (digest) {
+        const digestDir = await mkdtemp(join(tmpdir(), "codex-review-"));
+        sessionDigestFile = join(digestDir, "session.md");
+        await writeFile(sessionDigestFile, digest);
+      }
+    }
+
+    const sessionPart = sessionDigestFile
+      ? ` (session: ${sessionDigestFile})`
+      : "";
+    const prompt = `${parsed.instruction}: ${parsed.reviewFile} (ref: ${refPath})${sessionPart}`;
 
     try {
       const { output, exitCode } = await runCodex([
