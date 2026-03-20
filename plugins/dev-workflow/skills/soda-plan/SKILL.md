@@ -83,7 +83,7 @@ If $ARGUMENTS is empty, ask the user what they want to implement before proceedi
    - **Design rationale** — for non-obvious decisions, state "why" explicitly as a labeled callout, not embedded in prose
    - **Cross-step shared context** — types, constants, or contracts used by multiple steps. Define once and reference by name in each step.
    - **Subagent utilization plan** (include for scale M and L) — for each step, indicate whether it should be executed in a subagent or in the main context. See Subagent Criteria below for the decision rules.
-   - **Task group splitting** (include for scale L only) — group subagent-eligible steps into named task groups that can be executed in parallel. See Task Scale Classification below for details.
+   - **Transition note** (include for scale L only) — note that execution transitions to `/soda-team-init` → `/soda-team-run`. The plan serves as input context for task decomposition. See Execution Phase for details.
    - **Design decisions** (include when the plan involves architecture, external contracts, or user-facing behavior choices) — present each decision as a labeled callout in the plan body:
      > **Design Decision: [topic]**
      > Option A: ... — [trade-off]
@@ -178,6 +178,86 @@ After writing the plan, extract **discussion items** — areas that benefit from
 
 If no discussion items are identified, skip this phase and proceed directly to ExitPlanMode.
 
+## Execution Phase
+
+After plan approval (ExitPlanMode), execution routing depends on the task scale classification.
+
+### Scale S — Main Context
+
+Execute all steps in the main context sequentially. No worktree isolation or review cycle.
+
+### Scale M — Worker → Reviewer Core Loop
+
+Subagent-eligible steps are executed via `team-worker` → `team-reviewer` cycle on isolated worktrees. Main-context steps execute in the main context as before.
+
+**For each subagent-eligible step:**
+
+1. **Create worktree**:
+   ```bash
+   git worktree add .worktrees/step-{{N}} -b plan/step-{{N}} HEAD
+   ```
+
+2. **Launch Worker** via `Task(subagent_type: dev-workflow:team-worker)` with prompt:
+   ```
+   ## Task
+   ### Definition
+   {{step description and file changes from plan}}
+   ### Design Constraints
+   {{design decisions and constraints from plan, if any}}
+   ### Context
+   {{investigation summary and cross-step shared context from plan}}
+   ### Validation
+   {{validation criteria from plan step}}
+
+   ## Commit Message
+   {{commit message from plan step}}
+
+   ## Working Directory
+   {{worktree absolute path}}
+   ```
+
+3. **On Worker DONE** → launch Reviewer via `Task(subagent_type: dev-workflow:team-reviewer)`:
+   ```
+   ## Task Definition
+   {{same task sections as Worker input (Definition, Design Constraints, Context, Validation)}}
+   ## Working Directory
+   {{worktree path}}
+   ## Changes to Review
+   {{git diff of worktree branch vs base}}
+   ```
+
+   > **Why no `## Architecture Decisions`**: soda-plan context does not maintain ARCHITECTURE.md. Reviewer evaluates against the step's own Design Constraints and Validation criteria instead.
+
+4. **Handle verdict**:
+   - **PASS / PASS_WITH_FIX** → merge worktree branch to current branch, clean up:
+     ```bash
+     git checkout {{current_branch}}
+     git merge plan/step-{{N}} --no-ff -m "{{commit message}} (plan/step-{{N}})"
+     git worktree remove .worktrees/step-{{N}}
+     git branch -d plan/step-{{N}}
+     ```
+   - **FAIL** → append Reviewer's "For Next Worker" findings to the step's Context section, reset worktree, retry Worker once:
+     ```bash
+     cd .worktrees/step-{{N}}
+     git clean -fd
+     git reset --hard plan/step-{{N}}~1
+     ```
+     If second attempt also FAILs → report to user via AskUserQuestion with Reviewer findings.
+   - **ESCALATE** → report to user via AskUserQuestion with escalation details (no Architect role in soda-plan context).
+
+5. **On Worker BLOCKED** → read BLOCKER.md from worktree root, report to user via AskUserQuestion.
+
+**Sequencing**: Subagent-eligible steps with no mutual dependencies may run in parallel (separate worktrees). Steps with dependencies execute sequentially — wait for the dependency to merge before creating the next worktree.
+
+### Scale L — Transition to /soda-team-init
+
+Scale L tasks are too large for soda-plan's inline execution. After plan approval, present transition guidance:
+
+> このタスクは規模が大きいため、`/soda-team-init` でタスク分解し `/soda-team-run` で実行することを推奨します。
+> プランの内容を `/soda-team-init` の入力コンテキストとして活用できます。
+
+Do NOT execute implementation inline. The approved plan serves as input context for `/soda-team-init`.
+
 ## Constraints
 
 - Do NOT begin implementation until the user approves the plan.
@@ -218,45 +298,18 @@ When the plan includes a subagent utilization plan, annotate each step with one 
 
 ## Task Scale Classification
 
-Immediately after investigation (Step 1) completes, classify the task scale based on investigation results. The classification determines which conditional elements to include and how subagent utilization is structured.
+Immediately after investigation (Step 1) completes, classify the task scale based on investigation results. The classification determines which conditional elements to include and how execution is routed.
 
 **Classification criteria** (use the first matching category):
 
 - **S (Small)** — 1-3 steps, no cross-step dependencies beyond sequential ordering
   - Subagent utilization plan: omit (no benefit from subagent overhead)
-  - Task group splitting: omit
+  - Execution method: main context (see Execution Phase)
 - **M (Medium)** — 4-6 steps, fewer than 2 independent subtrees in the dependency graph
   - Subagent utilization plan: include (per-step annotation as before)
-  - Task group splitting: omit (single chain — grouping adds no value)
+  - Execution method: Worker → Reviewer core loop for subagent-eligible steps (see Execution Phase)
 - **L (Large)** — 7+ steps, OR 4+ steps with 2+ independent subtrees in the dependency graph
   - Subagent utilization plan: include (per-step annotation)
-  - Task group splitting: include (group subagent-eligible steps into parallelizable task groups)
+  - Execution method: transition to `/soda-team-init` → `/soda-team-run` (see Execution Phase)
 
 State the classification at the top of the plan body: `**Task Scale: [S|M|L]**`
-
-### Task Group Splitting (Scale L)
-
-For scale L tasks, after annotating each step with subagent eligibility (Subagent Criteria), group subagent-eligible steps into **task groups**:
-
-**Grouping rules**:
-1. Steps with no dependency relationship between them → same group (parallel execution)
-2. Steps that share input/output dependencies → separate groups (sequential execution)
-3. Main-context steps are never grouped — they execute in the main context between groups
-4. Each group must be nameable (e.g., "Group A: Setup infrastructure", "Group B: Implement feature modules")
-
-**Plan format for task groups**:
-
-    ### Task Groups
-
-    **Execution order**: Group A → Step 3 (main-context) → Group B → Step 7 (main-context, integration)
-
-    **Group A** — [description]
-    - Step 1: [commit message] (Subagent-eligible)
-    - Step 2: [commit message] (Subagent-eligible)
-
-    **Group B** — [description] (depends on: Group A, Step 3)
-    - Step 4: [commit message] (Subagent-eligible)
-    - Step 5: [commit message] (Subagent-eligible)
-    - Step 6: [commit message] (Subagent-eligible)
-
-**Constraint**: The execution order must be a valid topological sort of the step dependency graph. Every dependency declared in individual steps must be respected in the group ordering.
