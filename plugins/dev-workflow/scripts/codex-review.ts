@@ -146,7 +146,12 @@ async function preprocessSession(
   const turns: string[] = [];
 
   for (const line of lines) {
-    const entry = JSON.parse(line);
+    let entry;
+    try {
+      entry = JSON.parse(line);
+    } catch {
+      continue;
+    }
     if (entry.type === "user" && entry.message) {
       const content = extractTextBlocks(entry.message.content);
       if (content) turns.push(`## User\n${content}`);
@@ -157,6 +162,19 @@ async function preprocessSession(
   }
 
   return turns.length > 0 ? turns.join("\n\n---\n\n") : null;
+}
+
+async function buildSessionPart(
+  sessionJsonlPath: string | undefined,
+  tmpDir?: string
+): Promise<string> {
+  if (!sessionJsonlPath) return "";
+  const digest = await preprocessSession(sessionJsonlPath);
+  if (!digest) return "";
+  const digestDir = tmpDir ?? (await mkdtemp(join(tmpdir(), "codex-review-")));
+  const sessionDigestFile = join(digestDir, "session.md");
+  await writeFile(sessionDigestFile, digest);
+  return ` (session: ${sessionDigestFile})`;
 }
 
 function extractSessionId(output: string): string | null {
@@ -208,20 +226,10 @@ async function main() {
       await writeFile(reviewFile, content);
     }
 
-    let sessionDigestFile: string | undefined;
-    if (parsed.sessionJsonlPath) {
-      const digest = await preprocessSession(parsed.sessionJsonlPath);
-      if (digest) {
-        const digestDir =
-          tmpDir ?? (await mkdtemp(join(tmpdir(), "codex-review-")));
-        sessionDigestFile = join(digestDir, "session.md");
-        await writeFile(sessionDigestFile, digest);
-      }
-    }
-
-    const sessionPart = sessionDigestFile
-      ? ` (session: ${sessionDigestFile})`
-      : "";
+    const sessionPart = await buildSessionPart(
+      parsed.sessionJsonlPath,
+      tmpDir
+    );
     const prompt = `${parsed.instruction}: ${reviewFile} (ref: ${refPath})${sessionPart}`;
 
     try {
@@ -269,19 +277,7 @@ async function main() {
       await writeFile(parsed.reviewFile, content);
     }
 
-    let sessionDigestFile: string | undefined;
-    if (parsed.sessionJsonlPath) {
-      const digest = await preprocessSession(parsed.sessionJsonlPath);
-      if (digest) {
-        const digestDir = await mkdtemp(join(tmpdir(), "codex-review-"));
-        sessionDigestFile = join(digestDir, "session.md");
-        await writeFile(sessionDigestFile, digest);
-      }
-    }
-
-    const sessionPart = sessionDigestFile
-      ? ` (session: ${sessionDigestFile})`
-      : "";
+    const sessionPart = await buildSessionPart(parsed.sessionJsonlPath);
     const prompt = `${parsed.instruction}: ${parsed.reviewFile} (ref: ${refPath})${sessionPart}`;
 
     try {
