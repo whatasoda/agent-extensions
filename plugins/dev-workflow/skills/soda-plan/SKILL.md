@@ -111,7 +111,12 @@ If $ARGUMENTS is empty, ask the user what they want to implement before proceedi
 
 Delegate codex review to a subagent in findings-only mode. The subagent reports issues but does NOT revise the content — the plan author incorporates findings to preserve original intent.
 
-1. Launch a codex review subagent:
+1. Resolve session JSONL path (for context-aware review):
+   Use Glob to discover the installed version: pattern `~/.claude/plugins/cache/whatasoda-tools/dev-workflow/*`, pick the latest version directory.
+   Then run via Bash: `bun <Script base>/<version>/scripts/resolve-session.ts`
+   Capture stdout as session path. If empty, proceed without session context.
+
+2. Launch a codex review subagent:
    - Tool: `Task(subagent_type: dev-workflow:codex-review)`
    - Prompt: Include the review request with composed content.
    - Review request:
@@ -119,11 +124,12 @@ Delegate codex review to a subagent in findings-only mode. The subagent reports 
      ## Codex Review Request
      - **Mode**: findings
      - **Instruction**: "Review this plan. Skip trivial issues — only flag critical problems"
+     - **Session Path**: <resolved session path from step 1, or omit if empty>
 
      ### Content
      [composed plan content]
      ```
-2. Use the subagent's response:
+3. Use the subagent's response:
    - If **critical issues found**: read the `Issues` section and revise the plan in the main context to address them, preserving the original intent and voice.
    - If **no critical issues**, **Status: Skipped**, or subagent failure: continue without changes.
 

@@ -25,6 +25,7 @@ The prompt must contain a `## Codex Review Request` section with the following f
 - **Mode**: `init`, `resume`, or `findings`
 - **Instruction**: The review instruction string (in quotes)
 - **Ref Path**: (optional) Path to a reference CLAUDE.md
+- **Session Path**: (optional) Path to session JSONL file for context-aware review
 - **Session ID**: (required for resume only) Session ID from a prior init call
 - **Review File**: (required for resume only) Review file path from a prior init call
 
@@ -54,14 +55,14 @@ For `init` or `findings` mode:
 1. Write `<Content>` to `/tmp/codex-review-<ID>.md` using the Write tool.
 2. Run:
 ```bash
-bun <Script> <Mode> "<Instruction>" --file /tmp/codex-review-<ID>.md [--ref "<Ref Path>"]
+bun <Script> <Mode> "<Instruction>" --file /tmp/codex-review-<ID>.md [--ref "<Ref Path>"] [--session "<Session Path>"]
 ```
 
 For `resume` mode:
 1. Write `<Content>` to `/tmp/codex-review-<ID>-revised.md` using the Write tool.
 2. Run:
 ```bash
-bun <Script> resume <Session ID> <Review File> "<Instruction>" [--ref "<Ref Path>"] < /tmp/codex-review-<ID>-revised.md
+bun <Script> resume <Session ID> <Review File> "<Instruction>" [--ref "<Ref Path>"] [--session "<Session Path>"] < /tmp/codex-review-<ID>-revised.md
 ```
 
 ### Step 2: Parse the script output
@@ -89,7 +90,7 @@ Construct and run a resume command using the resolved `<Script>` path:
 1. Write revised content to `/tmp/codex-review-<ID>-revised.md` using the Write tool (same `<ID>` from Step 1).
 2. Run:
 ```bash
-bun <Script> resume <session_id> <review_file> "<same-instruction>" [--ref "<Ref Path>"] < /tmp/codex-review-<ID>-revised.md
+bun <Script> resume <session_id> <review_file> "<same-instruction>" [--ref "<Ref Path>"] [--session "<Session Path>"] < /tmp/codex-review-<ID>-revised.md
 ```
 
 - If `session_id` is "none" or unavailable, skip re-review and report the issues as unresolved.
