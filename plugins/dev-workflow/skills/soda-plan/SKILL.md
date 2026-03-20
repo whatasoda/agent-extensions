@@ -84,7 +84,7 @@ If $ARGUMENTS is empty, ask the user what they want to implement before proceedi
      > Option B: ... — [trade-off]
      > Recommended: [option] — [rationale]
 
-     The user reviews and confirms design decisions when approving the plan via ExitPlanMode. If a decision significantly changes the plan structure, note this dependency explicitly.
+     Design decisions are discussed individually during the Plan Discussion Phase before ExitPlanMode. If a decision significantly changes the plan structure, note this dependency explicitly.
 
      Examples of decisions that require callouts:
      - Architecture patterns (e.g., monolith vs microservice, event-driven vs request-response)
@@ -121,28 +121,50 @@ Delegate codex review to a subagent in findings-only mode. The subagent reports 
    - If **critical issues found**: read the `Issues` section and revise the plan in the main context to address them, preserving the original intent and voice.
    - If **no critical issues**, **Status: Skipped**, or subagent failure: continue without changes.
 
-After the codex review completes, use the EnterPlanMode tool to enter plan mode. Write the reviewed plan content to the plan file. Proceed with the Plan Annotation Guidance below, then exit plan mode via ExitPlanMode.
+After the codex review completes, use the EnterPlanMode tool to enter plan mode. Write the reviewed plan content to the plan file. Proceed with the Plan Discussion Phase below, then exit plan mode via ExitPlanMode.
 
-## Plan Annotation Guidance
+## Plan Discussion Phase
 
-After writing the plan, identify 1-3 **annotation points** — areas where user domain knowledge would most improve plan quality. Common annotation points:
-- Steps involving business logic or domain-specific behavior
-- Assumptions about existing code behavior that weren't fully verified
-- Design decisions where the user may have preferences not captured in investigation
-- Risk assessments that depend on deployment context
+After writing the plan, extract **discussion items** — areas that benefit from interactive confirmation before implementation. Discussion items fall into two categories:
 
-Present these annotation points in the plan as a brief note:
+- **Review points**: Steps where user domain knowledge would improve plan quality (business logic, unverified assumptions, context-dependent risks)
+- **Design decisions**: Choices presented as `**Design Decision: [topic]**` callouts in the plan
 
-> **レビューポイント**: 以下の箇所はドメイン知識による補足があると計画の精度が向上します：
-> - Step N: {{annotation point description}}
-> - Step M: {{annotation point description}}
+### Procedure
 
-The user may provide inline corrections or additional context. Incorporate their feedback and revise the affected plan sections. This annotation cycle can repeat multiple times before ExitPlanMode.
+1. **Extract and present**: List all discussion items with their category and dependency relationships:
 
-When the user provides domain knowledge corrections, mark them in the plan as:
-> **User Context**: {{correction or additional information}}
+   > **議論アイテム**: 以下の項目を順に確認します：
+   > 1. [category] Step N: {{description}}
+   > 2. [category] Step M: {{description}}
+   >
+   > 依存関係: Item 1 の結論が Item 2 の選択肢に影響します。
 
-This ensures domain knowledge survives context compaction as a labeled callout.
+   The user may reorder items or mark some as skip.
+
+2. **Discuss one at a time**: Present each item individually, following soda-discuss Interaction Principles (referenced from `/soda-discuss` SKILL.md — not duplicated here):
+
+   - **提示して委ねる**: Present context/options as text output, let the user respond freely
+   - **一度に一つ、承認を待つ**: Wait for the user's response before moving to the next item
+   - **選択肢には根拠と推奨を添える**: For design decisions, include tradeoffs and a recommendation
+   - **データが先、判断が後**: Present investigation data before asking for a decision
+   - **判断の保留は深掘りのシグナル**: If the user defers, provide deeper analysis before re-presenting
+
+   For each item type:
+   - **Review point**: Present the relevant plan section and what is uncertain → wait for domain knowledge
+   - **Design decision**: Present options, tradeoffs, and recommendation → wait for direction
+
+3. **Reflect conclusions**: After each item is resolved, immediately update the plan:
+   - Review point conclusions: mark as `**User Context**: {{correction or additional information}}`
+   - Design decision conclusions: update the callout to show the confirmed option
+
+   These labeled callouts ensure domain knowledge and decisions survive context compaction.
+
+4. **Handle emergent items**: If discussion reveals new items, add them to the list at the appropriate position based on dependency relationships.
+
+5. **Complete**: When all items are resolved (or the user signals readiness), proceed to ExitPlanMode.
+
+If no discussion items are identified, skip this phase and proceed directly to ExitPlanMode.
 
 ## Constraints
 
@@ -152,7 +174,7 @@ This ensures domain knowledge survives context compaction as a labeled callout.
 - The plan must be self-contained: include enough technical context (as code snippets and structured data, not prose) that implementation can proceed from the plan alone, even after context compaction.
 - Each step must define a commit with an imperative-mood message, explicit dependencies on prior steps, and validation criteria.
 - The plan must identify at least one risk and its mitigation.
-- Design decisions must be presented as labeled callouts in the plan body. The user confirms them when approving the plan via ExitPlanMode.
+- Design decisions must be presented as labeled callouts in the plan body. Each decision is discussed individually during the Plan Discussion Phase before ExitPlanMode.
 - During implementation, update the plan's step markers from `- [ ]` to `- [x]` as each step's commit is completed. This provides at-a-glance progress visibility.
 
 ## Compact-Resilience Guidelines
