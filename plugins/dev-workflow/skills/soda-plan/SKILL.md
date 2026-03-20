@@ -236,14 +236,22 @@ Subagent-eligible steps are executed via `team-worker` → `team-reviewer` cycle
      git worktree remove .worktrees/step-{{N}}
      git branch -d plan/step-{{N}}
      ```
-   - **FAIL** → append Reviewer's "For Next Worker" findings to the step's Context section, reset worktree, retry Worker once:
+   - **FAIL** → append Reviewer's "For Next Worker" findings to the step's Context section, reset worktree to the base commit, retry Worker once:
      ```bash
      cd .worktrees/step-{{N}}
      git clean -fd
-     git reset --hard plan/step-{{N}}~1
+     git reset --hard {{current_branch}}
      ```
+     > **Why `{{current_branch}}` not `~1`**: Worker may create multiple commits. Resetting to the branch the worktree was created from guarantees a clean slate, matching soda-team-run's pattern.
+
      If second attempt also FAILs → report to user via AskUserQuestion with Reviewer findings.
-   - **ESCALATE** → report to user via AskUserQuestion with escalation details (no Architect role in soda-plan context).
+   - **ESCALATE** → report to user via AskUserQuestion with escalation details and options:
+     - "実装を受け入れる" → merge worktree branch as-is (same as PASS flow)
+     - "このステップをスキップ" → clean up worktree and branch, skip this step:
+       ```bash
+       git worktree remove .worktrees/step-{{N}}
+       git branch -D plan/step-{{N}}
+       ```
 
 5. **On Worker BLOCKED** → read BLOCKER.md from worktree root, report to user via AskUserQuestion.
 
