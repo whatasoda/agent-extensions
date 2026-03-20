@@ -15,6 +15,12 @@ If $ARGUMENTS is empty, ask the user what they want to implement before proceedi
 ## Procedure
 
 1. **Investigate**: Explore the codebase to understand the scope, affected areas, and existing patterns.
+   - **Living Discussion Document check**: Before launching sub-agents, check for `.agent-discussions/*.md` files using Glob. If file(s) found:
+     - If one file: read it and use as investigation context
+     - If multiple files: present the list and ask the user which document applies to this task
+     - Extract all DD-N entries as **mandatory constraints** — every DD-N must be traceable to a plan step
+     - Extract RA-N entries as **exclusion constraints** — approaches listed as rejected must not be re-proposed
+     - If no files found: proceed normally (conversation-context-based input)
    - **Sub-agent output contract**: Every sub-agent prompt MUST end with the following output format requirement:
        > Return findings in this exact format:
        > ### Files
@@ -176,6 +182,7 @@ If no discussion items are identified, skip this phase and proceed directly to E
 - The plan must identify at least one risk and its mitigation.
 - Design decisions must be presented as labeled callouts in the plan body. Each decision is discussed individually during the Plan Discussion Phase before ExitPlanMode.
 - During implementation, update the plan's step markers from `- [ ]` to `- [x]` as each step's commit is completed. This provides at-a-glance progress visibility.
+- If a Living Discussion Document is loaded, all Design Decisions (DD-N) must be reflected in plan steps. Each step that implements a DD-N must reference it explicitly (e.g., "Implements DD-3"). Rejected Alternatives (RA-N) must not be re-proposed as approaches.
 
 ## Compact-Resilience Guidelines
 

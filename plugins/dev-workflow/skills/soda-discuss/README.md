@@ -46,9 +46,19 @@ The six Interaction Principles were extracted from analysis of actual high-quali
 - **提示して委ねる**: AskUserQuestion の構造化選択肢UIは、明確な比較が必要な場面では有効だが、自由記述のコンテキスト付与を阻害する。soda-discuss は探索的な対話であり、ユーザーが想定外の視点やドメイン知識を自由に提供できることが重要。テキスト出力ベースの対話を基本とし、AskUserQuestion は3つ以上の具体的選択肢がある判断ポイントのみに限定する。
 - **対話に徹する**: Observed across multiple sessions where discussions drifted into producing detailed implementation proposals (file-by-file change lists, code diffs) without explicit user request. The guard distinguishes illustrative code snippets (which aid decisions) from proposal-framed implementation output (which bypasses the discuss→plan transition). Tool-level restrictions (`allowed-tools`) prevent file modifications but cannot prevent text-output-based implementation.
 
-### Discussion Summary as Session Artifact
+### Living Discussion Document
 
-The Discussion Summary is a **session artifact** — downstream skills (soda-plan) use it naturally from the conversation context rather than detecting it programmatically. This avoids format coupling and lets the Discussion Summary evolve freely.
+The original design used a "Discussion Summary" — a conversation-context-only artifact produced at the end of a discussion session. This was replaced with an incremental, file-based Living Discussion Document for three reasons:
+
+**Information loss through abstraction**: End-of-session summaries compress specific design constraints (e.g., "return type must be union") into vague directional statements. Recording decisions immediately after approval preserves full specificity.
+
+**Context compaction vulnerability**: Conversation-context-only artifacts are subject to context window compaction. Long discussions — precisely the ones with the most decisions — lose the earliest (often most foundational) decisions first. File-based persistence eliminates this failure mode.
+
+**Permission-friendly file location**: `.agent-discussions/` at repo root avoids `.claude/` permission prompts. Globally gitignored to keep project repos clean.
+
+**Four-section design**: Design Decisions capture what was decided (with Constraint/Why/Scope fields to prevent abstraction). Rejected Alternatives prevent downstream skills from re-proposing discarded approaches. Deferred Topics track what to address later without it being forgotten or silently included. Context & Direction provides the narrative backdrop.
+
+**Topic-grouped structure with global numbering**: Decisions are grouped by discussion topic for navigability, but DD-N/RA-N numbering is global so soda-plan can reference "DD-3" unambiguously regardless of which topic it belongs to.
 
 ### Skill Boundaries (formerly Anti-patterns)
 

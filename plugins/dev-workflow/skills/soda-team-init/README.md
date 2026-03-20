@@ -17,7 +17,7 @@ Initialize a multi-agent team project by:
 
 ## Prerequisites
 
-- **soda-discuss completed**: Design direction should be established before initialization. The Discussion Summary provides the initial Architecture Decision Records.
+- **soda-discuss completed**: Design direction should be established before initialization. The Living Discussion Document (`.agent-discussions/`) provides the initial Architecture Decision Records.
 - **`.worktrees/` gitignored**: Worker agents operate on isolated git worktrees under `.worktrees/`. This directory must be gitignored before running soda-team-run.
 - **`.agent-team/` gitignored**: Coordination files are working artifacts, not committed to the repository.
 
@@ -66,7 +66,7 @@ Requirements are auto-classified into groups, but design-critical groups get hum
 soda-discuss → soda-team-init → soda-team-run
 ```
 
-- **After soda-discuss**: Discussion Summary provides design direction and initial ADRs
+- **After soda-discuss**: Living Discussion Document provides design direction and initial ADRs
 - **Before soda-team-run**: Coordination files are the input to execution cycles
 
 ## Coordination Files

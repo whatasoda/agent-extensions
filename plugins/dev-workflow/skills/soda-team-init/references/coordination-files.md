@@ -130,13 +130,13 @@ Architecture Decision Records maintained by Architect. The primary mechanism for
 
 ### Quality Safeguards
 
-- **Source field**: Traces the origin of each decision. soda-discuss decisions are transcribed from Discussion Summary; Architect decisions include the reasoning; User instructions preserve original wording.
+- **Source field**: Traces the origin of each decision. soda-discuss decisions are transcribed from Living Discussion Document DD-N entries; Architect decisions include the reasoning; User instructions preserve original wording.
 - **Status field**: Active / Superseded (with pointer to replacement ADR) / Deprecated. Prevents stale decisions from misleading Workers.
 - **Affected Areas specificity**: Must be directory or file-path level. Vague entries like "entire codebase" are prohibited. Reviewer uses these for compliance checking.
 
 ### Initial State
 
-On soda-team-init execution, design decisions from the preceding soda-discuss Discussion Summary are transcribed as the initial set of ADRs.
+On soda-team-init execution, Design Decisions (DD-N) from the preceding soda-discuss Living Discussion Document are transcribed as the initial set of ADRs. Each ADR's Source field references the originating DD-N.
 
 ## REVIEW-NNN-A.md
 
