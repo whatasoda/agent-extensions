@@ -60,6 +60,10 @@ The original design used a "Discussion Summary" — a conversation-context-only 
 
 **Topic-grouped structure with global numbering**: Decisions are grouped by discussion topic for navigability, but DD-N/RA-N numbering is global so soda-plan can reference "DD-3" unambiguously regardless of which topic it belongs to.
 
+**Understanding summary checkpoint**: Before writing Design Decisions to the document, the assistant displays a text summary of what it understood — effectively a preview of the Constraint/Why/Scope content about to be recorded. This addresses observed premature recording: the assistant would write to the document before the user felt the topic was sufficiently explored. The Write tool's permission prompt serves as a natural objection point — the user can reject the write if the summary reveals a misunderstanding or an unexplored angle, without needing an explicit AskUserQuestion gate.
+
+**Two-layer Open Questions**: Open Questions are presented at two levels. Per-topic questions appear immediately after writing a topic's Design Decisions, capturing specific unresolved points while the context is fresh. Cross-cutting questions surface when multiple decisions have accumulated, revealing patterns, tensions, or implications visible only in aggregate. Neither layer is persisted to the document — they are dialogue artifacts that bridge to the next conversation turn, not design decisions. This distinguishes them from Deferred Topics, which represent postponed decisions that must be tracked for downstream skills.
+
 ### Skill Boundaries (formerly Anti-patterns)
 
 The bottom section of SKILL.md defines skill boundaries — what this skill is NOT for. This complements Interaction Principle anti-patterns (which define how NOT to interact) with scope anti-patterns (which define what NOT to produce). The separation keeps each concern focused. The fourth boundary was expanded to cover text-output implementation artifacts (not just file edits), aligning with the "対話に徹する" Interaction Principle.

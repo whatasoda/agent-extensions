@@ -139,6 +139,7 @@ These are flexible guidance, not mandatory steps. Adapt to the conversation.
 - **Investigate with sub-agents**: Use sub-agents (Task, subagent_type: Explore) for codebase investigation. Apply the standard constraint block (below). Investigation informs the discussion but doesn't replace it.
 - **Iterate naturally**: Some discussions need multiple investigation rounds; others converge quickly. Follow the conversation's natural rhythm.
 - **Maintain the Living Discussion Document**: Create the document at discussion start. Update it incrementally — Design Decisions immediately after user approval, other sections at topic boundaries. See the Living Discussion Document section for format and lifecycle.
+- **Surface cross-cutting Open Questions**: When multiple decisions have accumulated, step back and consider questions that emerge from the interaction between decisions — patterns, tensions, or implications visible only in aggregate. This is a habit of periodic reflection, not a procedural step with a fixed trigger.
 
 ## Sub-agent Usage
 
@@ -167,7 +168,10 @@ Persist discussion decisions to a file incrementally throughout the discussion, 
 ### Lifecycle
 
 1. **Discussion start**: Create `.agent-discussions/<YYYY-MM-DD>-<topic-slug>.md` with frontmatter and initial Context & Direction (create the `.agent-discussions/` directory if it does not exist)
-2. **After each topic approval**: Append the topic's Design Decisions (immediately) and Rejected Alternatives
+2. **After each topic approval**:
+   - Display an understanding summary as text output — a preview of the Design Decisions (Constraint/Why/Scope) and Rejected Alternatives about to be recorded. This gives the user a checkpoint to object or steer before the write happens.
+   - Write the Design Decisions and Rejected Alternatives to the document.
+   - Present per-topic Open Questions — unresolved points specific to this topic that may warrant further exploration. Skip if none.
 3. **When topics are deferred**: Add to Deferred Topics section
 4. **Discussion end**: Set `status: concluded` in frontmatter
 
