@@ -235,11 +235,11 @@ Subagent-eligible steps are executed via `team-worker` → `team-reviewer` cycle
      git merge --squash plan/step-{{N}}
      git commit -m "{{commit message}} (plan/step-{{N}})"
      git worktree remove .worktrees/step-{{N}}
-     git branch -d plan/step-{{N}}
+     git branch -D plan/step-{{N}}
      ```
      **Merge conflict handling**: If merge fails due to conflicts:
      ```bash
-     git merge --abort
+     git reset --merge
      ```
      Report conflicting files to user via AskUserQuestion with options:
      - "コンフリクトを手動で解決する" → user resolves, then resume

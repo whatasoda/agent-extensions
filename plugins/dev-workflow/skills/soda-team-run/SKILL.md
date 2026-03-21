@@ -200,7 +200,7 @@ git commit -m "{{task title}} (TASK-NNN)"
 ```
 
 **Merge conflict handling**: If the merge fails due to conflicts:
-- Abort the merge: `git merge --abort`
+- Abort the merge: `git reset --merge`
 - Report the conflict to the user with the affected files
 - Use AskUserQuestion:
   - "コンフリクトを手動で解決する" — user resolves, then resume
@@ -210,7 +210,7 @@ git commit -m "{{task title}} (TASK-NNN)"
 After successful merge, clean up:
 ```bash
 git worktree remove .worktrees/{{TASK-ID}}
-git branch -d task/{{TASK-ID}}
+git branch -D task/{{TASK-ID}}
 ```
 
 Update TASKS.md: `[~]` → `[x]` with merge commit SHA.
