@@ -236,6 +236,17 @@ Subagent-eligible steps are executed via `team-worker` → `team-reviewer` cycle
      git worktree remove .worktrees/step-{{N}}
      git branch -d plan/step-{{N}}
      ```
+     **Merge conflict handling**: If merge fails due to conflicts:
+     ```bash
+     git merge --abort
+     ```
+     Report conflicting files to user via AskUserQuestion with options:
+     - "コンフリクトを手動で解決する" → user resolves, then resume
+     - "このステップをスキップ" → clean up worktree and branch:
+       ```bash
+       git worktree remove .worktrees/step-{{N}}
+       git branch -D plan/step-{{N}}
+       ```
    - **FAIL** → append Reviewer's "For Next Worker" findings to the step's Context section, reset worktree to the base commit, retry Worker once:
      ```bash
      cd .worktrees/step-{{N}}
@@ -244,7 +255,13 @@ Subagent-eligible steps are executed via `team-worker` → `team-reviewer` cycle
      ```
      > **Why `{{current_branch}}` not `~1`**: Worker may create multiple commits. Resetting to the branch the worktree was created from guarantees a clean slate, matching soda-team-run's pattern.
 
-     If second attempt also FAILs → report to user via AskUserQuestion with Reviewer findings.
+     If second attempt also FAILs → report to user via AskUserQuestion with Reviewer findings and options:
+     - "実装を受け入れる" → merge worktree branch as-is (same as PASS flow)
+     - "このステップをスキップ" → clean up worktree and branch, skip this step:
+       ```bash
+       git worktree remove .worktrees/step-{{N}}
+       git branch -D plan/step-{{N}}
+       ```
    - **ESCALATE** → report to user via AskUserQuestion with escalation details and options:
      - "実装を受け入れる" → merge worktree branch as-is (same as PASS flow)
      - "このステップをスキップ" → clean up worktree and branch, skip this step:
