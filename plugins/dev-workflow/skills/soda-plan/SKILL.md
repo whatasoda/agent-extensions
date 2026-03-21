@@ -232,7 +232,8 @@ Subagent-eligible steps are executed via `team-worker` → `team-reviewer` cycle
    - **PASS / PASS_WITH_FIX** → merge worktree branch to current branch, clean up:
      ```bash
      git checkout {{current_branch}}
-     git merge plan/step-{{N}} --no-ff -m "{{commit message}} (plan/step-{{N}})"
+     git merge --squash plan/step-{{N}}
+     git commit -m "{{commit message}} (plan/step-{{N}})"
      git worktree remove .worktrees/step-{{N}}
      git branch -d plan/step-{{N}}
      ```

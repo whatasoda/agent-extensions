@@ -195,7 +195,8 @@ For each passed task, merge the Worker branch into the integration branch:
 
 ```bash
 git checkout {{INTEGRATION_BRANCH}}
-git merge task/{{TASK-ID}} --no-ff -m "{{task title}} (TASK-NNN)"
+git merge --squash task/{{TASK-ID}}
+git commit -m "{{task title}} (TASK-NNN)"
 ```
 
 **Merge conflict handling**: If the merge fails due to conflicts:
