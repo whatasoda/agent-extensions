@@ -161,7 +161,7 @@ Written by Reviewer, consumed by Orchestrator (for status updates) and by future
 - ADR-NNN: {{OK | VIOLATION — description of what diverges}}
 
 ## Trivial Fixes Applied
-{{PASS_WITH_FIX only. Each fix must be 1-2 lines and unambiguous.}}
+{{PASS_WITH_FIX or ESCALATE with trivial fixes. Each fix must be 1-2 lines and unambiguous.}}
 - `{{path/to/file}}:{{line}}` — {{what was fixed}}
 
 ## For Next Worker
@@ -171,6 +171,10 @@ Written by Reviewer, consumed by Orchestrator (for status updates) and by future
 ## Escalation
 {{ESCALATE only. Problem description for Architect.}}
 - {{what assumption or decision needs revisiting and why}}
+
+## Implicit Decisions Detected
+{{Present when implicit design decisions are found (criterion 6). Listed regardless of verdict.}}
+- **[file:line]** {{decision description}} — not covered by task definition or Design Constraints
 ```
 
 **Managed by**: Reviewer

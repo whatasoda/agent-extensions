@@ -2,24 +2,23 @@
 
 ## Background
 
-Derived from ~190 occurrences in session history analysis (2025-09 to 2026-01). Branch review requests are the third most frequent pattern, typically appearing before PR creation. There is also overlap with the `check-completeness` pattern (~45 occurrences) which focuses on gaps and TODOs.
+Originally derived from branch review patterns (~190 occurrences in session history), soda-review was a code quality review skill covering four perspectives (correctness, completeness, quality, potential issues). However, code quality review is adequately covered by `/soda-fix` (automated) and manual instructions, leaving soda-review unused.
 
-Key sub-patterns absorbed:
-- "このブランチでの変更をレビューして" (default: current branch vs default branch)
-- "origin/develop からの merge-base を起点としたこのブランチの変更についてレビューして" (explicit base)
-- "e6b2699b より最近のコミットでの変更についてレビューして" (commit hash base)
-- "全体を通して機能的に失われたものがないか詳細にレビュー・確認して" (focus on regressions)
+Repurposed as a **design conformance review** skill based on a recurring manual workflow: comparing implementation changes against Design Decisions (DD-N) from Living Discussion Documents to identify conformance gaps and implicit design decisions.
 
 ## Purpose
 
-Pre-PR quality gate. Catches functional issues, completeness gaps, and code quality problems before changes leave the branch. This is intentionally a basic foundation — the skill covers the core review workflow without attempting to be comprehensive.
+Pre-merge design alignment gate. Verifies that implementation satisfies recorded Design Decisions and surfaces unrecorded design judgments introduced during implementation. Part of a two-layer conformance checking architecture:
+
+- **Layer A** (team-reviewer): Per-task implicit decision detection during Worker→Reviewer cycles
+- **Layer B** (this skill): Project-wide DD-N conformance review across the full branch diff
 
 ## Design Notes
 
-- **Basic foundation**: This is an intentionally minimal first version. The skill covers the standard review flow but does not yet include project-specific checklists or structured output formats.
-- **Report-only constraint**: The review must not modify code. This prevents the common pattern where a review turns into an unsolicited refactoring session. The user decides what to fix after seeing the report.
-- **Flexible base specification**: The base reference varies significantly across usage (merge-base with default branch, specific commit hashes, named branches). The argument handling is kept flexible to support all these patterns.
-- **Severity ordering**: Findings are reported by severity to help the user prioritize, especially in large diffs.
+- **Two parallel sub-agents**: DD verification and implicit decision detection run concurrently. DD verification checks each DD-N constraint against the diff. Implicit detection scans the diff for unrecorded design judgments.
+- **Report-only constraint**: The review must not modify code. Design conformance issues are bidirectional — sometimes the implementation is wrong, sometimes the DD is outdated. The user decides which side to change.
+- **Graceful degradation (DD-7)**: When no Living Discussion Document exists, DD verification is skipped. Implicit decision detection runs in discovery mode, reporting all non-trivial design judgments as formalization candidates.
+- **Reuses detect-base-branch.ts**: Same branch context detection as the original soda-review, supporting PR base, nearest base branch detection, and explicit base specification.
 
 ## Typical Usage Patterns
 
@@ -31,14 +30,10 @@ Pre-PR quality gate. Catches functional issues, completeness gaps, and code qual
 /soda-review origin/develop からの差分を対象に
 ```
 
+## Skill Chain Position
+
 ```
-/soda-review 370c8b726a から最新のコミットまで
+soda-research/soda-brief → soda-discuss → soda-plan → [implementation] → soda-review → soda-fix
 ```
 
-## Future Improvements
-
-- Add configurable review checklists per project (e.g., dinii-self-all has different concerns than soda-gql)
-- Integrate `check-completeness` patterns: "やり残しはある？", "対応漏れはないか" (~45 occurrences)
-- Add structured output format for tracking review findings across iterations
-- Consider a "regression focus" mode for large refactoring branches
-- Consider integration with `create-pr` for a seamless review → PR flow
+soda-review checks design conformance after implementation. soda-fix handles code quality issues separately.
