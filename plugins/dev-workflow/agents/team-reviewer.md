@@ -67,7 +67,7 @@ The prompt must contain the following sections:
 ### ADR Compliance
 - ADR-NNN: {{OK | VIOLATION — description}}
 ### Trivial Fixes Applied
-{{PASS_WITH_FIX only — list each fix with file path and line number}}
+{{PASS_WITH_FIX or ESCALATE with trivial fixes — list each fix with file path and line number}}
 ### For Next Worker
 {{FAIL only — concrete instructions for re-implementation}}
 ### Escalation
@@ -79,7 +79,7 @@ The prompt must contain the following sections:
 ## Verdict Logic for Implicit Decisions
 
 When implicit design decisions are detected (criterion 6):
-- If no other FAIL-worthy issues exist → verdict is **ESCALATE**. List implicit decisions in both `### Implicit Decisions Detected` and `### Escalation` sections.
+- If no other FAIL-worthy issues exist → verdict is **ESCALATE**. List implicit decisions in both `### Implicit Decisions Detected` and `### Escalation` sections. If trivial fixes were also applied, include them in `### Trivial Fixes Applied`.
 - If FAIL-worthy issues coexist → verdict remains **FAIL** (FAIL takes priority). Still list implicit decisions in `### Implicit Decisions Detected` and reference them in `### For Next Worker`.
 
 > **Why ESCALATE, not FAIL**: Task definitions cannot exhaustively specify every implementation detail. Workers may need to make judgment calls. These decisions should be surfaced for Architect/user review, not treated as implementation failures that trigger re-implementation loops.

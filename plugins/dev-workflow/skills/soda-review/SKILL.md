@@ -119,6 +119,7 @@ If $ARGUMENTS is not empty, treat it as the review focus or an alternative base 
      - "問題なし、このまま進める"
    - If clean (no violations, no implicit decisions):
      - "設計適合性に問題なし"
+     - "別の観点でレビュー"
 
 ## Report Format
 
@@ -152,12 +153,16 @@ If $ARGUMENTS is not empty, treat it as the review focus or an alternative base 
 - 暗黙の設計判断: {{N}} 件検出 (うち {{M}} 件 DD 化推奨)
 ```
 
-When in DD-7 degraded mode (no Living Discussion Document), omit the "DD 検証結果" and "DD 違反の詳細" sections. Replace with:
+When in DD-7 degraded mode (no Living Discussion Document), omit the "DD 検証結果" and "DD 違反の詳細" sections and update the summary. Replace with:
 
 ```
 ### DD 検証結果
 Living Discussion Document が見つからないため、DD 検証はスキップしました。
 暗黙の設計判断の探索のみ実行しています。
+
+### サマリー
+- DD 検証: スキップ (Living Discussion Document なし)
+- 暗黙の設計判断: {{N}} 件検出 (うち {{M}} 件 DD 化推奨)
 ```
 
 ## Constraints
