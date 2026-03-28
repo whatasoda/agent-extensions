@@ -4,97 +4,111 @@ This repository is a Claude Code plugin marketplace owned by whatasoda.
 
 ## Repository Purpose
 
-Manage and distribute personal Claude Code plugins and skills via the marketplace mechanism.
+Manage and distribute personal Claude Code plugins and skills via the marketplace mechanism. The primary deliverable is `@whatasoda/agent-tools` — a unified npm package (CLI: `wat`) combining workflow skills and a knowledge graph.
 
 ## Tech Stack
 
-- **Runtime / Build**: Bun + rslib (for packages)
+- **Runtime**: Bun (TypeScript source distribution, no build step)
 - **Language**: TypeScript
 - **Dependency management**: Bun workspaces (`plugins/*`, `packages/*`)
-- **Package build**: rslib (ESM + DTS)
-- **Plugin build**: `bun build` (self-contained bundle)
-- **Build output**: `plugins/*/dist/` (Git LFS tracked, committed)
+- **npm package**: `@whatasoda/agent-tools` (published from `packages/soda/`)
+- **Knowledge graph**: SQLite via `bun:sqlite` (`~/.soda-brain/brain.db`)
+
+## Architecture
+
+### Distribution Model
+
+Skills and agents are distributed via a two-layer system:
+
+1. **npm package** (`packages/soda/`): Contains all source code, skill bodies, agent bodies, CLI, TUI, and core library. Published as `@whatasoda/agent-tools` with CLI entry point `wat`.
+2. **Marketplace stubs** (`plugins/soda/`): Thin SKILL.md files with YAML frontmatter + bash embedding (`!`wat skill print <name>``). Installed via Claude Code marketplace.
+
+Updating skills only requires `npm update` — marketplace stubs rarely change.
+
+### packages/soda/ — npm package
+
+```
+packages/soda/
+  package.json          # @whatasoda/agent-tools, bin: { wat: "src/cli.ts" }
+  src/
+    cli.ts              # CLI entry point (#!/usr/bin/env bun)
+    cli/                # CLI dispatcher and command handlers
+      commands/         # node, tag, link, list, decision, skill, agent, review
+    core/               # Database, types, kinds, search, schema
+    tui/                # Ink/React read-only TUI
+    setup/              # Global install helper
+  skills/               # Skill body .md files (wat skill print reads these)
+    soda-discuss/body.md
+    soda-plan/body.md
+    ...
+  agents/               # Agent body .md files (wat agent print reads these)
+    team-worker/body.md
+    ...
+  scripts/              # Utility scripts (codex-review, resolve-session, detect-base-branch)
+```
+
+### plugins/soda/ — marketplace stubs
+
+```
+plugins/soda/
+  .claude-plugin/plugin.json
+  package.json
+  hooks/hooks.json      # Empty
+  skills/
+    soda-discuss/SKILL.md   # frontmatter + !`wat skill print soda-discuss`
+    ...
+  agents/
+    team-worker.md          # frontmatter + !`wat agent print team-worker`
+    ...
+```
+
+### CLI Commands (wat)
+
+```
+wat node create|get|update|delete|search   # Knowledge graph CRUD
+wat tag add|remove                         # Node tagging
+wat link create|delete|list                # Typed directional links
+wat list kinds|tags                         # Metadata listing
+wat decision create|list                   # Design decision management
+wat skill print <name>                     # Output skill body for marketplace stubs
+wat agent print <name>                     # Output agent body for marketplace stubs
+wat review detect-base-branch              # Git branch detection utility
+wat tui                                    # Read-only knowledge graph browser
+wat setup                                  # Global install helper
+```
 
 ## Conventions
 
-### Plugin Structure
+### Skill Structure
 
-Each plugin lives under `plugins/<plugin-name>/` and must contain:
+Each skill has two parts:
+- **Body** (`packages/soda/skills/<name>/body.md`): The actual skill content, served by CLI
+- **Stub** (`plugins/soda/skills/<name>/SKILL.md`): Frontmatter + bash embedding
 
-- `.claude-plugin/plugin.json` - Plugin manifest with name, description, version
-- `package.json` - Plugin dependencies (can reference `@agent-extensions/*` packages)
-- `tsconfig.json` - Extends root `tsconfig.json`
-- `skills/<skill-name>/SKILL.md` - At least one skill definition
-- `skills/<skill-name>/README.md` - Skill context document (background, purpose, design rationale for future improvement)
-
-Optional:
-
-- `src/` - TypeScript source (built to `dist/` via `bun run build`)
-- `hooks/hooks.json` - Event-driven hook definitions (reference `${CLAUDE_PLUGIN_ROOT}/dist/...`)
-- `agents/` - Agent definition files (`.md` format)
-- `scripts/` - Plugin-level utility scripts
-- `.mcp.json` - MCP server configurations
-- `.lsp.json` - LSP server configurations
-
-### Shared Packages
-
-Shared libraries live under `packages/<package-name>/`:
-
-- `package.json` with name `@agent-extensions/<package-name>`
-- `tsconfig.json` extending root
-- `src/` with TypeScript source
-- `rslib.config.ts` for building with rslib (ESM + DTS)
-- `@public-index.ts` entry point (sync-exports convention)
-- Plugins reference them as `"@agent-extensions/<name>": "workspace:*"`
-- Bundled into plugin `dist/` at build time (not needed at install time)
-
-#### sync-exports convention
-
-Packages use the `@public-*` file naming pattern to declare exports:
-
-- `@public-index.ts` → `"."` (main entry)
-- `@public-utils.ts` → `"./utils"`
-
-The `@agent-extensions/sync-exports` package provides tooling to detect these files and generate the `exports` field in `package.json` and rslib entry configuration.
-
-### Build
-
-`bun run build` runs two phases in order:
-
-1. **Packages** (`bun run build:packages`):
-   - Runs `syncExports()` on all packages to auto-generate `exports` fields in `package.json` from `@public-*.ts` files
-   - Then builds each `packages/*/rslib.config.ts` with rslib (ESM + DTS)
-2. **Plugins** (`bun run build:plugins`): Bundles each `plugins/*/src/` into `dist/` using `bun build`
-
-- Plugin builds inline all dependencies (including `@agent-extensions/*` packages) so `dist/` is self-contained
-- `plugins/*/dist/` is committed (LFS tracked) because marketplace install cannot run builds
-- `packages/*/dist/` is **not** committed (gitignored) — only needed locally for development
+Stubs contain security-relevant settings (allowed-tools) that should not change with npm updates.
 
 ### Marketplace Registration
 
-When adding or removing a plugin, update `.claude-plugin/marketplace.json`:
-
-- Add an entry to the `plugins` array with `name`, `source` (relative path), `description`, and `version`
-- Keep the `metadata.version` in sync when making structural changes
+`.claude-plugin/marketplace.json` registers the `soda` plugin. Keep the `version` field in sync with `plugins/soda/.claude-plugin/plugin.json`.
 
 ### CI / Automation
 
-A GitHub Actions workflow (`.github/workflows/ci.yml`) runs on every push to `main`:
+GitHub Actions (`.github/workflows/ci.yml`) on push to main:
 
-1. Detects if plugin source files changed (`skills/`, `src/`, `hooks/hooks.json`, `package.json`)
-2. Auto-bumps the patch version in both `plugin.json` and `marketplace.json`
-3. Rebuilds `plugins/*/dist/`
-4. Commits and pushes with `[skip ci]` to prevent re-triggering
+1. Runs tests (`packages/soda`)
+2. Detects plugin changes → auto-bumps plugin version
+3. Detects package changes → auto-bumps package version + publishes to npm
+4. Commits version bumps with `[skip ci]`
 
-**Version bumping conventions:**
-
-- **Patch versions**: Handled automatically by CI — do NOT bump manually
-- **Minor/major versions**: Bump manually when needed (use `bun run scripts/bump-version.ts <plugin-name>` or edit directly)
-- `scripts/bump-version.ts` accepts a plugin name and an optional `--dry-run` flag
+**Version bumping:**
+- **Patch versions**: Handled automatically by CI
+- **Minor/major versions**: Bump manually
+- `scripts/bump-version.ts` handles plugin version bumps
 
 ### Naming
 
-- Plugin names: kebab-case (e.g., `my-plugin`)
-- Skill names: kebab-case (e.g., `review-code`)
-- Package names: `@agent-extensions/<kebab-case>` (e.g., `@agent-extensions/utils`)
-- Marketplace name: `whatasoda-tools`
+- Plugin name: `soda`
+- Skill prefix: `soda-` (e.g., `soda-discuss`, `soda-plan`)
+- npm package: `@whatasoda/agent-tools`
+- CLI binary: `wat`
+- Marketplace: `whatasoda-tools`
