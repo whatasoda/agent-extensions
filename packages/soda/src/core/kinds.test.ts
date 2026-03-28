@@ -35,6 +35,81 @@ describe("listRegisteredKinds", () => {
   });
 });
 
+describe("decision kind", () => {
+  it("accepts valid input with constraint/why/scope", () => {
+    const result = validateProperties("decision", {
+      constraint: "Use SQLite for storage",
+      why: "Simplicity and zero-dependency deployment",
+      scope: "packages/soda",
+    });
+    expect(result).toMatchObject({
+      constraint: "Use SQLite for storage",
+      why: "Simplicity and zero-dependency deployment",
+      scope: "packages/soda",
+    });
+  });
+
+  it("rejects input missing required fields", () => {
+    expect(() => validateProperties("decision", { constraint: "only constraint" })).toThrow();
+    expect(() => validateProperties("decision", { why: "only why" })).toThrow();
+    expect(() => validateProperties("decision", { scope: "only scope" })).toThrow();
+    expect(() => validateProperties("decision", {})).toThrow();
+  });
+
+  it("defaults rejected_alternatives to empty array", () => {
+    const result = validateProperties("decision", {
+      constraint: "Use SQLite",
+      why: "Simplicity",
+      scope: "packages/soda",
+    });
+    expect((result as { rejected_alternatives: unknown[] }).rejected_alternatives).toEqual([]);
+  });
+
+  it("accepts optional repo_owner and repo_name", () => {
+    const result = validateProperties("decision", {
+      constraint: "Use SQLite",
+      why: "Simplicity",
+      scope: "packages/soda",
+      repo_owner: "whatasoda",
+      repo_name: "agent-extensions",
+    });
+    expect(result).toMatchObject({
+      repo_owner: "whatasoda",
+      repo_name: "agent-extensions",
+    });
+  });
+
+  it("accepts rejected_alternatives with what and why_rejected", () => {
+    const result = validateProperties("decision", {
+      constraint: "Use SQLite",
+      why: "Simplicity",
+      scope: "packages/soda",
+      rejected_alternatives: [
+        { what: "PostgreSQL", why_rejected: "Too heavy for local use" },
+      ],
+    });
+    expect((result as { rejected_alternatives: { what: string; why_rejected: string }[] }).rejected_alternatives).toEqual([
+      { what: "PostgreSQL", why_rejected: "Too heavy for local use" },
+    ]);
+  });
+});
+
+describe("conversation kind", () => {
+  it("accepts valid input without decisions property", () => {
+    const result = validateProperties("conversation", {
+      context: "Planning session",
+      key_points: ["Point A"],
+      open_questions: ["Question 1"],
+    });
+    expect(result).toMatchObject({
+      context: "Planning session",
+      key_points: ["Point A"],
+      open_questions: ["Question 1"],
+    });
+    expect(result).not.toHaveProperty("decisions");
+  });
+});
+
 describe("registerKind", () => {
   it("adds new kind and validateProperties works for it", () => {
     registerKind("test_kind", z.object({ name: z.string() }));

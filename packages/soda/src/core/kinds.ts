@@ -37,7 +37,6 @@ registerKind(
   "conversation",
   z.object({
     context: z.string(),
-    decisions: z.array(z.string()),
     key_points: z.array(z.string()),
     keywords_en: z.array(z.string()).optional(),
     open_questions: z.array(z.string()),
@@ -57,10 +56,16 @@ registerKind(
 registerKind(
   "decision",
   z.object({
-    chosen: z.string().describe("The selected option"),
-    keywords_en: z.array(z.string()).optional(),
-    options: z.array(z.string()).describe("Considered alternatives"),
-    rationale: z.string().describe("Why this was chosen"),
+    constraint: z.string().describe("Specific design constraint established"),
+    why: z.string().describe("Reasoning behind the constraint"),
+    scope: z.string().describe("Where this constraint applies"),
+    rejected_alternatives: z.array(z.object({
+      what: z.string().describe("What was considered"),
+      why_rejected: z.string().describe("Why it was rejected"),
+    })).optional().default([]),
+    repo_owner: z.string().optional().describe("Repository owner for scoping"),
+    repo_name: z.string().optional().describe("Repository name for scoping"),
     summary_en: z.string().optional(),
+    keywords_en: z.array(z.string()).optional(),
   }),
 );
