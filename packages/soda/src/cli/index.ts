@@ -2,6 +2,7 @@ import os from "os";
 import path from "path";
 import { Database } from "../core/database.js";
 import { ensureDbDir } from "../core/ensure-dirs.js";
+import { handleDecision } from "./commands/decision.js";
 import { handleLink } from "./commands/link.js";
 import { handleList } from "./commands/list.js";
 import { handleNode } from "./commands/node.js";
@@ -26,6 +27,9 @@ export async function runCli(resource: string, args: string[]): Promise<void> {
         break;
       case "list":
         await handleList(db, args);
+        break;
+      case "decision":
+        await handleDecision(db, args);
         break;
       default:
         exitWithError(
