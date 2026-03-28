@@ -6,6 +6,9 @@
   "bin": {
     "wat": "src/cli.ts"
   },
+  "scripts": {
+    "test": "bun test"
+  },
   "files": [
     "src/",
     "skills/",
