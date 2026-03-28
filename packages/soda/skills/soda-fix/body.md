@@ -18,7 +18,7 @@ Use English for internal reasoning (thinking). All user-facing output must be in
 Invoke codex-review in findings mode:
 
 ```
-Task(subagent_type: dev-workflow:codex-review)
+Task(subagent_type: soda:codex-review)
 ```
 
 Prompt:

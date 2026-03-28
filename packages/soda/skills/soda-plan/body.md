@@ -105,12 +105,12 @@ If $ARGUMENTS is empty, ask the user what they want to implement before proceedi
 Delegate codex review to a subagent in findings-only mode. The subagent reports issues but does NOT revise the content — the plan author incorporates findings to preserve original intent.
 
 1. Resolve session JSONL path (for context-aware review):
-   Use Glob to discover the installed version: pattern `~/.claude/plugins/cache/whatasoda-tools/dev-workflow/*`, pick the latest version directory.
+   Use Glob to discover the installed version: pattern `~/.claude/plugins/cache/whatasoda-tools/soda/*`, pick the latest version directory.
    Then run via Bash: `bun <Script base>/<version>/scripts/resolve-session.ts`
    Capture stdout as session path. If empty, proceed without session context.
 
 2. Launch a codex review subagent:
-   - Tool: `Task(subagent_type: dev-workflow:codex-review)`
+   - Tool: `Task(subagent_type: soda:codex-review)`
    - Prompt: Include the review request with composed content.
    - Review request:
      ```
@@ -190,7 +190,7 @@ Subagent-eligible steps are executed via `team-worker` → `team-reviewer` cycle
    git worktree add .worktrees/step-{{N}} -b plan/step-{{N}} HEAD
    ```
 
-2. **Launch Worker** via `Task(subagent_type: dev-workflow:team-worker)` with prompt:
+2. **Launch Worker** via `Task(subagent_type: soda:team-worker)` with prompt:
    ```
    ## Task
    ### Definition
@@ -209,7 +209,7 @@ Subagent-eligible steps are executed via `team-worker` → `team-reviewer` cycle
    {{worktree absolute path}}
    ```
 
-3. **On Worker DONE** → launch Reviewer via `Task(subagent_type: dev-workflow:team-reviewer)`:
+3. **On Worker DONE** → launch Reviewer via `Task(subagent_type: soda:team-reviewer)`:
    ```
    ## Task Definition
    {{same task sections as Worker input (Definition, Design Constraints, Context, Validation)}}

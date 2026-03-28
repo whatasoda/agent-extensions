@@ -224,7 +224,7 @@ Use AskUserQuestion:
 Before writing files, compose the full content of TASKS.md and ARCHITECTURE.md, then delegate review:
 
 1. Launch a codex review subagent:
-   - Tool: `Task(subagent_type: dev-workflow:codex-review)`
+   - Tool: `Task(subagent_type: soda:codex-review)`
    - Prompt:
      ```
      ## Codex Review Request

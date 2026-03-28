@@ -107,7 +107,7 @@ git worktree add .worktrees/{{TASK-ID}} -b task/{{TASK-ID}} {{INTEGRATION_BRANCH
 
 ### Worker Sub-agent
 
-Launch via `Task(subagent_type: dev-workflow:team-worker)`. The agent definition handles constraints, tools, and output format.
+Launch via `Task(subagent_type: soda:team-worker)`. The agent definition handles constraints, tools, and output format.
 
 **Dynamic prompt** — pass only these sections:
 
@@ -153,7 +153,7 @@ Update TASKS.md status to `[~]` when Worker starts, and track completion.
 
 ## Step 4: Review
 
-For each completed Worker (status DONE), launch a Reviewer sub-agent via `Task(subagent_type: dev-workflow:team-reviewer)`. The agent definition handles constraints, tools, Trivial Fix Policy, Review Criteria, and output format.
+For each completed Worker (status DONE), launch a Reviewer sub-agent via `Task(subagent_type: soda:team-reviewer)`. The agent definition handles constraints, tools, Trivial Fix Policy, Review Criteria, and output format.
 
 **Dynamic prompt** — pass only these sections:
 
@@ -323,7 +323,7 @@ After all tasks in the batch are resolved, present a cycle summary:
 Every sub-agent prompt MUST begin with the appropriate constraint block (Worker constraints or Reviewer constraints as defined in Steps 3 and 4).
 
 Sub-agent types:
-- **Worker**: `Task(subagent_type: dev-workflow:team-worker)` — implementation agent, runs on isolated worktree. See `agents/team-worker.md` for constraints and output format.
-- **Reviewer**: `Task(subagent_type: dev-workflow:team-reviewer)` — review agent with validation execution and trivial fix authority. See `agents/team-reviewer.md` for constraints, Trivial Fix Policy, Review Criteria, and output format.
+- **Worker**: `Task(subagent_type: soda:team-worker)` — implementation agent, runs on isolated worktree. See `agents/team-worker.md` for constraints and output format.
+- **Reviewer**: `Task(subagent_type: soda:team-reviewer)` — review agent with validation execution and trivial fix authority. See `agents/team-reviewer.md` for constraints, Trivial Fix Policy, Review Criteria, and output format.
 - **Investigator**: `Task(subagent_type: Explore)` — codebase investigation
 - **Architect**: Role switch within main context (not a sub-agent). Orchestrator loads ARCHITECTURE.md and enters design-focused dialogue with user via AskUserQuestion. See "Architect Escalation" in Step 5.
