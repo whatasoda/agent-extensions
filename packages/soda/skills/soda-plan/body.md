@@ -105,8 +105,7 @@ If $ARGUMENTS is empty, ask the user what they want to implement before proceedi
 Delegate codex review to a subagent in findings-only mode. The subagent reports issues but does NOT revise the content — the plan author incorporates findings to preserve original intent.
 
 1. Resolve session JSONL path (for context-aware review):
-   Use Glob to discover the installed version: pattern `~/.claude/plugins/cache/whatasoda-tools/soda/*`, pick the latest version directory.
-   Then run via Bash: `bun <Script base>/<version>/scripts/resolve-session.ts`
+   Run via Bash: `wat session resolve`
    Capture stdout as session path. If empty, proceed without session context.
 
 2. Launch a codex review subagent:
