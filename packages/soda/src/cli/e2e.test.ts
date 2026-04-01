@@ -208,6 +208,56 @@ describe("CLI E2E", () => {
     });
   });
 
+  describe("decision commands", () => {
+    it("creates a decision with required flags", async () => {
+      const result = await run([
+        "decision", "create",
+        "--constraint", "test constraint",
+        "--why", "test reason",
+        "--scope", "test scope",
+      ]);
+      expect(result.exitCode).toBe(0);
+      const node = parseOutput(result.stdout) as { kind: string; body: string; properties: Record<string, unknown> };
+      expect(node.kind).toBe("decision");
+      expect(node.body).toBe("test constraint");
+      expect(node.properties.constraint).toBe("test constraint");
+      expect(node.properties.why).toBe("test reason");
+      expect(node.properties.scope).toBe("test scope");
+    });
+
+    it("lists decisions", async () => {
+      await run(["decision", "create", "--constraint", "c1", "--why", "w1", "--scope", "s1"]);
+      await run(["decision", "create", "--constraint", "c2", "--why", "w2", "--scope", "s2"]);
+
+      const result = await run(["decision", "list"]);
+      expect(result.exitCode).toBe(0);
+      const decisions = parseOutput(result.stdout) as unknown[];
+      expect(decisions.length).toBe(2);
+    });
+
+    it("filters by tag", async () => {
+      await run(["decision", "create", "--constraint", "tagged", "--why", "w", "--scope", "s", "--tag", "topic:alpha"]);
+      await run(["decision", "create", "--constraint", "untagged", "--why", "w", "--scope", "s"]);
+
+      const result = await run(["decision", "list", "--tag", "topic:alpha"]);
+      expect(result.exitCode).toBe(0);
+      const decisions = parseOutput(result.stdout) as { body: string }[];
+      expect(decisions.length).toBe(1);
+      expect(decisions[0].body).toBe("tagged");
+    });
+
+    it("filters by repo", async () => {
+      await run(["decision", "create", "--constraint", "repo-scoped", "--why", "w", "--scope", "s", "--repo-owner", "octo", "--repo-name", "repo"]);
+      await run(["decision", "create", "--constraint", "no-repo", "--why", "w", "--scope", "s"]);
+
+      const result = await run(["decision", "list", "--repo", "octo/repo"]);
+      expect(result.exitCode).toBe(0);
+      const decisions = parseOutput(result.stdout) as { body: string }[];
+      expect(decisions.length).toBe(1);
+      expect(decisions[0].body).toBe("repo-scoped");
+    });
+  });
+
   describe("error handling", () => {
     it("exits with error for unknown command", async () => {
       const result = await run(["unknown"]);
