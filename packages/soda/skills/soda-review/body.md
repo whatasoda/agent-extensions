@@ -25,7 +25,7 @@ If $ARGUMENTS is not empty, treat it as the review focus or an alternative base 
 
 4. **Launch conformance check sub-agents**: Launch two sub-agents in parallel using Task tool. Both sub-agent prompts MUST begin with the standard constraint block.
 
-   **Sub-agent A — DD Verification Agent** (skip if DD-7 degraded mode):
+   **Sub-agent A — DD Verification Agent** (skip if no-decisions mode):
    ```
    Task(subagent_type: Explore)
    ```
@@ -146,7 +146,7 @@ If $ARGUMENTS is not empty, treat it as the review focus or an alternative base 
 - 暗黙の設計判断: {{N}} 件検出 (うち {{M}} 件 DD 化推奨)
 ```
 
-When in DD-7 degraded mode (no Living Discussion Document), omit the "DD 検証結果" and "DD 違反の詳細" sections and update the summary. Replace with:
+When in no-decisions mode (no Living Discussion Document), omit the "DD 検証結果" and "DD 違反の詳細" sections and update the summary. Replace with:
 
 ```
 ### DD 検証結果
