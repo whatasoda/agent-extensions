@@ -80,6 +80,7 @@ async function detectRepo(): Promise<{ owner: string; name: string } | null> {
     });
     const url = (await new Response(proc.stdout).text()).trim();
     await proc.exited;
+    if (proc.exitCode !== 0) return null;
 
     // Parse git@github.com:owner/repo.git or https://github.com/owner/repo.git
     const sshMatch = url.match(/[:/]([^/]+)\/([^/]+?)(?:\.git)?$/);

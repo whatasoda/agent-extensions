@@ -93,6 +93,7 @@ async function decisionList(db: Database, args: string[]): Promise<void> {
 
   const tags = values.tag as string[] | undefined;
   const limit = values.limit ? parseInt(values.limit as string, 10) : 50;
+  if (isNaN(limit)) exitWithError("Error: --limit must be a number");
 
   const results = db.search({
     kind: "decision",
@@ -102,7 +103,9 @@ async function decisionList(db: Database, args: string[]): Promise<void> {
   });
 
   if (values.repo) {
-    const [repoOwner, repoName] = (values.repo as string).split("/");
+    const repoStr = values.repo as string;
+    if (!repoStr.includes("/")) exitWithError("Error: --repo must be in owner/name format");
+    const [repoOwner, repoName] = repoStr.split("/");
     const filtered = results.nodes.filter((node) => {
       const props = node.properties as Record<string, unknown> | undefined;
       return props?.repo_owner === repoOwner && props?.repo_name === repoName;
