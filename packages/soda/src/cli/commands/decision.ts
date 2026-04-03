@@ -10,8 +10,12 @@ export async function handleDecision(db: Database, args: string[]): Promise<void
       return decisionCreate(db, rest);
     case "list":
       return decisionList(db, rest);
+    case "import": {
+      const { handleImport } = await import("./import.js");
+      return handleImport(db, rest);
+    }
     default:
-      exitWithError("Usage: soda decision <create|list>");
+      exitWithError("Usage: wat decision <create|list|import>");
   }
 }
 
