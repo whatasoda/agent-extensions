@@ -1,0 +1,31 @@
+{
+  "name": "@whatasoda/agent-tools",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "bin": {
+    "wat": "src/cli.ts"
+  },
+  "scripts": {
+    "test": "bun test"
+  },
+  "files": [
+    "src/",
+    "skills/",
+    "agents/",
+    "scripts/"
+  ],
+  "dependencies": {
+    "ink": "latest",
+    "@inkjs/ui": "latest",
+    "react": "latest",
+    "zod": "latest",
+    "ulid": "latest"
+  },
+  "devDependencies": {
+    "bun-types": "latest",
+    "@types/react": "latest",
+    "typescript": "latest",
+    "ink-testing-library": "latest"
+  }
+}
