@@ -96,7 +96,7 @@ async function decisionList(db: Database, args: string[]): Promise<void> {
 
   const results = db.search({
     kind: "decision",
-    limit,
+    limit: values.repo ? Number.MAX_SAFE_INTEGER : limit,
     offset: 0,
     tags: tags?.length ? tags : undefined,
   });

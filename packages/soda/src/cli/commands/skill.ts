@@ -18,7 +18,11 @@ async function skillPrint(name: string | undefined): Promise<void> {
   if (!name) {
     exitWithError("Usage: soda skill print <name>");
   }
-  const filePath = path.join(packageRoot, "skills", name, "body.md");
+  const baseDir = path.join(packageRoot, "skills");
+  const filePath = path.resolve(baseDir, name, "body.md");
+  if (!filePath.startsWith(baseDir + path.sep)) {
+    exitWithError(`Invalid skill name: ${name}`);
+  }
   const file = Bun.file(filePath);
   const exists = await file.exists();
   if (!exists) {

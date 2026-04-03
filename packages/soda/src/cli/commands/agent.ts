@@ -18,7 +18,11 @@ async function agentPrint(name: string | undefined): Promise<void> {
   if (!name) {
     exitWithError("Usage: soda agent print <name>");
   }
-  const filePath = path.join(packageRoot, "agents", name, "body.md");
+  const baseDir = path.join(packageRoot, "agents");
+  const filePath = path.resolve(baseDir, name, "body.md");
+  if (!filePath.startsWith(baseDir + path.sep)) {
+    exitWithError(`Invalid agent name: ${name}`);
+  }
   const file = Bun.file(filePath);
   const exists = await file.exists();
   if (!exists) {
