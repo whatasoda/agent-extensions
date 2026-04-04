@@ -4,8 +4,10 @@
   "private": true,
   "workspaces": ["plugins/*", "packages/*"],
   "scripts": {
-    "test": "cd packages/soda && bun test",
-    "typecheck": "cd packages/soda && tsc --noEmit"
+    "build": "cd packages/soda && bun run build",
+    "test": "cd packages/soda && bun run test",
+    "typecheck": "cd packages/soda && tsc --noEmit",
+    "publish": "cd packages/soda && bun run build && npm publish --access public"
   },
   "devDependencies": {
     "@types/bun": "latest",
