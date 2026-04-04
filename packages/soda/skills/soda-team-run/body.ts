@@ -1,13 +1,14 @@
-
+export default function (_ctx: { commandDocs(commands: string[]): string }): string {
+  return `
 Execute agent team tasks by orchestrating specialized agents (Worker, Reviewer, Architect, Investigator). Each invocation runs one or more cycles, auto-continuing when all tasks pass and actionable work remains.
 
 Use English for all generated file content and sub-agent communication. User interaction (AskUserQuestion options, status updates, summaries) must be in Japanese.
 
-If `$ARGUMENTS` is empty, default to selecting the next actionable tasks automatically.
+If \`$ARGUMENTS\` is empty, default to selecting the next actionable tasks automatically.
 
 ## Cycle Definition
 
-One cycle of `/soda-team-run` consists of:
+One cycle of \`/soda-team-run\` consists of:
 1. Select actionable tasks
 2. Execute tasks in parallel (Worker per task)
 3. Review completed tasks (Reviewer per task)
@@ -20,50 +21,50 @@ When all tasks in a cycle pass and actionable tasks remain, the next cycle begin
 ## Step 1: Load Project State
 
 **Repo root detection**:
-```bash
+\`\`\`bash
 git rev-parse --show-toplevel
-```
+\`\`\`
 
 **Project resolution** — resolve which namespaced project to use:
 
-1. List subdirectories under `.agent-team/`.
-2. If `.agent-team/` does not exist or has no subdirectories:
-   - If `.agent-team/CONFIG.md` exists directly (legacy flat layout): warn the user that the old format is detected, suggest re-initializing with `/soda-team-init`. Stop.
-   - Otherwise: inform the user no projects found, suggest `/soda-team-init`. Stop.
-3. If exactly one subdirectory: use it as `{{PROJECT_DIR}}`.
+1. List subdirectories under \`.agent-team/\`.
+2. If \`.agent-team/\` does not exist or has no subdirectories:
+   - If \`.agent-team/CONFIG.md\` exists directly (legacy flat layout): warn the user that the old format is detected, suggest re-initializing with \`/soda-team-init\`. Stop.
+   - Otherwise: inform the user no projects found, suggest \`/soda-team-init\`. Stop.
+3. If exactly one subdirectory: use it as \`{{PROJECT_DIR}}\`.
 4. If multiple subdirectories:
-   a. Extract project-name from the current branch (e.g., `team/auth-refactor` → `auth-refactor`)
-   b. Find a subdirectory whose name after the `YYYYMMDD-` prefix starts with `<project-name>` (e.g., `20260320-auth-refactor` and `20260320-auth-refactor-2` both match `auth-refactor`) → use it as `{{PROJECT_DIR}}`
-   c. Fallback: select the most recent by lexicographic sort (last entry, since `YYYYMMDD` prefix sorts chronologically)
+   a. Extract project-name from the current branch (e.g., \`team/auth-refactor\` → \`auth-refactor\`)
+   b. Find a subdirectory whose name after the \`YYYYMMDD-\` prefix starts with \`<project-name>\` (e.g., \`20260320-auth-refactor\` and \`20260320-auth-refactor-2\` both match \`auth-refactor\`) → use it as \`{{PROJECT_DIR}}\`
+   c. Fallback: select the most recent by lexicographic sort (last entry, since \`YYYYMMDD\` prefix sorts chronologically)
 5. Present the selected project for user confirmation before proceeding.
 
-`{{PROJECT_DIR}}` is the resolved path (e.g., `.agent-team/20260320-auth-refactor`) used in all subsequent file references.
+\`{{PROJECT_DIR}}\` is the resolved path (e.g., \`.agent-team/20260320-auth-refactor\`) used in all subsequent file references.
 
-Read `{{PROJECT_DIR}}/TASKS.md`, `{{PROJECT_DIR}}/ARCHITECTURE.md`, and `{{PROJECT_DIR}}/CONFIG.md`.
+Read \`{{PROJECT_DIR}}/TASKS.md\`, \`{{PROJECT_DIR}}/ARCHITECTURE.md\`, and \`{{PROJECT_DIR}}/CONFIG.md\`.
 
-If TASKS.md is missing in the selected project, inform the user and suggest `/soda-team-init`. Stop.
+If TASKS.md is missing in the selected project, inform the user and suggest \`/soda-team-init\`. Stop.
 
 Extract the **Integration Branch** from CONFIG.md. All merge operations target this branch. Verify it exists:
-```bash
+\`\`\`bash
 git rev-parse --verify {{INTEGRATION_BRANCH}}
-```
+\`\`\`
 If missing, inform the user and stop.
 
 Parse TASKS.md to determine:
 - Total task count and status distribution
-- Which tasks are actionable (pending `[ ]` with all deps satisfied)
-- Which tasks are in-progress `[~]` (may be stale from a previous interrupted cycle)
-- Which tasks are blocked `[!]`
+- Which tasks are actionable (pending \`[ ]\` with all deps satisfied)
+- Which tasks are in-progress \`[~]\` (may be stale from a previous interrupted cycle)
+- Which tasks are blocked \`[!]\`
 
 If in-progress tasks exist, use AskUserQuestion:
-- "中断タスクを再開する" — treat `[~]` tasks as this cycle's targets
-- "中断タスクをリセットして次を選ぶ" — reset `[~]` to `[ ]`, then select normally
+- "中断タスクを再開する" — treat \`[~]\` tasks as this cycle's targets
+- "中断タスクをリセットして次を選ぶ" — reset \`[~]\` to \`[ ]\`, then select normally
 
 ## Step 2: Task Selection
 
 ### Automatic Selection (default)
 
-Identify all actionable tasks — tasks with status `[ ]` whose dependencies are all `[x]`.
+Identify all actionable tasks — tasks with status \`[ ]\` whose dependencies are all \`[x]\`.
 
 Group actionable tasks by parallelizability:
 - Tasks with no mutual file conflicts → can run in parallel
@@ -88,7 +89,7 @@ Display the proposed batch:
 
 ### Manual Selection
 
-If `$ARGUMENTS` specifies a task ID (e.g., "TASK-005"), group name (e.g., "GROUP-A"):
+If \`$ARGUMENTS\` specifies a task ID (e.g., "TASK-005"), group name (e.g., "GROUP-A"):
 - Task ID: execute that specific task (check deps are satisfied)
 - Group name: select all actionable tasks in that group
 - Present the selection for confirmation
@@ -101,17 +102,17 @@ For each task in the batch, launch a Worker sub-agent in parallel.
 ### Worktree Setup
 
 For each Worker, create an isolated git worktree branching from the integration branch:
-```bash
+\`\`\`bash
 git worktree add .worktrees/{{TASK-ID}} -b task/{{TASK-ID}} {{INTEGRATION_BRANCH}}
-```
+\`\`\`
 
 ### Worker Sub-agent
 
-Launch via `Task(subagent_type: soda:team-worker)`. The agent definition handles constraints, tools, and output format.
+Launch via \`Task(subagent_type: soda:team-worker)\`. The agent definition handles constraints, tools, and output format.
 
 **Dynamic prompt** — pass only these sections:
 
-```
+\`\`\`
 ## Task
 [contents of TASK-NNN.md]
 
@@ -120,11 +121,11 @@ Launch via `Task(subagent_type: soda:team-worker)`. The agent definition handles
 
 ## Working Directory
 {{worktree path}}
-```
+\`\`\`
 
 ### Parallel Execution
 
-Launch all Workers in the batch simultaneously using parallel `Task` calls. Each Worker operates on its own worktree — no file conflicts possible.
+Launch all Workers in the batch simultaneously using parallel \`Task\` calls. Each Worker operates on its own worktree — no file conflicts possible.
 
 While Workers execute, report to the user:
 
@@ -142,22 +143,22 @@ As each Worker completes:
   - If this is the second block for the same task: escalate to user (see Step 5)
 
 **Worktree reset for retry**: When re-launching a Worker on the same task, reset the worktree to a clean state instead of creating a new one:
-```bash
+\`\`\`bash
 cd .worktrees/{{TASK-ID}}
 git clean -fd
 git reset --hard {{INTEGRATION_BRANCH}}
-```
+\`\`\`
 This maintains the disposable Worker principle (no stale state) while avoiding unnecessary disk usage from worktree recreation.
 
-Update TASKS.md status to `[~]` when Worker starts, and track completion.
+Update TASKS.md status to \`[~]\` when Worker starts, and track completion.
 
 ## Step 4: Review
 
-For each completed Worker (status DONE), launch a Reviewer sub-agent via `Task(subagent_type: soda:team-reviewer)`. The agent definition handles constraints, tools, Trivial Fix Policy, Review Criteria, and output format.
+For each completed Worker (status DONE), launch a Reviewer sub-agent via \`Task(subagent_type: soda:team-reviewer)\`. The agent definition handles constraints, tools, Trivial Fix Policy, Review Criteria, and output format.
 
 **Dynamic prompt** — pass only these sections:
 
-```
+\`\`\`
 ## Task Definition
 [contents of TASK-NNN.md]
 
@@ -169,16 +170,16 @@ For each completed Worker (status DONE), launch a Reviewer sub-agent via `Task(s
 
 ## Changes to Review
 [git diff of the Worker's worktree branch vs base]
-```
+\`\`\`
 
 ### Review Result Handling
 
 - **PASS**: Write REVIEW-NNN-A.md → proceed to merge (Step 5)
 - **PASS_WITH_FIX**: Write REVIEW-NNN-A.md (including Trivial Fixes Applied) → proceed to merge (Step 5). The Reviewer has already committed the fix.
-- **FAIL**: Write REVIEW-NNN-A.md → append findings to TASK-NNN.md History → reset worktree (`git clean -fd && git reset --hard {{INTEGRATION_BRANCH}}`) → create new Worker on the same worktree (return to Step 3 for this task)
+- **FAIL**: Write REVIEW-NNN-A.md → append findings to TASK-NNN.md History → reset worktree (\`git clean -fd && git reset --hard {{INTEGRATION_BRANCH}}\`) → create new Worker on the same worktree (return to Step 3 for this task)
 - **ESCALATE**: Write REVIEW-NNN-A.md → invoke Architect (Step 5). Worktree handling depends on Architect outcome — see Exiting Architect role.
 
-Limit re-implementation attempts to 2 before user escalation. If a task fails review twice, mark as `[!]` and escalate to user. When the user explicitly chooses "追加調査して再試行" from User Escalation, the retry counter resets (the user has made an informed decision to continue).
+Limit re-implementation attempts to 2 before user escalation. If a task fails review twice, mark as \`[!]\` and escalate to user. When the user explicitly chooses "追加調査して再試行" from User Escalation, the retry counter resets (the user has made an informed decision to continue).
 
 ## Step 5: Resolution
 
@@ -186,27 +187,27 @@ Limit re-implementation attempts to 2 before user escalation. If a task fails re
 
 For each passed task, merge the Worker branch into the integration branch:
 
-```bash
+\`\`\`bash
 git checkout {{INTEGRATION_BRANCH}}
 git merge --squash task/{{TASK-ID}}
 git commit -m "{{task title}} (TASK-NNN)"
-```
+\`\`\`
 
 **Merge conflict handling**: If the merge fails due to conflicts:
-- Abort the merge: `git reset --merge`
+- Abort the merge: \`git reset --merge\`
 - Report the conflict to the user with the affected files
 - Use AskUserQuestion:
   - "コンフリクトを手動で解決する" — user resolves, then resume
-  - "このタスクを後回しにする" — mark `[!]`, clean up worktree (`git worktree remove .worktrees/{{TASK-ID}}` and `git branch -D task/{{TASK-ID}}`), proceed with other tasks
+  - "このタスクを後回しにする" — mark \`[!]\`, clean up worktree (\`git worktree remove .worktrees/{{TASK-ID}}\` and \`git branch -D task/{{TASK-ID}}\`), proceed with other tasks
 - Do NOT attempt automatic conflict resolution.
 
 After successful merge, clean up:
-```bash
+\`\`\`bash
 git worktree remove .worktrees/{{TASK-ID}}
 git branch -D task/{{TASK-ID}}
-```
+\`\`\`
 
-Update TASKS.md: `[~]` → `[x]` with merge commit SHA.
+Update TASKS.md: \`[~]\` → \`[x]\` with merge commit SHA.
 
 ### Architect Escalation (ESCALATE)
 
@@ -222,20 +223,20 @@ When a Reviewer flags a design-level issue, the Orchestrator switches to **Archi
 - The user decides:
   - Resolve the design issue (user ↔ Architect dialogue)
   - Override and accept the implementation as-is
-  - Defer the task (mark as `[!]`)
+  - Defer the task (mark as \`[!]\`)
 
 **Exiting Architect role**:
 - If a design decision was made:
   - Write new/revised ADR to ARCHITECTURE.md
   - Update affected TASK-NNN.md files with revised Design Constraints (summarized, not just references)
-  - Reset worktree (`git clean -fd && git reset --hard {{INTEGRATION_BRANCH}}`)
+  - Reset worktree (\`git clean -fd && git reset --hard {{INTEGRATION_BRANCH}}\`)
   - The task re-enters Step 3 with updated constraints
 - If the user chose to override:
   - Do NOT reset the worktree — the Worker's implementation is accepted as-is
   - Proceed directly to Merge (PASS) in Step 5
 - If the user chose to defer:
-  - Mark task as `[!]` in TASKS.md
-  - Clean up worktree (`git worktree remove .worktrees/{{TASK-ID}}` and `git branch -D task/{{TASK-ID}}`)
+  - Mark task as \`[!]\` in TASKS.md
+  - Clean up worktree (\`git worktree remove .worktrees/{{TASK-ID}}\` and \`git branch -D task/{{TASK-ID}}\`)
 - Resume Orchestrator role and continue the cycle
 
 ### User Escalation (BLOCKED)
@@ -252,8 +253,8 @@ Present the situation to the user:
 Use AskUserQuestion:
 - "追加調査して再試行" — launch Investigator, update TASK-NNN.md context, retry (worktree is reset, retry counter resets)
 - "タスクを分割する" — see Task Splitting below
-- "タスクをスキップ" — mark `[!]` with reason, clean up worktree (`git worktree remove .worktrees/{{TASK-ID}}` and `git branch -D task/{{TASK-ID}}`)
-- "手動で対応する" — mark `[!]`, clean up worktree, user handles outside the team
+- "タスクをスキップ" — mark \`[!]\` with reason, clean up worktree (\`git worktree remove .worktrees/{{TASK-ID}}\` and \`git branch -D task/{{TASK-ID}}\`)
+- "手動で対応する" — mark \`[!]\`, clean up worktree, user handles outside the team
 
 ### Task Splitting
 
@@ -268,13 +269,13 @@ When the user chooses to split a failed task:
    > | 2 | {{title}} | {{acceptance}} | #1 |
 4. **Confirm**: Use AskUserQuestion for user approval
 5. **Generate**:
-   - Mark original task as `[!]` in TASKS.md with note: `split → TASK-XXX, TASK-YYY`
+   - Mark original task as \`[!]\` in TASKS.md with note: \`split → TASK-XXX, TASK-YYY\`
    - Generate new TASK-XXX.md, TASK-YYY.md files:
      - Inherit Context and Design Constraints from the original task
-     - Add failure insights to History: `- Split from TASK-NNN: "{{failure summary}}"`
+     - Add failure insights to History: \`- Split from TASK-NNN: "{{failure summary}}" \`
    - Add new tasks to TASKS.md
-   - New task numbers: `max(existing task numbers) + 1`, continuing zero-padded sequence
-6. **Clean up**: Remove the original task's worktree (`git worktree remove`, `git branch -D`)
+   - New task numbers: \`max(existing task numbers) + 1\`, continuing zero-padded sequence
+6. **Clean up**: Remove the original task's worktree (\`git worktree remove\`, \`git branch -D\`)
 7. New tasks become actionable in the next cycle (or current cycle if user selects "次のサイクルを実行")
 
 ## Step 6: Cycle Report
@@ -315,15 +316,17 @@ After all tasks in the batch are resolved, present a cycle summary:
 - Reviewers MUST NOT make non-trivial modifications. Trivial fixes (1-2 lines, unambiguous) are permitted and must be recorded.
 - Re-implementation is limited to 2 attempts per task before user escalation.
 - TASKS.md is the single source of truth for task status. Update it after every state change.
-- All coordination files must conform to `../soda-team-init/references/coordination-files.md`.
-- Merge target is the integration branch recorded in `{{PROJECT_DIR}}/CONFIG.md`. Do NOT assume `main`.
+- All coordination files must conform to \`../soda-team-init/references/coordination-files.md\`.
+- Merge target is the integration branch recorded in \`{{PROJECT_DIR}}/CONFIG.md\`. Do NOT assume \`main\`.
 
 ## Sub-agent Usage
 
 Every sub-agent prompt MUST begin with the appropriate constraint block (Worker constraints or Reviewer constraints as defined in Steps 3 and 4).
 
 Sub-agent types:
-- **Worker**: `Task(subagent_type: soda:team-worker)` — implementation agent, runs on isolated worktree. See `agents/team-worker.md` for constraints and output format.
-- **Reviewer**: `Task(subagent_type: soda:team-reviewer)` — review agent with validation execution and trivial fix authority. See `agents/team-reviewer.md` for constraints, Trivial Fix Policy, Review Criteria, and output format.
-- **Investigator**: `Task(subagent_type: Explore)` — codebase investigation
+- **Worker**: \`Task(subagent_type: soda:team-worker)\` — implementation agent, runs on isolated worktree. See \`agents/team-worker.md\` for constraints and output format.
+- **Reviewer**: \`Task(subagent_type: soda:team-reviewer)\` — review agent with validation execution and trivial fix authority. See \`agents/team-reviewer.md\` for constraints, Trivial Fix Policy, Review Criteria, and output format.
+- **Investigator**: \`Task(subagent_type: Explore)\` — codebase investigation
 - **Architect**: Role switch within main context (not a sub-agent). Orchestrator loads ARCHITECTURE.md and enters design-focused dialogue with user via AskUserQuestion. See "Architect Escalation" in Step 5.
+`;
+}

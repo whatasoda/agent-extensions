@@ -1,34 +1,37 @@
-
+export default function (ctx: { commandDocs(commands: string[]): string }): string {
+  return `
 Review branch changes for design conformance — checking implementation against Design Decisions (DD-N) from Living Discussion Documents and detecting implicit design decisions introduced during implementation.
 
 Use English for internal reasoning (thinking). All user-facing output must be in Japanese.
 
 ## Current Branch Context
 
-!`sd review detect-base-branch`
+!\`sd review detect-base-branch\`
 
-The above JSON provides `baseBranch`, `mergeBase`, `changedFiles`, `potentialConflicts`, and ready-to-use `commands.diff` / `commands.log`.
+The above JSON provides \`baseBranch\`, \`mergeBase\`, \`changedFiles\`, \`potentialConflicts\`, and ready-to-use \`commands.diff\` / \`commands.log\`.
 
 If $ARGUMENTS is not empty, treat it as the review focus or an alternative base branch specification. When an alternative base is specified, re-compute the diff using that base instead of the detected one.
 
+${ctx.commandDocs(["review", "decision"])}
+
 ## Procedure
 
-1. **Identify the diff**: Use the pre-fetched branch context JSON above. Run `commands.diff` to get the full diff. If $ARGUMENTS specifies a different base, re-compute the merge-base and diff accordingly. If the JSON contains an `error` field, present the error to the user and use AskUserQuestion: "別のベースブランチを指定" / "レビューを中止". If the diff is empty, inform the user and use AskUserQuestion: "別のベースブランチを指定" / "レビューを終了".
+1. **Identify the diff**: Use the pre-fetched branch context JSON above. Run \`commands.diff\` to get the full diff. If $ARGUMENTS specifies a different base, re-compute the merge-base and diff accordingly. If the JSON contains an \`error\` field, present the error to the user and use AskUserQuestion: "別のベースブランチを指定" / "レビューを中止". If the diff is empty, inform the user and use AskUserQuestion: "別のベースブランチを指定" / "レビューを終了".
 
-2. **Load design decisions**: Query `sd decision list --repo <owner/repo>` (detect owner/repo from git remote).
+2. **Load design decisions**: Query \`sd decision list --repo <owner/repo>\` (detect owner/repo from git remote).
    - **If decisions found**: Present the found decisions and use AskUserQuestion to ask which apply to this review. Extract:
      - Decision constraints as **verification targets**
-     - `rejected_alternatives` as **exclusion reference** (for context, not verification)
+     - \`rejected_alternatives\` as **exclusion reference** (for context, not verification)
    - **If no decisions found** (degraded mode): Note that no design decisions exist. Skip decision verification in step 4. The implicit decision detection agent will run in discovery mode — identifying all non-trivial design judgments as formalization candidates rather than checking against a baseline.
 
-3. **Prepare diff content**: Run `commands.diff` via Bash and capture the full diff output.
+3. **Prepare diff content**: Run \`commands.diff\` via Bash and capture the full diff output.
 
 4. **Launch conformance check sub-agents**: Launch two sub-agents in parallel using Task tool. Both sub-agent prompts MUST begin with the standard constraint block.
 
    **Sub-agent A — DD Verification Agent** (skip if no-decisions mode):
-   ```
+   \`\`\`
    Task(subagent_type: Explore)
-   ```
+   \`\`\`
    Prompt structure:
    > You are a research-only agent. Do NOT use AskUserQuestion, EnterPlanMode, or any interactive/planning tools. Return your findings in the output format specified below.
    >
@@ -57,9 +60,9 @@ If $ARGUMENTS is not empty, treat it as the review focus or an alternative base 
    > - {{any additional context or caveats}}
 
    **Sub-agent B — Implicit Decision Detection Agent**:
-   ```
+   \`\`\`
    Task(subagent_type: Explore)
-   ```
+   \`\`\`
    Prompt structure:
    > You are a research-only agent. Do NOT use AskUserQuestion, EnterPlanMode, or any interactive/planning tools. Return your findings in the output format specified below.
    >
@@ -104,7 +107,7 @@ If $ARGUMENTS is not empty, treat it as the review focus or an alternative base 
 
 7. **Next steps**: Use AskUserQuestion with context-dependent options:
    - If violations found:
-     - "違反箇所の修正をプランする" (suggest `/soda-plan`)
+     - "違反箇所の修正をプランする" (suggest \`/soda-plan\`)
      - "DD を実装に合わせて更新する"
      - "メモして後で対応"
    - If implicit decisions found but no violations:
@@ -116,13 +119,13 @@ If $ARGUMENTS is not empty, treat it as the review focus or an alternative base 
 
 ## Report Format
 
-```
+\`\`\`
 ## 設計適合性レポート
 
 ### 対象
 - ブランチ: {{branch name}}
 - ベース: {{base branch}} ({{merge-base commit}})
-- 参照: {{selected design decisions, or "なし (探索モード)"}}
+- 参照: {{selected design decisions, or \"なし (探索モード)\"}}
 
 ### DD 検証結果
 | DD | 制約 | 判定 | 根拠 |
@@ -144,11 +147,11 @@ If $ARGUMENTS is not empty, treat it as the review focus or an alternative base 
 ### サマリー
 - DD 検証: {{N}} 件中 {{satisfied}} 件適合、{{violated}} 件違反、{{unclear}} 件不明
 - 暗黙の設計判断: {{N}} 件検出 (うち {{M}} 件 DD 化推奨)
-```
+\`\`\`
 
 When in no-decisions mode (no Living Discussion Document), omit the "DD 検証結果" and "DD 違反の詳細" sections and update the summary. Replace with:
 
-```
+\`\`\`
 ### DD 検証結果
 Living Discussion Document が見つからないため、DD 検証はスキップしました。
 暗黙の設計判断の探索のみ実行しています。
@@ -156,10 +159,12 @@ Living Discussion Document が見つからないため、DD 検証はスキッ�
 ### サマリー
 - DD 検証: スキップ (Living Discussion Document なし)
 - 暗黙の設計判断: {{N}} 件検出 (うち {{M}} 件 DD 化推奨)
-```
+\`\`\`
 
 ## Constraints
 
 - **Report only** — do NOT modify any code or files. If a fix is needed, suggest a direction but do not apply it.
-- **No code quality review** — this skill focuses exclusively on design conformance. Code quality concerns (bugs, style, performance) are handled by `/soda-fix` and manual review.
+- **No code quality review** — this skill focuses exclusively on design conformance. Code quality concerns (bugs, style, performance) are handled by \`/soda-fix\` and manual review.
 - Sub-agent prompts MUST begin with: "You are a research-only agent. Do NOT use AskUserQuestion, EnterPlanMode, or any interactive/planning tools."
+`;
+}

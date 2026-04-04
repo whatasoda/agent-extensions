@@ -57,6 +57,9 @@ cpSync(path.join(ROOT, "skills"), path.join(DIST, "skills"), { recursive: true }
 // agents/
 cpSync(path.join(ROOT, "agents"), path.join(DIST, "agents"), { recursive: true });
 
+// docs/
+cpSync(path.join(ROOT, "docs"), path.join(DIST, "docs"), { recursive: true });
+
 // schema.sql
 cpSync(path.join(ROOT, "src", "core", "schema.sql"), path.join(DIST, "src", "core", "schema.sql"));
 

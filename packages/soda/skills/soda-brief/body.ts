@@ -1,5 +1,6 @@
-
-Perform a lightweight investigation on the given topic and produce a Discussion Briefing that frames the discussion for `/soda-discuss`.
+export default function (_ctx: { commandDocs(commands: string[]): string }): string {
+  return `
+Perform a lightweight investigation on the given topic and produce a Discussion Briefing that frames the discussion for \`/soda-discuss\`.
 
 Use English for internal reasoning (thinking). Discussion Briefing content must be in English. Next-step suggestion must be in Japanese.
 
@@ -7,9 +8,9 @@ If $ARGUMENTS is empty, output a brief message in Japanese asking the user what 
 
 ## Purpose
 
-This skill is a **non-interactive preparation step** for `/soda-discuss`. It gathers enough context to start a productive discussion without requiring the depth of `/soda-research`.
+This skill is a **non-interactive preparation step** for \`/soda-discuss\`. It gathers enough context to start a productive discussion without requiring the depth of \`/soda-research\`.
 
-**Position in skill chain**: `soda-research → soda-brief → soda-discuss → soda-plan`. soda-brief and soda-research are alternatives at the preparation stage — soda-brief for quick kickoff, soda-research for deep investigation.
+**Position in skill chain**: \`soda-research → soda-brief → soda-discuss → soda-plan\`. soda-brief and soda-research are alternatives at the preparation stage — soda-brief for quick kickoff, soda-research for deep investigation.
 
 ## Procedure
 
@@ -27,7 +28,7 @@ Identify the core topic from $ARGUMENTS. Determine:
 **Codebase investigation output contract**: Every codebase sub-agent prompt MUST end with:
 > Return findings in this exact format:
 > ### Files
-> - `path/to/file` — relevance to the topic
+> - \`path/to/file\` — relevance to the topic
 > ### Patterns
 > - pattern name — description of the convention or pattern found
 > ### Dependencies
@@ -82,26 +83,28 @@ Skip this step if the survey provides sufficient context for framing.
 
 Synthesize findings into a Discussion Briefing block:
 
-```
+\`\`\`
 ## Discussion Briefing
 - **Topic**: what needs to be discussed
 - **Background**: relevant codebase findings and current state
 - **External Context** (include if external research was performed): key findings from official docs, best practices, and caveats
 - **Key Questions**: 2-4 questions that should guide the discussion (ordered by dependency)
 - **Constraints**: known technical or design constraints
-```
+\`\`\`
 
 Then suggest the next step in Japanese:
 
-```
+\`\`\`
 調査完了。以下のコマンドで議論を開始できます：
   /soda-discuss [topic]
-```
+\`\`\`
 
 ## Constraints
 
 - This skill is **non-interactive**. Do NOT use AskUserQuestion.
 - Do NOT modify any code (read-only investigation only).
 - Do NOT enter plan mode (no EnterPlanMode).
-- Keep investigation lightweight — max 2 sub-agent launches (1 survey + 1 optional focused). For deep research, use `/soda-research` instead.
+- Keep investigation lightweight — max 2 sub-agent launches (1 survey + 1 optional focused). For deep research, use \`/soda-research\` instead.
 - The Discussion Briefing is a session artifact. Downstream skills use it naturally from the conversation context.
+`;
+}
