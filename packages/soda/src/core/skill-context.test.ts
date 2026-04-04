@@ -107,11 +107,7 @@ describe("commandDocs embedding", () => {
     });
   }
 
-  const skillsWithoutDocs = [
-    "soda-brief",
-    "soda-research",
-    "soda-team-run",
-  ];
+  const skillsWithoutDocs = ["soda-brief", "soda-research", "soda-team-run"];
 
   const agentsWithoutDocs = ["team-reviewer", "team-worker"];
 
