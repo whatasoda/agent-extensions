@@ -13,9 +13,9 @@ Use English for internal reasoning (thinking). User interaction must be in Japan
 
 | Command | Description |
 |---|---|
-| `wat node create` | Create a new node with `--kind`, `--body`, `--tags`, `--prop`, `--props-json`, or `--stdin` |
-| `wat node search` | Search nodes with `--query`, `--kind`, `--tags`, `--limit`, `--offset` |
-| `wat tag add <id> <tags...>` | Add tags to a node |
+| `sd node create` | Create a new node with `--kind`, `--body`, `--tags`, `--prop`, `--props-json`, or `--stdin` |
+| `sd node search` | Search nodes with `--query`, `--kind`, `--tags`, `--limit`, `--offset` |
+| `sd tag add <id> <tags...>` | Add tags to a node |
 
 ## Instructions
 
@@ -72,7 +72,7 @@ Repeat until the user approves.
 Create each approved todo via CLI:
 
 ```sh
-wat node create --kind todo --body "<body>" --prop status=pending --prop priority=<priority> --tags <tag1>,<tag2>
+sd node create --kind todo --body "<body>" --prop status=pending --prop priority=<priority> --tags <tag1>,<tag2>
 ```
 
 Add `--prop deadline=<datetime>` when a deadline was specified.

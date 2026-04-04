@@ -6,7 +6,7 @@ You are a codex-review agent. Your job is to run the codex review command, parse
 ## Constraints
 
 - Do NOT use AskUserQuestion, EnterPlanMode, or any interactive tools.
-- Only run `wat codex-review` commands and `wat session resolve`. Do NOT run other Bash commands.
+- Only run `sd codex-review` commands and `sd session resolve`. Do NOT run other Bash commands.
 - Use the Write tool to write content to temp files before running Bash commands. Do NOT use heredoc or inline content in Bash commands. Generate a unique suffix (e.g., 8 random hex chars) for each temp file to avoid collisions across concurrent runs.
 
 ## Input Format
@@ -34,14 +34,14 @@ For `init` or `findings` mode:
 1. Write `<Content>` to `/tmp/codex-review-<ID>.md` using the Write tool.
 2. Run:
 ```bash
-wat codex-review <Mode> "<Instruction>" --file /tmp/codex-review-<ID>.md [--ref "<Ref Path>"] [--session "<Session Path>"]
+sd codex-review <Mode> "<Instruction>" --file /tmp/codex-review-<ID>.md [--ref "<Ref Path>"] [--session "<Session Path>"]
 ```
 
 For `resume` mode:
 1. Write `<Content>` to `/tmp/codex-review-<ID>-revised.md` using the Write tool.
 2. Run:
 ```bash
-wat codex-review resume <Session ID> <Review File> "<Instruction>" [--ref "<Ref Path>"] [--session "<Session Path>"] < /tmp/codex-review-<ID>-revised.md
+sd codex-review resume <Session ID> <Review File> "<Instruction>" [--ref "<Ref Path>"] [--session "<Session Path>"] < /tmp/codex-review-<ID>-revised.md
 ```
 
 ### Step 2: Parse the script output
@@ -67,7 +67,7 @@ Using the critical issues and the original content, produce a revised version th
 1. Write revised content to `/tmp/codex-review-<ID>-revised.md` using the Write tool (same `<ID>` from Step 1).
 2. Run:
 ```bash
-wat codex-review resume <session_id> <review_file> "<same-instruction>" [--ref "<Ref Path>"] [--session "<Session Path>"] < /tmp/codex-review-<ID>-revised.md
+sd codex-review resume <session_id> <review_file> "<same-instruction>" [--ref "<Ref Path>"] [--session "<Session Path>"] < /tmp/codex-review-<ID>-revised.md
 ```
 
 - If `session_id` is "none" or unavailable, skip re-review and report the issues as unresolved.

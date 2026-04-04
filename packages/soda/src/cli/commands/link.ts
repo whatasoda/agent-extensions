@@ -13,7 +13,7 @@ export async function handleLink(db: Database, args: string[]): Promise<void> {
     case "list":
       return linkList(db, rest);
     default:
-      exitWithError("Usage: soda-brain link <create|delete|list>");
+      exitWithError("Usage: sd link <create|delete|list>");
   }
 }
 
@@ -24,7 +24,7 @@ async function linkCreate(db: Database, args: string[]): Promise<void> {
 
   const [fromId, toId] = positionals;
   if (!fromId || !toId || !values.type) {
-    exitWithError("Usage: soda-brain link create <from-id> <to-id> --type <link-type>");
+    exitWithError("Usage: sd link create <from-id> <to-id> --type <link-type>");
   }
   const result = db.createLink(fromId, toId, values.type as string);
   outputJson(result);
@@ -37,7 +37,7 @@ async function linkDelete(db: Database, args: string[]): Promise<void> {
 
   const [fromId, toId] = positionals;
   if (!fromId || !toId || !values.type) {
-    exitWithError("Usage: soda-brain link delete <from-id> <to-id> --type <link-type>");
+    exitWithError("Usage: sd link delete <from-id> <to-id> --type <link-type>");
   }
   db.deleteLink(fromId, toId, values.type as string);
   outputJson({ success: true });
@@ -50,7 +50,7 @@ async function linkList(db: Database, args: string[]): Promise<void> {
 
   const [nodeId] = positionals;
   if (!nodeId) {
-    exitWithError("Usage: soda-brain link list <node-id> [--direction from|to|both]");
+    exitWithError("Usage: sd link list <node-id> [--direction from|to|both]");
   }
 
   const direction = (values.direction as string | undefined) ?? "both";

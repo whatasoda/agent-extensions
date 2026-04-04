@@ -45,7 +45,7 @@ switch (command) {
     break;
   default:
     console.error(
-      "Usage: wat <node|tag|link|list|decision|skill|agent|review|codex-review|session|tui>\n\nCommands:\n  node          Create, read, update, delete, search nodes\n  tag           Add or remove tags\n  link          Create, delete, list links\n  list          List kinds or tags\n  decision      Create or list design decisions\n  skill         Print skill body\n  agent         Print agent body\n  review        Review utilities\n  codex-review  Run codex review\n  session       Session utilities\n  tui           Launch the TUI browser",
+      "Usage: sd <node|tag|link|list|decision|skill|agent|review|codex-review|session|tui>\n\nCommands:\n  node          Create, read, update, delete, search nodes\n  tag           Add or remove tags\n  link          Create, delete, list links\n  list          List kinds or tags\n  decision      Create or list design decisions\n  skill         Print skill body\n  agent         Print agent body\n  review        Review utilities\n  codex-review  Run codex review\n  session       Session utilities\n  tui           Launch the TUI browser",
     );
     process.exit(1);
 }

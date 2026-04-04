@@ -5,7 +5,7 @@ Use English for internal reasoning (thinking). All user-facing output must be in
 
 ## Phase 1: Collect Changes
 
-1. Run `wat review detect-base-branch` and use the `baseBranch` and `mergeBase` from its JSON output. If the script fails, default to `main`. If the JSON contains an `error` field, present the error to the user and use AskUserQuestion: "ベースブランチを指定する" / "中止". If the user specifies a base branch, re-compute the diff using that base. If the user cancels, stop.
+1. Run `sd review detect-base-branch` and use the `baseBranch` and `mergeBase` from its JSON output. If the script fails, default to `main`. If the JSON contains an `error` field, present the error to the user and use AskUserQuestion: "ベースブランチを指定する" / "中止". If the user specifies a base branch, re-compute the diff using that base. If the user cancels, stop.
 2. Run `git diff <base>...HEAD` to collect the current branch's changes.
 3. If the diff is empty, inform the user and stop.
 4. Present a brief summary to the user:

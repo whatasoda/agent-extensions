@@ -5,7 +5,7 @@ Initialize an agent team project by classifying requirements into groups, decomp
 
 Use English for all generated file content. User interaction (AskUserQuestion options, presentations, summaries) must be in Japanese.
 
-**Prerequisite**: A soda-discuss session should have been completed beforehand to establish design direction. Design decisions persisted in the DB provide the Architect's initial context, including design constraints and rejected alternatives. Query them via `wat decision list --repo <owner/repo>`.
+**Prerequisite**: A soda-discuss session should have been completed beforehand to establish design direction. Design decisions persisted in the DB provide the Architect's initial context, including design constraints and rejected alternatives. Query them via `sd decision list --repo <owner/repo>`.
 
 If `$ARGUMENTS` is empty, ask the user to describe the requirements source before proceeding.
 
@@ -61,7 +61,7 @@ Accept requirements from the user. Requirements can come from:
 
 - **Inline text**: User provides a list directly in `$ARGUMENTS` or as a follow-up message
 - **File reference**: User points to a file containing requirements (e.g., a gap analysis document, issue list)
-- **Design decisions from DB**: Query `wat decision list --repo <owner/repo>` for design constraints from a preceding soda-discuss session
+- **Design decisions from DB**: Query `sd decision list --repo <owner/repo>` for design constraints from a preceding soda-discuss session
 
 Parse the input into a normalized list of individual requirements. Each requirement should be a single, actionable item.
 

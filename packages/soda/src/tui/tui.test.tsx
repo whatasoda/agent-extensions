@@ -25,10 +25,10 @@ describe("App renders without error", () => {
   it("renders a simple box without crashing", () => {
     const { lastFrame } = render(
       <Box>
-        <Text>soda-brain TUI</Text>
+        <Text>soda-agent-tools TUI</Text>
       </Box>,
     );
-    expect(lastFrame()).toContain("soda-brain TUI");
+    expect(lastFrame()).toContain("soda-agent-tools TUI");
   });
 });
 

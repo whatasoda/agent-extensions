@@ -10,7 +10,7 @@ export async function handleSession(args: string[]): Promise<void> {
     case "resolve":
       return sessionResolve(rest);
     default:
-      exitWithError("Usage: wat session <resolve>");
+      exitWithError("Usage: sd session <resolve>");
   }
 }
 
