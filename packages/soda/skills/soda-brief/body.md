@@ -21,12 +21,10 @@ Identify the core topic from $ARGUMENTS. Determine:
 
 ### Step 2: Survey Investigation
 
-Launch a sub-agent (Task, subagent_type: Explore) to survey the relevant area.
-
 **Sub-agent prompt constraints**: Every sub-agent prompt MUST begin with:
 > You are a research-only agent. Do NOT use AskUserQuestion, EnterPlanMode, or any interactive/planning tools. Return your findings in the output format specified below.
 
-**Sub-agent output contract**: Every sub-agent prompt MUST end with:
+**Codebase investigation output contract**: Every codebase sub-agent prompt MUST end with:
 > Return findings in this exact format:
 > ### Files
 > - `path/to/file` — relevance to the topic
@@ -37,7 +35,42 @@ Launch a sub-agent (Task, subagent_type: Explore) to survey the relevant area.
 > ### Open Questions
 > - question — what remains unclear from this investigation alone
 
-The survey prompt should include the topic and ask for: relevant files, existing patterns, dependencies, and current state of the area.
+**External research output contract**: Every external research sub-agent prompt MUST end with:
+> Return findings in this exact format:
+> ### Official Documentation
+> - library/service name — key API, configuration, version-specific notes
+> ### Best Practices
+> - practice — source and context
+> ### Patterns & Examples
+> - pattern — description with code snippets if available
+> ### Caveats
+> - caveat — gotchas, known issues, version incompatibilities
+
+#### External Research Trigger
+
+Before launching sub-agents, evaluate whether the topic involves external technologies:
+
+- If the topic references **named external libraries, frameworks, or services** (e.g., "Drizzle", "NextAuth", "Stripe"), **technology selection or comparison** (e.g., "which ORM", "migrate from X to Y"), or **external API integration** (e.g., "Slack API", "GitHub webhook") → launch an external research sub-agent **in parallel** with the codebase survey.
+- If the topic is purely about modifying existing code with no new external dependencies → skip external research.
+
+**External research sub-agent prompt template**:
+> You are a research-only agent. Do NOT use AskUserQuestion, EnterPlanMode, or any interactive/planning tools. Return your findings in the output format specified below.
+>
+> ## Research Task
+> Investigate external documentation and resources for: [topic extracted from $ARGUMENTS]
+>
+> ## Research Strategy
+> 1. Use Context7 MCP (resolve-library-id → get-library-docs) for each identified library/framework
+> 2. Use WebSearch for broader context: best practices, migration guides, comparison articles, known issues
+> 3. Synthesize findings — prioritize official documentation over community content
+>
+> [External research output contract]
+
+#### Codebase Survey
+
+Launch a sub-agent (Task, subagent_type: Explore) to survey the relevant area. The survey prompt should include the topic and ask for: relevant files, existing patterns, dependencies, and current state of the area.
+
+If external research is triggered, launch both sub-agents in a single message (parallel execution).
 
 ### Step 3: Focused Investigation (optional)
 
@@ -53,6 +86,7 @@ Synthesize findings into a Discussion Briefing block:
 ## Discussion Briefing
 - **Topic**: what needs to be discussed
 - **Background**: relevant codebase findings and current state
+- **External Context** (include if external research was performed): key findings from official docs, best practices, and caveats
 - **Key Questions**: 2-4 questions that should guide the discussion (ordered by dependency)
 - **Constraints**: known technical or design constraints
 ```
