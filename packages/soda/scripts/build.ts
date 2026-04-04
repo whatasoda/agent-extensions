@@ -10,7 +10,7 @@ const DIST = path.join(ROOT, "dist");
 rmSync(DIST, { recursive: true, force: true });
 
 // 2. Transpile src/ (excluding tests)
-const srcTranspiler = new Bun.Transpiler({ loader: "tsx" });
+const srcTranspiler = new Bun.Transpiler({ loader: "tsx", autoImportJSX: true });
 const srcGlob = new Glob("**/*.{ts,tsx}");
 
 let transpiled = 0;
