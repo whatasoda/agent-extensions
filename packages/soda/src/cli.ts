@@ -38,6 +38,11 @@ switch (command) {
     await handleSession(process.argv.slice(3));
     break;
   }
+  case "update": {
+    const { handleUpdate } = await import("./cli/commands/update.js");
+    await handleUpdate(process.argv.slice(3));
+    break;
+  }
   case "tui":
   case undefined:
     // @ts-expect-error: .tsx import works at runtime with Bun
@@ -45,7 +50,7 @@ switch (command) {
     break;
   default:
     console.error(
-      "Usage: sd <node|tag|link|list|decision|skill|agent|review|codex-review|session|tui>\n\nCommands:\n  node          Create, read, update, delete, search nodes\n  tag           Add or remove tags\n  link          Create, delete, list links\n  list          List kinds or tags\n  decision      Create or list design decisions\n  skill         Print skill body\n  agent         Print agent body\n  review        Review utilities\n  codex-review  Run codex review\n  session       Session utilities\n  tui           Launch the TUI browser",
+      "Usage: sd <node|tag|link|list|decision|skill|agent|review|codex-review|session|update|tui>\n\nCommands:\n  node          Create, read, update, delete, search nodes\n  tag           Add or remove tags\n  link          Create, delete, list links\n  list          List kinds or tags\n  decision      Create or list design decisions\n  skill         Print skill body\n  agent         Print agent body\n  review        Review utilities\n  codex-review  Run codex review\n  session       Session utilities\n  update        Update to latest version (sd update [tag])\n  tui           Launch the TUI browser",
     );
     process.exit(1);
 }
