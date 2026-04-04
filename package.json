@@ -7,7 +7,8 @@
     "build": "cd packages/soda && bun run build",
     "test": "cd packages/soda && bun run test",
     "typecheck": "cd packages/soda && tsc --noEmit",
-    "publish": "cd packages/soda && bun run build && npm publish --access public"
+    "publish": "cd packages/soda && bun run build && npm publish --access public",
+    "publish:local": "bun scripts/publish-local.ts"
   },
   "devDependencies": {
     "@types/bun": "latest",
