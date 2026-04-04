@@ -12,15 +12,12 @@
 
 import { readdir } from "node:fs/promises";
 
-async function findInIndex(
-  indexPath: string,
-  sessionId: string
-): Promise<string | null> {
+async function findInIndex(indexPath: string, sessionId: string): Promise<string | null> {
   const file = Bun.file(indexPath);
   if (!(await file.exists())) return null;
   const index = await file.json();
   const entry = (index.entries as { sessionId: string; fullPath: string }[])?.find(
-    (e) => e.sessionId === sessionId
+    (e) => e.sessionId === sessionId,
   );
   return entry?.fullPath ?? null;
 }
@@ -68,9 +65,7 @@ async function main() {
 
   const pidFile = Bun.file(`${home}/.claude/sessions/${claudePid}.json`);
   if (!(await pidFile.exists())) {
-    console.error(
-      `⚠ セッションPIDファイルが見つかりません (PID: ${claudePid})`
-    );
+    console.error(`⚠ セッションPIDファイルが見つかりません (PID: ${claudePid})`);
     process.exit(0);
   }
   const { sessionId, cwd } = (await pidFile.json()) as {
@@ -90,7 +85,7 @@ async function main() {
   // Step 3: Index lookup (for completed sessions with potentially different escaping)
   const indexResult = await findInIndex(
     `${projectsDir}/${escapedPath}/sessions-index.json`,
-    sessionId
+    sessionId,
   );
   if (indexResult) {
     console.log(indexResult);
@@ -107,19 +102,14 @@ async function main() {
       return;
     }
     // Check sessions-index.json
-    const result = await findInIndex(
-      `${projectsDir}/${dir}/sessions-index.json`,
-      sessionId
-    );
+    const result = await findInIndex(`${projectsDir}/${dir}/sessions-index.json`, sessionId);
     if (result) {
       console.log(result);
       return;
     }
   }
 
-  console.error(
-    `⚠ セッション ${sessionId} がインデックスに見つかりません`
-  );
+  console.error(`⚠ セッション ${sessionId} がインデックスに見つかりません`);
 }
 
 main();

@@ -82,9 +82,7 @@ async function nodeUpdate(db: Database, args: string[]): Promise<void> {
 
   const [id] = positionals;
   if (!id) {
-    exitWithError(
-      "Usage: sd node update <id> [--body ...] [--kind ...] [--prop ...] [--stdin]",
-    );
+    exitWithError("Usage: sd node update <id> [--body ...] [--kind ...] [--prop ...] [--stdin]");
   }
 
   if (values.stdin) {

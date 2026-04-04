@@ -10,7 +10,8 @@ import { handleTag } from "./commands/tag.js";
 import { exitWithError } from "./helpers.js";
 
 export async function runCli(resource: string, args: string[]): Promise<void> {
-  const DB_PATH = process.env.SODA_AGENT_TOOLS_DB ?? path.join(os.homedir(), ".soda-agent-tools", "data.db");
+  const DB_PATH =
+    process.env.SODA_AGENT_TOOLS_DB ?? path.join(os.homedir(), ".soda-agent-tools", "data.db");
   ensureDbDir(DB_PATH);
   const db = new Database(DB_PATH);
 
