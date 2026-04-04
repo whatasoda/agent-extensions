@@ -14,7 +14,7 @@ If $ARGUMENTS is empty, ask the user what they want to implement before proceedi
        - Extract decisions as **mandatory constraints** — every applicable decision must be traceable to a plan step
        - Extract `rejected_alternatives` from each decision as **exclusion constraints** — approaches listed as rejected must not be re-proposed
      - If no decisions found: proceed normally (conversation-context-based input)
-   - **Sub-agent output contract**: Every sub-agent prompt MUST end with the following output format requirement:
+   - **Codebase investigation output contract**: Every codebase sub-agent prompt MUST end with the following output format requirement:
        > Return findings in this exact format:
        > ### Files
        > - `path/to/file` — relevance to the task
@@ -24,11 +24,36 @@ If $ARGUMENTS is empty, ask the user what they want to implement before proceedi
        > - dependency — how it affects the task
        > ### Open Questions
        > - question — what remains unclear from this investigation alone
-     - Launch a sub-agent (Task, subagent_type: Explore) to survey project structure, dependencies, and conventions relevant to the task.
-     - Summarize the agent's findings into a Common Context block.
-     - Based on findings, optionally launch 1-2 focused sub-agents in parallel. Each prompt must include the Common Context block (summarized, not raw output), the specific investigation question, and both the constraint block and output contract.
+   - **External research output contract**: Every external research sub-agent prompt MUST end with:
+       > Return findings in this exact format:
+       > ### Official Documentation
+       > - library/service name — key API, configuration, version-specific notes
+       > ### Best Practices
+       > - practice — source and context
+       > ### Patterns & Examples
+       > - pattern — description with code snippets if available
+       > ### Caveats
+       > - caveat — gotchas, known issues, version incompatibilities
+   - **External Research Trigger**: Before launching the survey sub-agent, evaluate whether the task involves external technologies:
+     - If the task references **named external libraries, frameworks, or services**, **technology selection or comparison**, or **external API integration** → launch an external research sub-agent **in parallel** with the codebase survey.
+     - If the task is purely about modifying existing code with no new external dependencies → skip external research.
+     - External research sub-agent prompt:
+       > You are a research-only agent. Do NOT use AskUserQuestion, EnterPlanMode, or any interactive/planning tools. Return your findings in the output format specified below.
+       >
+       > ## Research Task
+       > Investigate external documentation and resources for: [topic]
+       >
+       > ## Research Strategy
+       > 1. Use Context7 MCP (resolve-library-id → get-library-docs) for each identified library/framework
+       > 2. Use WebSearch for broader context: best practices, migration guides, comparison articles, known issues
+       > 3. Synthesize findings — prioritize official documentation over community content
+       >
+       > [External research output contract]
    - **Sub-agent prompt constraints**: Every sub-agent prompt (both survey and focused) MUST begin with the following constraint block:
      > You are a research-only agent. Do NOT use AskUserQuestion, EnterPlanMode, or any interactive/planning tools. Return your findings in the output format specified below.
+   - Launch a sub-agent (Task, subagent_type: Explore) to survey project structure, dependencies, and conventions relevant to the task. If external research is triggered, launch both sub-agents in a single message (parallel execution).
+   - Summarize findings from all agents into a Common Context block. If external research was performed, include a dedicated "External Context" section in the Common Context block.
+   - Based on findings, optionally launch 1-2 focused sub-agents in parallel. Each prompt must include the Common Context block (summarized, not raw output), the specific investigation question, and both the constraint block and output contract.
    - Summarize investigation results before proceeding.
    - If investigation reveals multiple fundamentally different approaches, use AskUserQuestion to let the user decide: "方針を調整して続行" / "ここで中断して方針を整理". Do not choose an approach autonomously.
 2. **Branch Strategy**: Use AskUserQuestion to determine branch strategy before planning:

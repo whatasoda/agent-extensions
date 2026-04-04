@@ -171,6 +171,18 @@ These are flexible guidance, not mandatory steps. Adapt to the conversation.
 
 - **Start with understanding**: Grasp what the user wants to explore. If `$ARGUMENTS` is vague, ask clarifying questions — but don't over-interrogate. One or two questions is usually enough to get started.
 - **Investigate with sub-agents**: Use sub-agents (Task, subagent_type: Explore) for codebase investigation. Apply the standard constraint block (above). Investigation informs the discussion but doesn't replace it.
+- **External research when needed**: When the discussion involves external libraries, technology comparison, or API integration, launch an external research sub-agent in parallel with any codebase investigation. The external research sub-agent should use Context7 MCP (resolve-library-id → get-library-docs) for official documentation and WebSearch for broader context (best practices, migration guides, known issues). Apply the standard constraint block. Use the external research output contract:
+  > Return findings in this exact format:
+  > ### Official Documentation
+  > - library/service name — key API, configuration, version-specific notes
+  > ### Best Practices
+  > - practice — source and context
+  > ### Patterns & Examples
+  > - pattern — description with code snippets if available
+  > ### Caveats
+  > - caveat — gotchas, known issues, version incompatibilities
+
+  Present external research findings alongside codebase findings before asking for decisions — consistent with the "データが先、判断が後" principle.
 - **Iterate naturally**: Some discussions need multiple investigation rounds; others converge quickly. Follow the conversation's natural rhythm.
 - **Record decisions immediately**: When the user approves a design decision, persist it to the DB via `sd decision create`. The Bash tool permission prompt serves as a natural approval checkpoint. Include `--repo-owner` and `--repo-name` when working in a git repository, and `--tag topic:<topic-slug>` for grouping.
 - **Capture memos as text during discussion**: When a notable idea or insight emerges, present it as text ("メモ：〇〇") without writing to the DB. Memos are batched and written during wrap-up.
