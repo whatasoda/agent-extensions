@@ -99,13 +99,7 @@ jobs:
         if: steps.detect-package.outputs.has_changes == 'true'
         run: cd packages/soda && bun run build
 
-      - name: Publish to npm
-        if: steps.detect-package.outputs.has_changes == 'true'
-        run: cd packages/soda && npm publish --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Commit and push
+      - name: Commit and push version bumps
         if: steps.detect-plugins.outputs.has_changes == 'true' || steps.detect-package.outputs.has_changes == 'true'
         run: |
           git config user.name "github-actions[bot]"
@@ -122,3 +116,9 @@ jobs:
 
           git commit -m "chore: auto-bump and rebuild (${{ steps.bump.outputs.bumped }}) [skip ci]"
           git push
+
+      - name: Publish to npm
+        if: steps.detect-package.outputs.has_changes == 'true'
+        run: cd packages/soda && npm publish --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
