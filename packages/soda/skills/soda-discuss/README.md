@@ -14,11 +14,11 @@ The two skills were merged based on the following observations:
 
 ## Key Design Decisions
 
-- **DB-first persistence**: Decisions write directly to soda-brain SQLite DB via `wat decision create`, replacing LDD files entirely
+- **DB-first persistence**: Decisions write directly to soda-brain SQLite DB via `sd decision create`, replacing LDD files entirely
 - **Natural flow**: No explicit mode switching between exploration and decision-making — the conversation flows naturally, with only wrap-up being an explicit phase
 - **Decision immediate, memos batched**: Design decisions are recorded immediately (Bash permission = approval checkpoint). Memos are captured as text during discussion and batch-written during wrap-up
 - **Conversation node as link hub**: The wrap-up conversation node stores session metadata (context, key_points, open_questions) and links to decisions/memos. It does NOT duplicate decision content
-- **allowed-tools restriction**: `Bash(wat *)` only — no arbitrary shell access. Investigation via Task sub-agents
+- **allowed-tools restriction**: `Bash(sd *)` only — no arbitrary shell access. Investigation via Task sub-agents
 
 ## References
 

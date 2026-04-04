@@ -150,7 +150,7 @@ export async function handleImport(db: import("../../core/database.js").Database
   } else if (fileArgs.length > 0) {
     files = fileArgs.map((f) => path.resolve(f));
   } else {
-    return exitWithError("Usage: wat decision import --scan  OR  wat decision import <file...>\n  --dry-run  Preview without writing to DB");
+    return exitWithError("Usage: sd decision import --scan  OR  sd decision import <file...>\n  --dry-run  Preview without writing to DB");
   }
 
   const repo = await detectRepo();

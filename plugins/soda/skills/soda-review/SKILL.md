@@ -3,7 +3,7 @@ name: soda-review
 description: Review branch changes for design conformance against Living Discussion Documents
 user-invocable: true
 argument-hint: [focus or base branch]
-allowed-tools: Bash(git *), Bash(wat *), Read, Grep, Glob, Task, AskUserQuestion
+allowed-tools: Bash(git *), Bash(sd *), Read, Grep, Glob, Task, AskUserQuestion
 ---
 
-!`wat skill print soda-review`
+!`sd skill print soda-review`

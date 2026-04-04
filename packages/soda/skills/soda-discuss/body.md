@@ -127,22 +127,22 @@ Share findings, analysis, and recommendations as text output. Don't wrap every i
 
 | Command | Description |
 |---|---|
-| `wat decision create` | Create a decision with `--constraint`, `--why`, `--scope`, `--repo-owner`, `--repo-name`, `--tag`, `--rejected-alt-json`, or `--stdin` |
-| `wat decision list` | List decisions with `--tag`, `--repo <owner/repo>`, `--limit` |
-| `wat node create` | Create a node with `--kind`, `--body`, `--tags`, `--prop`, `--props-json`, or `--stdin` |
-| `wat node update <id>` | Update a node's `--body`, `--kind`, `--prop`, `--props-json`, or via `--stdin` |
-| `wat node delete <id>` | Delete a node |
-| `wat node get <id>` | Retrieve a node with all its relations |
-| `wat node search` | Search nodes with `--query`, `--kind`, `--tags`, `--limit`, `--offset` |
-| `wat tag add <id> <tags...>` | Add tags to a node |
-| `wat tag remove <id> <tags...>` | Remove tags from a node |
-| `wat link create <from> <to> --type <t>` | Create a typed directional link |
-| `wat link delete <from> <to> --type <t>` | Delete a link |
-| `wat link list <id>` | List links for a node (`--direction from\|to\|both`) |
+| `sd decision create` | Create a decision with `--constraint`, `--why`, `--scope`, `--repo-owner`, `--repo-name`, `--tag`, `--rejected-alt-json`, or `--stdin` |
+| `sd decision list` | List decisions with `--tag`, `--repo <owner/repo>`, `--limit` |
+| `sd node create` | Create a node with `--kind`, `--body`, `--tags`, `--prop`, `--props-json`, or `--stdin` |
+| `sd node update <id>` | Update a node's `--body`, `--kind`, `--prop`, `--props-json`, or via `--stdin` |
+| `sd node delete <id>` | Delete a node |
+| `sd node get <id>` | Retrieve a node with all its relations |
+| `sd node search` | Search nodes with `--query`, `--kind`, `--tags`, `--limit`, `--offset` |
+| `sd tag add <id> <tags...>` | Add tags to a node |
+| `sd tag remove <id> <tags...>` | Remove tags from a node |
+| `sd link create <from> <to> --type <t>` | Create a typed directional link |
+| `sd link delete <from> <to> --type <t>` | Delete a link |
+| `sd link list <id>` | List links for a node (`--direction from\|to\|both`) |
 
 For complex properties, use `--stdin` with a heredoc:
 ```sh
-wat node create --stdin <<'EOF'
+sd node create --stdin <<'EOF'
 {"kind":"conversation","body":"...","properties":{...},"tags":[...]}
 EOF
 ```
@@ -172,7 +172,7 @@ These are flexible guidance, not mandatory steps. Adapt to the conversation.
 - **Start with understanding**: Grasp what the user wants to explore. If `$ARGUMENTS` is vague, ask clarifying questions — but don't over-interrogate. One or two questions is usually enough to get started.
 - **Investigate with sub-agents**: Use sub-agents (Task, subagent_type: Explore) for codebase investigation. Apply the standard constraint block (above). Investigation informs the discussion but doesn't replace it.
 - **Iterate naturally**: Some discussions need multiple investigation rounds; others converge quickly. Follow the conversation's natural rhythm.
-- **Record decisions immediately**: When the user approves a design decision, persist it to the DB via `wat decision create`. The Bash tool permission prompt serves as a natural approval checkpoint. Include `--repo-owner` and `--repo-name` when working in a git repository, and `--tag topic:<topic-slug>` for grouping.
+- **Record decisions immediately**: When the user approves a design decision, persist it to the DB via `sd decision create`. The Bash tool permission prompt serves as a natural approval checkpoint. Include `--repo-owner` and `--repo-name` when working in a git repository, and `--tag topic:<topic-slug>` for grouping.
 - **Capture memos as text during discussion**: When a notable idea or insight emerges, present it as text ("メモ：〇〇") without writing to the DB. Memos are batched and written during wrap-up.
 - **Surface cross-cutting Open Questions**: When multiple decisions have accumulated, step back and consider questions that emerge from the interaction between decisions — patterns, tensions, or implications visible only in aggregate. This is a habit of periodic reflection, not a procedural step with a fixed trigger.
 
@@ -184,27 +184,27 @@ Wrap-up can be initiated by the user ("まとめて", "終わり") or suggested 
 
 1. **Memo batch write**: Present a list of memos captured as text during discussion. Let the user review — discard, keep, or adjust. Write accepted memos to DB:
    ```sh
-   wat node create --kind memo --body "<memo content>" --tag "topic:<slug>"
+   sd node create --kind memo --body "<memo content>" --tag "topic:<slug>"
    ```
 
 2. **Conversation node creation**: Create a conversation node summarizing the session:
    ```sh
-   wat node create --stdin <<'EOF'
+   sd node create --stdin <<'EOF'
    {"kind":"conversation","body":"<session title>","properties":{"context":"...","key_points":[...],"open_questions":[...],"summary_en":"...","keywords_en":[...]},"tags":["topic:<slug>"]}
    EOF
    ```
 
 3. **Link decisions and memos to conversation**:
    ```sh
-   wat link create <decision_id> <conversation_id> --type decided_during
-   wat link create <memo_id> <conversation_id> --type captured_during
+   sd link create <decision_id> <conversation_id> --type decided_during
+   sd link create <memo_id> <conversation_id> --type captured_during
    ```
 
 4. **Optional memo promotion**: Ask "昇格したいメモはありますか？" If the user wants to promote memos to idea/todo:
    ```sh
-   wat node update <memo_id> --kind idea --props-json '{"summary_en":"...","keywords_en":[...]}'
+   sd node update <memo_id> --kind idea --props-json '{"summary_en":"...","keywords_en":[...]}'
    ```
-   Link promoted nodes: `wat link create <promoted_id> <conversation_id> --type derived_from`
+   Link promoted nodes: `sd link create <promoted_id> <conversation_id> --type derived_from`
 
 5. **Summarize**: Present the final state — conversation node + linked decisions + memos + promotions.
 

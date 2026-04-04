@@ -15,7 +15,7 @@ export async function handleDecision(db: Database, args: string[]): Promise<void
       return handleImport(db, rest);
     }
     default:
-      exitWithError("Usage: wat decision <create|list|import>");
+      exitWithError("Usage: sd decision <create|list|import>");
   }
 }
 

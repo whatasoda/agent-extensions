@@ -4,7 +4,7 @@ This repository is a Claude Code plugin marketplace owned by whatasoda.
 
 ## Repository Purpose
 
-Manage and distribute personal Claude Code plugins and skills via the marketplace mechanism. The primary deliverable is `@whatasoda/agent-tools` — a unified npm package (CLI: `wat`) combining workflow skills and a knowledge graph.
+Manage and distribute personal Claude Code plugins and skills via the marketplace mechanism. The primary deliverable is `@whatasoda/agent-tools` — a unified npm package (CLI: `sd`) combining workflow skills and a knowledge graph.
 
 ## Tech Stack
 
@@ -21,7 +21,7 @@ Manage and distribute personal Claude Code plugins and skills via the marketplac
 Skills and agents are distributed via a two-layer system:
 
 1. **npm package** (`packages/soda/`): Contains all source code, skill bodies, agent bodies, CLI, TUI, and core library. Published as `@whatasoda/agent-tools` with CLI entry point `wat`.
-2. **Marketplace stubs** (`plugins/soda/`): Thin SKILL.md files with YAML frontmatter + bash embedding (`!`wat skill print <name>``). Installed via Claude Code marketplace.
+2. **Marketplace stubs** (`plugins/soda/`): Thin SKILL.md files with YAML frontmatter + bash embedding (`!`sd skill print <name>``). Installed via Claude Code marketplace.
 
 Updating skills only requires `npm update` — marketplace stubs rarely change.
 
@@ -29,7 +29,7 @@ Updating skills only requires `npm update` — marketplace stubs rarely change.
 
 ```
 packages/soda/
-  package.json          # @whatasoda/agent-tools, bin: { wat: "src/cli.ts" }
+  package.json          # @whatasoda/agent-tools, bin: { sd: "src/cli.ts" }
   src/
     cli.ts              # CLI entry point (#!/usr/bin/env bun)
     cli/                # CLI dispatcher and command handlers
@@ -37,11 +37,11 @@ packages/soda/
     core/               # Database, types, kinds, search, schema
     tui/                # Ink/React read-only TUI
     setup/              # Global install helper
-  skills/               # Skill body .md files (wat skill print reads these)
+  skills/               # Skill body .md files (sd skill print reads these)
     soda-discuss/body.md
     soda-plan/body.md
     ...
-  agents/               # Agent body .md files (wat agent print reads these)
+  agents/               # Agent body .md files (sd agent print reads these)
     team-worker/body.md
     ...
   scripts/              # Utility scripts (codex-review, resolve-session, detect-base-branch)
@@ -55,26 +55,26 @@ plugins/soda/
   package.json
   hooks/hooks.json      # Empty
   skills/
-    soda-discuss/SKILL.md   # frontmatter + !`wat skill print soda-discuss`
+    soda-discuss/SKILL.md   # frontmatter + !`sd skill print soda-discuss`
     ...
   agents/
-    team-worker.md          # frontmatter + !`wat agent print team-worker`
+    team-worker.md          # frontmatter + !`sd agent print team-worker`
     ...
 ```
 
-### CLI Commands (wat)
+### CLI Commands (sd)
 
 ```
-wat node create|get|update|delete|search   # Knowledge graph CRUD
-wat tag add|remove                         # Node tagging
-wat link create|delete|list                # Typed directional links
-wat list kinds|tags                         # Metadata listing
-wat decision create|list                   # Design decision management
-wat skill print <name>                     # Output skill body for marketplace stubs
-wat agent print <name>                     # Output agent body for marketplace stubs
-wat review detect-base-branch              # Git branch detection utility
-wat tui                                    # Read-only knowledge graph browser
-wat setup                                  # Global install helper
+sd node create|get|update|delete|search   # Knowledge graph CRUD
+sd tag add|remove                         # Node tagging
+sd link create|delete|list                # Typed directional links
+sd list kinds|tags                         # Metadata listing
+sd decision create|list                   # Design decision management
+sd skill print <name>                     # Output skill body for marketplace stubs
+sd agent print <name>                     # Output agent body for marketplace stubs
+sd review detect-base-branch              # Git branch detection utility
+sd tui                                    # Read-only knowledge graph browser
+sd setup                                  # Global install helper
 ```
 
 ## Conventions
@@ -110,5 +110,5 @@ GitHub Actions (`.github/workflows/ci.yml`) on push to main:
 - Plugin name: `soda`
 - Skill prefix: `soda-` (e.g., `soda-discuss`, `soda-plan`)
 - npm package: `@whatasoda/agent-tools`
-- CLI binary: `wat`
+- CLI binary: `sd`
 - Marketplace: `whatasoda-tools`
