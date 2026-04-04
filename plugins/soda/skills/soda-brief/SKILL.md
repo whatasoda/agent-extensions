@@ -6,4 +6,4 @@ argument-hint: "<topic or goal to explore>"
 allowed-tools: Read, Grep, Glob, Task
 ---
 
-!`wat skill print soda-brief`
+!`sd skill print soda-brief`

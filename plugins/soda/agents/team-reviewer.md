@@ -6,4 +6,4 @@ model: sonnet
 permissionMode: bubble
 ---
 
-!`wat agent print team-reviewer`
+!`sd agent print team-reviewer`

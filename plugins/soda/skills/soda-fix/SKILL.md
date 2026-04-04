@@ -6,4 +6,4 @@ argument-hint: []
 allowed-tools: Bash(git *), Bash(bun *), Read, Write, Edit, Grep, Glob, Task, AskUserQuestion
 ---
 
-!`wat skill print soda-fix`
+!`sd skill print soda-fix`

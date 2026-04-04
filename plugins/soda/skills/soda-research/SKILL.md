@@ -6,4 +6,4 @@ argument-hint: [research topic or question]
 allowed-tools: Bash(git *), Read, Grep, Glob, Task, AskUserQuestion
 ---
 
-!`wat skill print soda-research`
+!`sd skill print soda-research`

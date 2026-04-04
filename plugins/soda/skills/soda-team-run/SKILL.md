@@ -6,4 +6,4 @@ argument-hint: "[task ID, group name, or 'next']"
 allowed-tools: Bash(git *), Bash(bun *), Read, Write, Edit, Grep, Glob, Task, AskUserQuestion
 ---
 
-!`wat skill print soda-team-run`
+!`sd skill print soda-team-run`
