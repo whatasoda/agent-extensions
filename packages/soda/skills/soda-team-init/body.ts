@@ -24,7 +24,7 @@ git rev-parse --show-toplevel
 1. **Legacy flat layout detection**: If \`.agent-team/CONFIG.md\` exists directly (not inside a subdirectory), warn the user that the old flat format is detected and suggest manual cleanup before re-initializing. Stop.
 2. **Scan for namespaced projects**: Check for existing projects by scanning \`.agent-team/*/TASKS.md\`.
 3. If existing namespaced projects found, present the list and use AskUserQuestion:
-   - "既存プロジェクトを上書きする (対象を選択)" — present project list for selection. Set \`\${"{{NAMESPACE}}"}\` to the selected project's directory name, delete its contents (\`rm -rf .agent-team/\${"{{NAMESPACE}}"}/tasks .agent-team/\${"{{NAMESPACE}}"}/reviews\`), and skip the "Derive namespace directory name" step below. Proceed to Branch Strategy.
+   - "既存プロジェクトを上書きする (対象を選択)" — present project list for selection. Set \`{{NAMESPACE}}\` to the selected project's directory name, delete its contents (\`rm -rf .agent-team/{{NAMESPACE}}/tasks .agent-team/{{NAMESPACE}}/reviews\`), and skip the "Derive namespace directory name" step below. Proceed to Branch Strategy.
    - "新規プロジェクトとして作成" — proceed to branch strategy, create a new namespace
    - "キャンセル"
 4. If no existing projects found, proceed to branch strategy.
@@ -35,14 +35,14 @@ Determine the integration branch where all Worker results will be merged. This b
 
 Use AskUserQuestion:
 - "新しい統合ブランチを作成" — create a new branch from current HEAD
-- "現在のブランチを統合ブランチとして使用 (\`\${"{{CURRENT_BRANCH}}"}\`)"
+- "現在のブランチを統合ブランチとして使用 (\`{{CURRENT_BRANCH}}\`)"
 
 If creating a new branch:
-- Derive branch name as \`team/\${"{{project-name}}"}\` (slugified from the project description)
+- Derive branch name as \`team/{{project-name}}\` (slugified from the project description)
 - Present the suggested name for confirmation
 - Create from current HEAD:
   \`\`\`bash
-  git checkout -b \${"{{BRANCH_NAME}}"}
+  git checkout -b {{BRANCH_NAME}}
   \`\`\`
 
 Record the integration branch name — CONFIG.md will be written together with other coordination files in Step 6.
@@ -70,9 +70,9 @@ Parse the input into a normalized list of individual requirements. Each requirem
 
 Present the parsed list to the user:
 
-> **要件一覧** (\${"{{COUNT}}"}件)
-> 1. \${"{{requirement 1}}"}
-> 2. \${"{{requirement 2}}"}
+> **要件一覧** ({{COUNT}}件)
+> 1. {{requirement 1}}
+> 2. {{requirement 2}}
 > ...
 
 Use AskUserQuestion:
@@ -121,14 +121,14 @@ Present the classification result:
 
 > **グループ分類結果**
 >
-> **GROUP-A**: \${"{{name}}"} (\${"{{N}}"}件) \${"{{🔶 設計判断が必要 if design-critical}}"}
-> - \${"{{requirement 1}}"}
-> - \${"{{requirement 2}}"}
+> **GROUP-A**: {{name}} ({{N}}件) {{🔶 設計判断が必要 if design-critical}}
+> - {{requirement 1}}
+> - {{requirement 2}}
 > - 影響範囲: \`src/foo/\`, \`src/bar/\`
 >
-> **GROUP-B**: \${"{{name}}"} (\${"{{N}}"}件)
-> - \${"{{requirement 3}}"}
-> - \${"{{requirement 4}}"}
+> **GROUP-B**: {{name}} ({{N}}件)
+> - {{requirement 3}}
+> - {{requirement 4}}
 > - 影響範囲: \`src/baz/\`
 >
 > **グループ間依存**: GROUP-A → GROUP-B (AのAPI変更がBに影響)
@@ -153,8 +153,8 @@ For each design-critical group:
 
 For groups that are NOT design-critical, briefly present the planned approach:
 
-> **GROUP-B**: \${"{{name}}"} — 自動分解方針
-> - \${"{{approach summary}}"}
+> **GROUP-B**: {{name}} — 自動分解方針
+> - {{approach summary}}
 > - 設計判断なし（既存パターン \`src/existing/pattern.ts\` に従う）
 
 Use AskUserQuestion after presenting all non-critical groups:
@@ -191,13 +191,13 @@ Signs a task is too small:
 
 Present the decomposed tasks per group:
 
-> **GROUP-A タスク分解** (\${"{{N}}"}タスク)
+> **GROUP-A タスク分解** ({{N}}タスク)
 >
 > | # | タスク | 受入条件 | 依存 | 並列可 |
 > |---|--------|----------|------|--------|
-> | 1 | \${"{{title}}"} | \${"{{acceptance}}"} | なし | ✓ |
-> | 2 | \${"{{title}}"} | \${"{{acceptance}}"} | #1 | - |
-> | 3 | \${"{{title}}"} | \${"{{acceptance}}"} | なし | ✓ |
+> | 1 | {{title}} | {{acceptance}} | なし | ✓ |
+> | 2 | {{title}} | {{acceptance}} | #1 | - |
+> | 3 | {{title}} | {{acceptance}} | なし | ✓ |
 >
 > **並列実行プラン**: #1 と #3 を並列 → #2
 
@@ -210,10 +210,10 @@ Use AskUserQuestion for each group:
 After all groups are confirmed, present a final overview:
 
 > **全体サマリー**
-> - グループ数: \${"{{N}}"}
-> - タスク総数: \${"{{M}}"}
-> - 並列実行可能: 最大\${"{{P}}"}タスク同時
-> - 設計判断: \${"{{D}}"}件 (ARCHITECTURE.md に記録)
+> - グループ数: {{N}}
+> - タスク総数: {{M}}
+> - 並列実行可能: 最大{{P}}タスク同時
+> - 設計判断: {{D}}件 (ARCHITECTURE.md に記録)
 > - 推定実行順序: GROUP-A (#1,#3 並列) → GROUP-A #2 → GROUP-B (#1,#2 並列) → ...
 
 Use AskUserQuestion:
@@ -244,17 +244,17 @@ Before writing files, compose the full content of TASKS.md and ARCHITECTURE.md, 
 
 Initialize the namespaced directory:
 \`\`\`bash
-mkdir -p .agent-team/\${"{{NAMESPACE}}"}/tasks .agent-team/\${"{{NAMESPACE}}"}/reviews
+mkdir -p .agent-team/{{NAMESPACE}}/tasks .agent-team/{{NAMESPACE}}/reviews
 \`\`\`
 
 Write the following files (refer to \`references/coordination-files.md\` for format specification):
 
-1. **\`.agent-team/\${"{{NAMESPACE}}"}/CONFIG.md\`** — Integration branch name, base branch/commit, creation date (as determined in Step 1)
-2. **\`.agent-team/\${"{{NAMESPACE}}"}/TASKS.md\`** — Task list with group overview and all tasks in pending state
-3. **\`.agent-team/\${"{{NAMESPACE}}"}/ARCHITECTURE.md\`** — Initial ADRs from:
+1. **\`.agent-team/{{NAMESPACE}}/CONFIG.md\`** — Integration branch name, base branch/commit, creation date (as determined in Step 1)
+2. **\`.agent-team/{{NAMESPACE}}/TASKS.md\`** — Task list with group overview and all tasks in pending state
+3. **\`.agent-team/{{NAMESPACE}}/ARCHITECTURE.md\`** — Initial ADRs from:
    - Design decisions from DB (transcribed as ADRs with decision name as Source reference)
    - Design decisions from Step 4 (design-critical group discussions)
-4. **\`.agent-team/\${"{{NAMESPACE}}"}/tasks/TASK-NNN.md\`** — One file per task, with:
+4. **\`.agent-team/{{NAMESPACE}}/tasks/TASK-NNN.md\`** — One file per task, with:
    - Definition from Step 5 decomposition
    - Design Constraints summarized from relevant ADRs (not just references)
    - Context from investigation findings
@@ -278,19 +278,19 @@ Present the generated files:
 >
 > \`\`\`
 > .agent-team/
-> └── \${"{{NAMESPACE}}"}/
->     ├── CONFIG.md             — integration branch: \${"{{BRANCH_NAME}}"}
->     ├── TASKS.md              — \${"{{GROUP_COUNT}}"} groups, \${"{{TASK_COUNT}}"} tasks
->     ├── ARCHITECTURE.md       — \${"{{ADR_COUNT}}"} decisions
+> └── {{NAMESPACE}}/
+>     ├── CONFIG.md             — integration branch: {{BRANCH_NAME}}
+>     ├── TASKS.md              — {{GROUP_COUNT}} groups, {{TASK_COUNT}} tasks
+>     ├── ARCHITECTURE.md       — {{ADR_COUNT}} decisions
 >     └── tasks/
 >         ├── TASK-001.md
 >         ├── TASK-002.md
->         └── ... (\${"{{TASK_COUNT}}"} files)
+>         └── ... ({{TASK_COUNT}} files)
 > \`\`\`
 >
 > **実行順序**:
-> \${"{{GROUP-A}}"}: TASK-001, TASK-003 (並列) → TASK-002
-> \${"{{GROUP-B}}"}: TASK-004, TASK-005 (並列)
+> {{GROUP-A}}: TASK-001, TASK-003 (並列) → TASK-002
+> {{GROUP-B}}: TASK-004, TASK-005 (並列)
 > GROUP-A → GROUP-B (依存)
 
 Then print next steps:

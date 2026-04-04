@@ -167,8 +167,8 @@ After writing the plan, extract **discussion items** — areas that benefit from
 1. **Extract and present**: List all discussion items with their category and dependency relationships:
 
    > **議論アイテム**: 以下の項目を順に確認します：
-   > 1. [category] Step N: \${"{description}"}
-   > 2. [category] Step M: \${"{description}"}
+   > 1. [category] Step N: {{description}}
+   > 2. [category] Step M: {{description}}
    >
    > 依存関係: Item 1 の結論が Item 2 の選択肢に影響します。
 
@@ -187,7 +187,7 @@ After writing the plan, extract **discussion items** — areas that benefit from
    - **Design decision**: Present options, tradeoffs, and recommendation → wait for direction
 
 3. **Reflect conclusions**: After each item is resolved, immediately update the plan:
-   - Review point conclusions: mark as \`**User Context**: \${"{correction or additional information}"}\`
+   - Review point conclusions: mark as \`**User Context**: {{correction or additional information}}\`
    - Design decision conclusions: update the callout to show the confirmed option
 
    These labeled callouts ensure domain knowledge and decisions survive context compaction.
@@ -214,36 +214,36 @@ Subagent-eligible steps are executed via \`team-worker\` → \`team-reviewer\` c
 
 1. **Create worktree**:
    \`\`\`bash
-   git worktree add .worktrees/step-\${"{{N}}"} -b plan/step-\${"{{N}}"} HEAD
+   git worktree add .worktrees/step-{{N}} -b plan/step-{{N}} HEAD
    \`\`\`
 
 2. **Launch Worker** via \`Task(subagent_type: soda:team-worker)\` with prompt:
    \`\`\`
    ## Task
    ### Definition
-   \${"{{step description and file changes from plan}}"}
+   {{step description and file changes from plan}}
    ### Design Constraints
-   \${"{{design decisions and constraints from plan, if any}}"}
+   {{design decisions and constraints from plan, if any}}
    ### Context
-   \${"{{investigation summary and cross-step shared context from plan}}"}
+   {{investigation summary and cross-step shared context from plan}}
    ### Validation
-   \${"{{validation criteria from plan step}}"}
+   {{validation criteria from plan step}}
 
    ## Commit Message
-   \${"{{commit message from plan step}}"}
+   {{commit message from plan step}}
 
    ## Working Directory
-   \${"{{worktree absolute path}}"}
+   {{worktree absolute path}}
    \`\`\`
 
 3. **On Worker DONE** → launch Reviewer via \`Task(subagent_type: soda:team-reviewer)\`:
    \`\`\`
    ## Task Definition
-   \${"{{same task sections as Worker input (Definition, Design Constraints, Context, Validation)}}"}
+   {{same task sections as Worker input (Definition, Design Constraints, Context, Validation)}}
    ## Working Directory
-   \${"{{worktree path}}"}
+   {{worktree path}}
    ## Changes to Review
-   \${"{{git diff of worktree branch vs base}}"}
+   {{git diff of worktree branch vs base}}
    \`\`\`
 
    > **Why no \`## Architecture Decisions\`**: soda-plan context does not maintain ARCHITECTURE.md. Reviewer evaluates against the step's own Design Constraints and Validation criteria instead.
@@ -251,11 +251,11 @@ Subagent-eligible steps are executed via \`team-worker\` → \`team-reviewer\` c
 4. **Handle verdict**:
    - **PASS / PASS_WITH_FIX** → merge worktree branch to current branch, clean up:
      \`\`\`bash
-     git checkout \${"{{current_branch}}"}
-     git merge --squash plan/step-\${"{{N}}"}
-     git commit -m "\${"{{commit message}}"} (plan/step-\${"{{N}}"})"
-     git worktree remove .worktrees/step-\${"{{N}}"}
-     git branch -D plan/step-\${"{{N}}"}
+     git checkout {{current_branch}}
+     git merge --squash plan/step-{{N}}
+     git commit -m "{{commit message}} (plan/step-{{N}})"
+     git worktree remove .worktrees/step-{{N}}
+     git branch -D plan/step-{{N}}
      \`\`\`
      **Merge conflict handling**: If merge fails due to conflicts:
      \`\`\`bash
@@ -265,30 +265,30 @@ Subagent-eligible steps are executed via \`team-worker\` → \`team-reviewer\` c
      - "コンフリクトを手動で解決する" → user resolves, then resume
      - "このステップをスキップ" → clean up worktree and branch:
        \`\`\`bash
-       git worktree remove .worktrees/step-\${"{{N}}"}
-       git branch -D plan/step-\${"{{N}}"}
+       git worktree remove .worktrees/step-{{N}}
+       git branch -D plan/step-{{N}}
        \`\`\`
    - **FAIL** → append Reviewer's "For Next Worker" findings to the step's Context section, reset worktree to the base commit, retry Worker once:
      \`\`\`bash
-     cd .worktrees/step-\${"{{N}}"}
+     cd .worktrees/step-{{N}}
      git clean -fd
-     git reset --hard \${"{{current_branch}}"}
+     git reset --hard {{current_branch}}
      \`\`\`
-     > **Why \`\${"{{current_branch}}"}\` not \`~1\`**: Worker may create multiple commits. Resetting to the branch the worktree was created from guarantees a clean slate, matching soda-team-run's pattern.
+     > **Why \`{{current_branch}}\` not \`~1\`**: Worker may create multiple commits. Resetting to the branch the worktree was created from guarantees a clean slate, matching soda-team-run's pattern.
 
      If second attempt also FAILs → report to user via AskUserQuestion with Reviewer findings and options:
      - "実装を受け入れる" → merge worktree branch as-is (same as PASS flow)
      - "このステップをスキップ" → clean up worktree and branch, skip this step:
        \`\`\`bash
-       git worktree remove .worktrees/step-\${"{{N}}"}
-       git branch -D plan/step-\${"{{N}}"}
+       git worktree remove .worktrees/step-{{N}}
+       git branch -D plan/step-{{N}}
        \`\`\`
    - **ESCALATE** → report to user via AskUserQuestion with escalation details and options:
      - "実装を受け入れる" → merge worktree branch as-is (same as PASS flow)
      - "このステップをスキップ" → clean up worktree and branch, skip this step:
        \`\`\`bash
-       git worktree remove .worktrees/step-\${"{{N}}"}
-       git branch -D plan/step-\${"{{N}}"}
+       git worktree remove .worktrees/step-{{N}}
+       git branch -D plan/step-{{N}}
        \`\`\`
 
 5. **On Worker BLOCKED** → read BLOCKER.md from worktree root, report to user via AskUserQuestion.
