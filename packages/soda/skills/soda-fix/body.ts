@@ -1,12 +1,15 @@
-
+export default function (ctx: { commandDocs(commands: string[]): string }): string {
+  return `
 Review current branch changes using codex-review (findings mode), classify issues by severity, and apply fixes with appropriate user decision gates.
 
 Use English for internal reasoning (thinking). All user-facing output must be in Japanese.
 
+${ctx.commandDocs(["review"])}
+
 ## Phase 1: Collect Changes
 
-1. Run `sd review detect-base-branch` and use the `baseBranch` and `mergeBase` from its JSON output. If the script fails, default to `main`. If the JSON contains an `error` field, present the error to the user and use AskUserQuestion: "ベースブランチを指定する" / "中止". If the user specifies a base branch, re-compute the diff using that base. If the user cancels, stop.
-2. Run `git diff <base>...HEAD` to collect the current branch's changes.
+1. Run \`sd review detect-base-branch\` and use the \`baseBranch\` and \`mergeBase\` from its JSON output. If the script fails, default to \`main\`. If the JSON contains an \`error\` field, present the error to the user and use AskUserQuestion: "ベースブランチを指定する" / "中止". If the user specifies a base branch, re-compute the diff using that base. If the user cancels, stop.
+2. Run \`git diff <base>...HEAD\` to collect the current branch's changes.
 3. If the diff is empty, inform the user and stop.
 4. Present a brief summary to the user:
    > **変更概要**
@@ -17,13 +20,13 @@ Use English for internal reasoning (thinking). All user-facing output must be in
 
 Invoke codex-review in findings mode:
 
-```
+\`\`\`
 Task(subagent_type: soda:codex-review)
-```
+\`\`\`
 
 Prompt:
 
-```
+\`\`\`
 ## Codex Review Request
 - **Mode**: findings
 - **Instruction**: "Review these code changes. For each issue found, output in the following structured format:
@@ -41,7 +44,7 @@ Focus on correctness, security, performance, and maintainability. Do not report 
 
 ### Content
 <git diff output>
-```
+\`\`\`
 
 If the codex-review sub-agent returns Status: "Skipped", inform the user that review is unavailable and stop.
 
@@ -90,7 +93,7 @@ For each Auto-fix issue (in file order to minimize conflicts):
 
 1. Read the target file.
 2. Apply the fix using the Edit tool.
-3. Commit with a descriptive message: `fix(<scope>): <issue summary>`
+3. Commit with a descriptive message: \`fix(<scope>): <issue summary>\`
 
 If an edit fails (e.g., the target code has changed), skip the issue and add it to the User-confirm list with a note explaining the failure.
 
@@ -112,7 +115,7 @@ Options:
 If the user selects a fix strategy:
 1. Read the target file.
 2. Apply the selected fix using the Edit tool.
-3. Commit: `fix(<scope>): <issue summary>`
+3. Commit: \`fix(<scope>): <issue summary>\`
 
 If the user selects "修正しない（スキップ）", move to the next issue.
 
@@ -135,3 +138,5 @@ Use AskUserQuestion:
 - Each fix must be committed individually for easy revert.
 - Never auto-fix issues that cannot be parsed from the codex output (fallback rule).
 - All user-facing text must be in Japanese.
+`;
+}

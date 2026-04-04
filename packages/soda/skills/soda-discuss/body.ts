@@ -1,4 +1,5 @@
-Use English for internal reasoning (thinking). User interaction (discussion, presentations) must be in Japanese.
+export default function (ctx: { commandDocs(commands: string[]): string }): string {
+  return `Use English for internal reasoning (thinking). User interaction (discussion, presentations) must be in Japanese.
 
 ## Purpose
 
@@ -6,9 +7,9 @@ This skill is for **designing new features, skills, or concepts when details are
 
 Unlike procedural skills (soda-plan, soda-brief), this skill defines **values and principles** that guide the conversation, not a fixed sequence of steps.
 
-**Position in skill chain**: `soda-research → soda-brief → soda-discuss → soda-plan`. Downstream skills (soda-plan) query decisions from the DB via CLI. This skill's responsibility ends at recording decisions.
+**Position in skill chain**: \`soda-research → soda-brief → soda-discuss → soda-plan\`. Downstream skills (soda-plan) query decisions from the DB via CLI. This skill's responsibility ends at recording decisions.
 
-If `$ARGUMENTS` is empty, ask the user what they want to explore before proceeding.
+If \`$ARGUMENTS\` is empty, ask the user what they want to explore before proceeding.
 
 ## Core Values
 
@@ -123,29 +124,7 @@ Share findings, analysis, and recommendations as text output. Don't wrap every i
 
 **Anti-pattern**: Using AskUserQuestion for every interaction point, turning an open-ended discussion into a rigid Q&A flow. This prevents the user from volunteering context that wasn't anticipated by the predefined options.
 
-## Available CLI Commands (wat)
-
-| Command | Description |
-|---|---|
-| `sd decision create` | Create a decision with `--constraint`, `--why`, `--scope`, `--repo-owner`, `--repo-name`, `--tag`, `--rejected-alt-json`, or `--stdin` |
-| `sd decision list` | List decisions with `--tag`, `--repo <owner/repo>`, `--limit` |
-| `sd node create` | Create a node with `--kind`, `--body`, `--tags`, `--prop`, `--props-json`, or `--stdin` |
-| `sd node update <id>` | Update a node's `--body`, `--kind`, `--prop`, `--props-json`, or via `--stdin` |
-| `sd node delete <id>` | Delete a node |
-| `sd node get <id>` | Retrieve a node with all its relations |
-| `sd node search` | Search nodes with `--query`, `--kind`, `--tags`, `--limit`, `--offset` |
-| `sd tag add <id> <tags...>` | Add tags to a node |
-| `sd tag remove <id> <tags...>` | Remove tags from a node |
-| `sd link create <from> <to> --type <t>` | Create a typed directional link |
-| `sd link delete <from> <to> --type <t>` | Delete a link |
-| `sd link list <id>` | List links for a node (`--direction from\|to\|both`) |
-
-For complex properties, use `--stdin` with a heredoc:
-```sh
-sd node create --stdin <<'EOF'
-{"kind":"conversation","body":"...","properties":{...},"tags":[...]}
-EOF
-```
+${ctx.commandDocs(["node", "tag", "link", "list", "decision"])}
 
 ## Sub-agent Usage
 
@@ -157,7 +136,7 @@ Every sub-agent prompt MUST end with the standard investigation output contract:
 
 > Return findings in this exact format:
 > ### Files
-> - `path/to/file` — relevance to the topic
+> - \`path/to/file\` — relevance to the topic
 > ### Patterns
 > - pattern name — description of the convention or pattern found
 > ### Dependencies
@@ -169,7 +148,7 @@ Every sub-agent prompt MUST end with the standard investigation output contract:
 
 These are flexible guidance, not mandatory steps. Adapt to the conversation.
 
-- **Start with understanding**: Grasp what the user wants to explore. If `$ARGUMENTS` is vague, ask clarifying questions — but don't over-interrogate. One or two questions is usually enough to get started.
+- **Start with understanding**: Grasp what the user wants to explore. If \`$ARGUMENTS\` is vague, ask clarifying questions — but don't over-interrogate. One or two questions is usually enough to get started.
 - **Investigate with sub-agents**: Use sub-agents (Task, subagent_type: Explore) for codebase investigation. Apply the standard constraint block (above). Investigation informs the discussion but doesn't replace it.
 - **External research when needed**: When the discussion involves external libraries, technology comparison, or API integration, launch an external research sub-agent in parallel with any codebase investigation. The external research sub-agent should use Context7 MCP (resolve-library-id → get-library-docs) for official documentation and WebSearch for broader context (best practices, migration guides, known issues). Apply the standard constraint block. Use the external research output contract:
   > Return findings in this exact format:
@@ -184,7 +163,7 @@ These are flexible guidance, not mandatory steps. Adapt to the conversation.
 
   Present external research findings alongside codebase findings before asking for decisions — consistent with the "データが先、判断が後" principle.
 - **Iterate naturally**: Some discussions need multiple investigation rounds; others converge quickly. Follow the conversation's natural rhythm.
-- **Record decisions immediately**: When the user approves a design decision, persist it to the DB via `sd decision create`. The Bash tool permission prompt serves as a natural approval checkpoint. Include `--repo-owner` and `--repo-name` when working in a git repository, and `--tag topic:<topic-slug>` for grouping.
+- **Record decisions immediately**: When the user approves a design decision, persist it to the DB via \`sd decision create\`. The Bash tool permission prompt serves as a natural approval checkpoint. Include \`--repo-owner\` and \`--repo-name\` when working in a git repository, and \`--tag topic:<topic-slug>\` for grouping.
 - **Capture memos as text during discussion**: When a notable idea or insight emerges, present it as text ("メモ：〇〇") without writing to the DB. Memos are batched and written during wrap-up.
 - **Surface cross-cutting Open Questions**: When multiple decisions have accumulated, step back and consider questions that emerge from the interaction between decisions — patterns, tensions, or implications visible only in aggregate. This is a habit of periodic reflection, not a procedural step with a fixed trigger.
 
@@ -195,28 +174,28 @@ Wrap-up can be initiated by the user ("まとめて", "終わり") or suggested 
 ### Steps
 
 1. **Memo batch write**: Present a list of memos captured as text during discussion. Let the user review — discard, keep, or adjust. Write accepted memos to DB:
-   ```sh
+   \`\`\`sh
    sd node create --kind memo --body "<memo content>" --tag "topic:<slug>"
-   ```
+   \`\`\`
 
 2. **Conversation node creation**: Create a conversation node summarizing the session:
-   ```sh
+   \`\`\`sh
    sd node create --stdin <<'EOF'
    {"kind":"conversation","body":"<session title>","properties":{"context":"...","key_points":[...],"open_questions":[...],"summary_en":"...","keywords_en":[...]},"tags":["topic:<slug>"]}
    EOF
-   ```
+   \`\`\`
 
 3. **Link decisions and memos to conversation**:
-   ```sh
+   \`\`\`sh
    sd link create <decision_id> <conversation_id> --type decided_during
    sd link create <memo_id> <conversation_id> --type captured_during
-   ```
+   \`\`\`
 
 4. **Optional memo promotion**: Ask "昇格したいメモはありますか？" If the user wants to promote memos to idea/todo:
-   ```sh
+   \`\`\`sh
    sd node update <memo_id> --kind idea --props-json '{"summary_en":"...","keywords_en":[...]}'
-   ```
-   Link promoted nodes: `sd link create <promoted_id> <conversation_id> --type derived_from`
+   \`\`\`
+   Link promoted nodes: \`sd link create <promoted_id> <conversation_id> --type derived_from\`
 
 5. **Summarize**: Present the final state — conversation node + linked decisions + memos + promotions.
 
@@ -224,5 +203,7 @@ Wrap-up can be initiated by the user ("まとめて", "終わり") or suggested 
 
 - **Don't force a fixed sequence of steps.** The conversation flow should emerge from the topic, not from a template.
 - **Don't make autonomous decisions about direction.** Always confirm with the user before narrowing the discussion.
-- **Don't produce detailed implementation plans.** That's what `/soda-plan` is for.
-- **Don't produce implementation artifacts — whether as file edits or as text output.** DB writes via `wat` CLI are discussion artifacts, not implementation artifacts — writing decisions and memos is expected. This boundary prohibits file-by-file change lists, detailed diffs, and step-by-step implementation instructions. Code snippets for illustrating design points are fine; framing them as actionable proposals is not. When the user is ready to implement, transition to `/soda-plan`.
+- **Don't produce detailed implementation plans.** That's what \`/soda-plan\` is for.
+- **Don't produce implementation artifacts — whether as file edits or as text output.** DB writes via \`sd\` CLI are discussion artifacts, not implementation artifacts — writing decisions and memos is expected. This boundary prohibits file-by-file change lists, detailed diffs, and step-by-step implementation instructions. Code snippets for illustrating design points are fine; framing them as actionable proposals is not. When the user is ready to implement, transition to \`/soda-plan\`.
+`;
+}

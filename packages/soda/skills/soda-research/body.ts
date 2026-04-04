@@ -1,4 +1,5 @@
-
+export default function (_ctx: { commandDocs(commands: string[]): string }): string {
+  return `
 Perform deep, structured codebase research on the given topic and produce a reusable Research Summary artifact.
 
 Use English for internal reasoning (thinking). All user-facing output — topic framing, findings presentation, and AskUserQuestion options — must be in Japanese. The Research Summary block must use the exact English template format for downstream compatibility.
@@ -25,7 +26,7 @@ Present this framing briefly. Do NOT use AskUserQuestion — proceed directly to
 **Sub-agent output contract**: Every sub-agent prompt MUST end with the following output format requirement:
 > Return findings in this exact format:
 > ### Files
-> - `path/to/file` — relevance to the topic
+> - \`path/to/file\` — relevance to the topic
 > ### Patterns
 > - pattern name — description of the convention or pattern found
 > ### Dependencies
@@ -54,7 +55,7 @@ Based on Round 1 findings, launch 1-2 focused sub-agents in parallel (Task, suba
 
 Synthesize all investigation results into a structured findings report. Organize by theme (not by agent). Present in Japanese:
 
-- **主要な発見**: Key discoveries with file paths and specific code references (`path/to/file:L42-L78`)
+- **主要な発見**: Key discoveries with file paths and specific code references (\`path/to/file:L42-L78\`)
 - **パターンと規約**: Patterns and conventions found in the codebase
 - **アーキテクチャと依存関係**: Architecture relationships, dependency chains, data flow
 - **未解決の疑問**: Open questions and areas of uncertainty
@@ -80,16 +81,16 @@ Use AskUserQuestion:
 
 ### Step 5: Research Summary
 
-Emit the following structured handoff block. This enables same-session chaining to `/soda-discuss` or `/soda-plan`.
+Emit the following structured handoff block. This enables same-session chaining to \`/soda-discuss\` or \`/soda-plan\`.
 
-```
+\`\`\`
 ## Research Summary
 
 **Topic**: (one-sentence research question)
 **Scope**: (what areas were investigated)
 
 ### Key Findings
-- `path/to/file` — (discovery with specific details)
+- \`path/to/file\` — (discovery with specific details)
 - (pattern or convention found)
 
 ### Architecture & Dependencies
@@ -97,7 +98,7 @@ Emit the following structured handoff block. This enables same-session chaining 
 - (dependency chain)
 
 ### Code References
-- `path/to/file:L42-L78` — (what this code does and why it matters)
+- \`path/to/file:L42-L78\` — (what this code does and why it matters)
 
 ### Open Questions
 - (unresolved question that could not be answered from code alone)
@@ -105,18 +106,18 @@ Emit the following structured handoff block. This enables same-session chaining 
 ### Domain Knowledge
 - (corrections or additions provided by user during annotation cycle)
 (omit this section if no user annotations were provided)
-```
+\`\`\`
 
 Then print next steps:
 
-```
+\`\`\`
 Research complete:
 - Research Summary emitted for handoff
 
 Next:
   /soda-discuss — Discuss direction and explore approaches using this research
   /soda-plan — Plan implementation directly using this research
-```
+\`\`\`
 
 ## Constraints
 
@@ -125,3 +126,5 @@ Next:
 - The Research Summary block format should be stable — downstream skills use it as conversation context.
 - Findings presentation must be organized by theme, not by agent. Merge and deduplicate findings across agents.
 - Domain Knowledge entries from user annotations are authoritative — they override investigation findings when there is a conflict.
+`;
+}
