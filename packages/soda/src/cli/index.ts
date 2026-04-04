@@ -10,7 +10,8 @@ import { handleTag } from "./commands/tag.js";
 import { exitWithError } from "./helpers.js";
 
 export async function runCli(resource: string, args: string[]): Promise<void> {
-  const DB_PATH = process.env.SODA_BRAIN_DB ?? path.join(os.homedir(), ".soda-brain", "brain.db");
+  const DB_PATH =
+    process.env.SODA_AGENT_TOOLS_DB ?? path.join(os.homedir(), ".soda-agent-tools", "data.db");
   ensureDbDir(DB_PATH);
   const db = new Database(DB_PATH);
 
@@ -33,7 +34,7 @@ export async function runCli(resource: string, args: string[]): Promise<void> {
         break;
       default:
         exitWithError(
-          "Usage: soda-brain <node|tag|link|list|tui|setup>\n\nCommands:\n  node    Create, read, update, delete, search nodes\n  tag     Add or remove tags\n  link    Create, delete, list links\n  list    List kinds or tags\n  tui     Launch the TUI browser\n  setup   Configure Claude Code integration",
+          "Usage: sd <node|tag|link|list|tui|setup>\n\nCommands:\n  node    Create, read, update, delete, search nodes\n  tag     Add or remove tags\n  link    Create, delete, list links\n  list    List kinds or tags\n  tui     Launch the TUI browser\n  setup   Configure Claude Code integration",
         );
     }
   } catch (e) {

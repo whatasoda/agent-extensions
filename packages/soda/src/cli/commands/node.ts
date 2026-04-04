@@ -17,7 +17,7 @@ export async function handleNode(db: Database, args: string[]): Promise<void> {
     case "search":
       return nodeSearch(db, rest);
     default:
-      exitWithError("Usage: soda-brain node <create|get|update|delete|search>");
+      exitWithError("Usage: sd node <create|get|update|delete|search>");
   }
 }
 
@@ -65,7 +65,7 @@ async function nodeGet(db: Database, args: string[]): Promise<void> {
   const { positionals } = parseCli(args, {});
   const [id] = positionals;
   if (!id) {
-    exitWithError("Usage: soda-brain node get <id>");
+    exitWithError("Usage: sd node get <id>");
   }
   const result = db.getNode(id);
   outputJson(result);
@@ -82,9 +82,7 @@ async function nodeUpdate(db: Database, args: string[]): Promise<void> {
 
   const [id] = positionals;
   if (!id) {
-    exitWithError(
-      "Usage: soda-brain node update <id> [--body ...] [--kind ...] [--prop ...] [--stdin]",
-    );
+    exitWithError("Usage: sd node update <id> [--body ...] [--kind ...] [--prop ...] [--stdin]");
   }
 
   if (values.stdin) {
@@ -116,7 +114,7 @@ async function nodeDelete(db: Database, args: string[]): Promise<void> {
   const { positionals } = parseCli(args, {});
   const [id] = positionals;
   if (!id) {
-    exitWithError("Usage: soda-brain node delete <id>");
+    exitWithError("Usage: sd node delete <id>");
   }
   db.deleteNode(id);
   outputJson({ success: true });

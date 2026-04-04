@@ -5,7 +5,7 @@ Use English for internal reasoning (thinking). All user-facing output must be in
 
 ## Current Branch Context
 
-!`wat review detect-base-branch`
+!`sd review detect-base-branch`
 
 The above JSON provides `baseBranch`, `mergeBase`, `changedFiles`, `potentialConflicts`, and ready-to-use `commands.diff` / `commands.log`.
 
@@ -15,7 +15,7 @@ If $ARGUMENTS is not empty, treat it as the review focus or an alternative base 
 
 1. **Identify the diff**: Use the pre-fetched branch context JSON above. Run `commands.diff` to get the full diff. If $ARGUMENTS specifies a different base, re-compute the merge-base and diff accordingly. If the JSON contains an `error` field, present the error to the user and use AskUserQuestion: "別のベースブランチを指定" / "レビューを中止". If the diff is empty, inform the user and use AskUserQuestion: "別のベースブランチを指定" / "レビューを終了".
 
-2. **Load design decisions**: Query `wat decision list --repo <owner/repo>` (detect owner/repo from git remote).
+2. **Load design decisions**: Query `sd decision list --repo <owner/repo>` (detect owner/repo from git remote).
    - **If decisions found**: Present the found decisions and use AskUserQuestion to ask which apply to this review. Extract:
      - Decision constraints as **verification targets**
      - `rejected_alternatives` as **exclusion reference** (for context, not verification)

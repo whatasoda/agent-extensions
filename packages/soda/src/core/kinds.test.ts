@@ -84,13 +84,12 @@ describe("decision kind", () => {
       constraint: "Use SQLite",
       why: "Simplicity",
       scope: "packages/soda",
-      rejected_alternatives: [
-        { what: "PostgreSQL", why_rejected: "Too heavy for local use" },
-      ],
+      rejected_alternatives: [{ what: "PostgreSQL", why_rejected: "Too heavy for local use" }],
     });
-    expect((result as { rejected_alternatives: { what: string; why_rejected: string }[] }).rejected_alternatives).toEqual([
-      { what: "PostgreSQL", why_rejected: "Too heavy for local use" },
-    ]);
+    expect(
+      (result as { rejected_alternatives: { what: string; why_rejected: string }[] })
+        .rejected_alternatives,
+    ).toEqual([{ what: "PostgreSQL", why_rejected: "Too heavy for local use" }]);
   });
 });
 

@@ -10,6 +10,6 @@ export async function handleList(db: Database, args: string[]): Promise<void> {
     case "tags":
       return outputJson(db.listTags());
     default:
-      exitWithError("Usage: soda-brain list <kinds|tags>");
+      exitWithError("Usage: sd list <kinds|tags>");
   }
 }

@@ -4,14 +4,14 @@ import path from "path";
 import os from "os";
 
 const CLI_PATH = path.resolve(import.meta.dir, "../../src/cli.ts");
-const TEST_DB = path.join(os.tmpdir(), `soda-brain-e2e-${Date.now()}.db`);
+const TEST_DB = path.join(os.tmpdir(), `soda-agent-tools-e2e-${Date.now()}.db`);
 
 async function run(
   args: string[],
   stdin?: string,
 ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
   const proc = Bun.spawn(["bun", CLI_PATH, ...args], {
-    env: { ...process.env, SODA_BRAIN_DB: TEST_DB },
+    env: { ...process.env, SODA_AGENT_TOOLS_DB: TEST_DB },
     stderr: "pipe",
     stdin: stdin === undefined ? "pipe" : new Blob([stdin]),
     stdout: "pipe",
@@ -211,13 +211,21 @@ describe("CLI E2E", () => {
   describe("decision commands", () => {
     it("creates a decision with required flags", async () => {
       const result = await run([
-        "decision", "create",
-        "--constraint", "test constraint",
-        "--why", "test reason",
-        "--scope", "test scope",
+        "decision",
+        "create",
+        "--constraint",
+        "test constraint",
+        "--why",
+        "test reason",
+        "--scope",
+        "test scope",
       ]);
       expect(result.exitCode).toBe(0);
-      const node = parseOutput(result.stdout) as { kind: string; body: string; properties: Record<string, unknown> };
+      const node = parseOutput(result.stdout) as {
+        kind: string;
+        body: string;
+        properties: Record<string, unknown>;
+      };
       expect(node.kind).toBe("decision");
       expect(node.body).toBe("test constraint");
       expect(node.properties.constraint).toBe("test constraint");
@@ -236,7 +244,18 @@ describe("CLI E2E", () => {
     });
 
     it("filters by tag", async () => {
-      await run(["decision", "create", "--constraint", "tagged", "--why", "w", "--scope", "s", "--tag", "topic:alpha"]);
+      await run([
+        "decision",
+        "create",
+        "--constraint",
+        "tagged",
+        "--why",
+        "w",
+        "--scope",
+        "s",
+        "--tag",
+        "topic:alpha",
+      ]);
       await run(["decision", "create", "--constraint", "untagged", "--why", "w", "--scope", "s"]);
 
       const result = await run(["decision", "list", "--tag", "topic:alpha"]);
@@ -247,7 +266,20 @@ describe("CLI E2E", () => {
     });
 
     it("filters by repo", async () => {
-      await run(["decision", "create", "--constraint", "repo-scoped", "--why", "w", "--scope", "s", "--repo-owner", "octo", "--repo-name", "repo"]);
+      await run([
+        "decision",
+        "create",
+        "--constraint",
+        "repo-scoped",
+        "--why",
+        "w",
+        "--scope",
+        "s",
+        "--repo-owner",
+        "octo",
+        "--repo-name",
+        "repo",
+      ]);
       await run(["decision", "create", "--constraint", "no-repo", "--why", "w", "--scope", "s"]);
 
       const result = await run(["decision", "list", "--repo", "octo/repo"]);

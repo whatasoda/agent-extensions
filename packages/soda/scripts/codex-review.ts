@@ -111,9 +111,7 @@ async function getRefPath(refPath?: string): Promise<string> {
   return `${repoRoot}/CLAUDE.md`;
 }
 
-async function runCodex(
-  args: string[]
-): Promise<{ output: string; exitCode: number }> {
+async function runCodex(args: string[]): Promise<{ output: string; exitCode: number }> {
   const proc = Bun.spawn(["codex", ...args], {
     stdout: "pipe",
     stderr: "inherit",
@@ -123,9 +121,7 @@ async function runCodex(
   return { output, exitCode };
 }
 
-function extractTextBlocks(
-  content: string | { type: string; text?: string }[]
-): string {
+function extractTextBlocks(content: string | { type: string; text?: string }[]): string {
   if (typeof content === "string") return content;
   return content
     .filter((b) => b.type === "text" && b.text)
@@ -133,9 +129,7 @@ function extractTextBlocks(
     .join("\n\n");
 }
 
-async function preprocessSession(
-  jsonlPath: string
-): Promise<string | null> {
+async function preprocessSession(jsonlPath: string): Promise<string | null> {
   const file = Bun.file(jsonlPath);
   if (!(await file.exists())) {
     console.error(`⚠ セッションファイルが見つかりません: ${jsonlPath}`);
@@ -165,7 +159,7 @@ async function preprocessSession(
 
 async function buildSessionPart(
   sessionJsonlPath: string | undefined,
-  tmpDir?: string
+  tmpDir?: string,
 ): Promise<string> {
   if (!sessionJsonlPath) return "";
   const digest = await preprocessSession(sessionJsonlPath);
@@ -184,13 +178,13 @@ function extractSessionId(output: string): string | null {
 function printUsage() {
   console.error("Usage:");
   console.error(
-    '  bun codex-review.ts init "instruction" [--file <path>] [--ref <path>] [--session <path>]'
+    '  bun codex-review.ts init "instruction" [--file <path>] [--ref <path>] [--session <path>]',
   );
   console.error(
-    '  bun codex-review.ts findings "instruction" [--file <path>] [--ref <path>] [--session <path>]'
+    '  bun codex-review.ts findings "instruction" [--file <path>] [--ref <path>] [--session <path>]',
   );
   console.error(
-    '  bun codex-review.ts resume <session-id> <review-file> "instruction" [--ref <path>] [--session <path>]'
+    '  bun codex-review.ts resume <session-id> <review-file> "instruction" [--ref <path>] [--session <path>]',
   );
 }
 
@@ -225,28 +219,20 @@ async function main() {
       await writeFile(reviewFile, content);
     }
 
-    const sessionPart = await buildSessionPart(
-      parsed.sessionJsonlPath,
-      tmpDir
-    );
+    const sessionPart = await buildSessionPart(parsed.sessionJsonlPath, tmpDir);
     const prompt = `${parsed.instruction}: ${reviewFile} (ref: ${refPath})${sessionPart}`;
 
     try {
-      const { output, exitCode } = await runCodex([
-        "exec",
-        "-m",
-        "gpt-5.4",
-        prompt,
-      ]);
+      const { output, exitCode } = await runCodex(["exec", "-m", "gpt-5.4", prompt]);
 
       if (exitCode !== 0) {
         if (exitCode === 126 || exitCode === 127) {
           console.error(
-            `⚠ codex レビューをスキップします（codex コマンドが見つからない、または実行権限がありません — exit code: ${exitCode}）`
+            `⚠ codex レビューをスキップします（codex コマンドが見つからない、または実行権限がありません — exit code: ${exitCode}）`,
           );
         } else {
           console.error(
-            `⚠ codex レビューをスキップします（コマンド実行失敗 — exit code: ${exitCode}）`
+            `⚠ codex レビューをスキップします（コマンド実行失敗 — exit code: ${exitCode}）`,
           );
         }
         console.log(`review_file: ${reviewFile}`);
@@ -292,11 +278,11 @@ async function main() {
       if (exitCode !== 0) {
         if (exitCode === 126 || exitCode === 127) {
           console.error(
-            `⚠ codex 再レビューをスキップします（codex コマンドが見つからない、または実行権限がありません — exit code: ${exitCode}）`
+            `⚠ codex 再レビューをスキップします（codex コマンドが見つからない、または実行権限がありません — exit code: ${exitCode}）`,
           );
         } else {
           console.error(
-            `⚠ codex 再レビューをスキップします（コマンド実行失敗 — exit code: ${exitCode}）`
+            `⚠ codex 再レビューをスキップします（コマンド実行失敗 — exit code: ${exitCode}）`,
           );
         }
         process.exit(0);
@@ -304,9 +290,7 @@ async function main() {
 
       console.log(output);
     } catch {
-      console.error(
-        "⚠ codex 再レビューをスキップします（コマンド実行失敗）"
-      );
+      console.error("⚠ codex 再レビューをスキップします（コマンド実行失敗）");
       process.exit(0);
     }
   }

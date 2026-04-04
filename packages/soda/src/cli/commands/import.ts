@@ -43,7 +43,8 @@ function parseLDD(content: string, filePath: string): ParsedLDD {
     const ddBlocks = section.split(/^#### DD-\d+:\s*/m).slice(1);
     for (const block of ddBlocks) {
       const name = block.split("\n")[0].trim();
-      const constraint = block.match(/\*\*Constraint\*\*:\s*([\s\S]*?)(?=\n- \*\*)/)?.[1]?.trim() ?? "";
+      const constraint =
+        block.match(/\*\*Constraint\*\*:\s*([\s\S]*?)(?=\n- \*\*)/)?.[1]?.trim() ?? "";
       const why = block.match(/\*\*Why\*\*:\s*([\s\S]*?)(?=\n- \*\*|\n\n|$)/)?.[1]?.trim() ?? "";
       const scope = block.match(/\*\*Scope\*\*:\s*([\s\S]*?)(?=\n\n|$)/)?.[1]?.trim() ?? "";
       if (constraint || name) {
@@ -54,8 +55,11 @@ function parseLDD(content: string, filePath: string): ParsedLDD {
     // Extract RAs
     const raBlocks = section.split(/^#### RA-\d+:\s*/m).slice(1);
     for (const block of raBlocks) {
-      const what = block.match(/\*\*What\*\*:\s*([\s\S]*?)(?=\n- \*\*)/)?.[1]?.trim() ?? block.split("\n")[0].trim();
-      const whyRejected = block.match(/\*\*Why rejected\*\*:\s*([\s\S]*?)(?=\n\n|$)/)?.[1]?.trim() ?? "";
+      const what =
+        block.match(/\*\*What\*\*:\s*([\s\S]*?)(?=\n- \*\*)/)?.[1]?.trim() ??
+        block.split("\n")[0].trim();
+      const whyRejected =
+        block.match(/\*\*Why rejected\*\*:\s*([\s\S]*?)(?=\n\n|$)/)?.[1]?.trim() ?? "";
       if (what) {
         sectionRAs.push({ what, why_rejected: whyRejected });
       }
@@ -132,7 +136,10 @@ async function getRepoRoot(): Promise<string | null> {
   }
 }
 
-export async function handleImport(db: import("../../core/database.js").Database, args: string[]): Promise<void> {
+export async function handleImport(
+  db: import("../../core/database.js").Database,
+  args: string[],
+): Promise<void> {
   const scanMode = args.includes("--scan");
   const dryRun = args.includes("--dry-run");
   const fileArgs = args.filter((a) => !a.startsWith("--"));
@@ -150,7 +157,9 @@ export async function handleImport(db: import("../../core/database.js").Database
   } else if (fileArgs.length > 0) {
     files = fileArgs.map((f) => path.resolve(f));
   } else {
-    return exitWithError("Usage: wat decision import --scan  OR  wat decision import <file...>\n  --dry-run  Preview without writing to DB");
+    return exitWithError(
+      "Usage: sd decision import --scan  OR  sd decision import <file...>\n  --dry-run  Preview without writing to DB",
+    );
   }
 
   const repo = await detectRepo();
@@ -209,7 +218,9 @@ export async function handleImport(db: import("../../core/database.js").Database
   }
 
   if (dryRun) {
-    console.log(`\n[dry-run] Would import ${results.reduce((s, r) => s + r.imported, 0)} decision(s) total`);
+    console.log(
+      `\n[dry-run] Would import ${results.reduce((s, r) => s + r.imported, 0)} decision(s) total`,
+    );
   } else {
     outputJson({ imported: totalImported, files: results });
   }

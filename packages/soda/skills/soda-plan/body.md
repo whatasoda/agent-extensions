@@ -8,7 +8,7 @@ If $ARGUMENTS is empty, ask the user what they want to implement before proceedi
 ## Procedure
 
 1. **Investigate**: Explore the codebase to understand the scope, affected areas, and existing patterns.
-   - **Design Decision check**: Before launching sub-agents, query existing decisions via `wat decision list --repo <owner/repo>` (detect owner/repo from git remote).
+   - **Design Decision check**: Before launching sub-agents, query existing decisions via `sd decision list --repo <owner/repo>` (detect owner/repo from git remote).
      - If decisions found:
        - Present the found decisions and ask the user which apply to this task (always confirm — some may be stale or unrelated)
        - Extract decisions as **mandatory constraints** — every applicable decision must be traceable to a plan step
@@ -105,7 +105,7 @@ If $ARGUMENTS is empty, ask the user what they want to implement before proceedi
 Delegate codex review to a subagent in findings-only mode. The subagent reports issues but does NOT revise the content — the plan author incorporates findings to preserve original intent.
 
 1. Resolve session JSONL path (for context-aware review):
-   Run via Bash: `wat session resolve`
+   Run via Bash: `sd session resolve`
    Capture stdout as session path. If empty, proceed without session context.
 
 2. Launch a codex review subagent:

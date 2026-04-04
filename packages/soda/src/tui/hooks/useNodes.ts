@@ -5,7 +5,7 @@ import type { NodeWithRelations } from "../../core/types.js";
 import os from "os";
 import path from "path";
 
-const DEFAULT_DB_PATH = path.join(os.homedir(), ".soda-brain", "brain.db");
+const DEFAULT_DB_PATH = path.join(os.homedir(), ".soda-agent-tools", "data.db");
 
 export interface FilterParams {
   kind?: string;
@@ -20,7 +20,7 @@ export function useNodes(filter: FilterParams) {
   const dbRef = useRef<Database | null>(null);
 
   useEffect(() => {
-    const dbPath = process.env["SODA_BRAIN_DB"] ?? DEFAULT_DB_PATH;
+    const dbPath = process.env["SODA_AGENT_TOOLS_DB"] ?? DEFAULT_DB_PATH;
     ensureDbDir(dbPath);
     dbRef.current = new Database(dbPath);
     return () => {

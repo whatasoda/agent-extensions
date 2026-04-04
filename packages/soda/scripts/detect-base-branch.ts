@@ -119,18 +119,13 @@ async function getChangedFiles(mergeBase: string): Promise<ChangedFile[]> {
   });
 }
 
-async function getBaseChangedFiles(
-  mergeBase: string,
-  baseBranch: string
-): Promise<string[]> {
+async function getBaseChangedFiles(mergeBase: string, baseBranch: string): Promise<string[]> {
   try {
     let result: string;
     try {
-      result =
-        await $`git diff --name-only ${mergeBase}..origin/${baseBranch}`.text();
+      result = await $`git diff --name-only ${mergeBase}..origin/${baseBranch}`.text();
     } catch {
-      result =
-        await $`git diff --name-only ${mergeBase}..${baseBranch}`.text();
+      result = await $`git diff --name-only ${mergeBase}..${baseBranch}`.text();
     }
     return result.trim().split("\n").filter(Boolean);
   } catch {
@@ -138,10 +133,7 @@ async function getBaseChangedFiles(
   }
 }
 
-function detectConflicts(
-  yourFiles: ChangedFile[],
-  baseFiles: string[]
-): string[] {
+function detectConflicts(yourFiles: ChangedFile[], baseFiles: string[]): string[] {
   const yourFileSet = new Set<string>();
   for (const f of yourFiles) {
     yourFileSet.add(f.file);
@@ -153,10 +145,9 @@ function detectConflicts(
 }
 
 async function findNearestBaseBranch(
-  candidates: string[]
+  candidates: string[],
 ): Promise<{ branch: string; mergeBase: string } | null> {
-  let nearest: { branch: string; mergeBase: string; distance: number } | null =
-    null;
+  let nearest: { branch: string; mergeBase: string; distance: number } | null = null;
 
   for (const branch of candidates) {
     const mergeBase = await getMergeBase(branch);
