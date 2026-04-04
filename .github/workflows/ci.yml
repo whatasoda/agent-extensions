@@ -95,6 +95,10 @@ jobs:
           mv package.json.tmp package.json
           echo "Bumped @whatasoda/agent-tools: ${current} → ${new_version}"
 
+      - name: Build package
+        if: steps.detect-package.outputs.has_changes == 'true'
+        run: cd packages/soda && bun run build
+
       - name: Publish to npm
         if: steps.detect-package.outputs.has_changes == 'true'
         run: cd packages/soda && npm publish --access public --provenance
