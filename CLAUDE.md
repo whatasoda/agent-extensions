@@ -12,7 +12,7 @@ Manage and distribute personal Claude Code plugins and skills via the marketplac
 - **Language**: TypeScript
 - **Dependency management**: Bun workspaces (`plugins/*`, `packages/*`)
 - **npm package**: `@whatasoda/agent-tools` (published from `packages/soda/`)
-- **Knowledge graph**: SQLite via `bun:sqlite` (`~/.soda-brain/brain.db`)
+- **Knowledge graph**: SQLite via `bun:sqlite` (`~/.soda-agent-tools/data.db`)
 
 ## Architecture
 

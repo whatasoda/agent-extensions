@@ -4,14 +4,14 @@ import path from "path";
 import os from "os";
 
 const CLI_PATH = path.resolve(import.meta.dir, "../../src/cli.ts");
-const TEST_DB = path.join(os.tmpdir(), `soda-brain-e2e-${Date.now()}.db`);
+const TEST_DB = path.join(os.tmpdir(), `soda-agent-tools-e2e-${Date.now()}.db`);
 
 async function run(
   args: string[],
   stdin?: string,
 ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
   const proc = Bun.spawn(["bun", CLI_PATH, ...args], {
-    env: { ...process.env, SODA_BRAIN_DB: TEST_DB },
+    env: { ...process.env, SODA_AGENT_TOOLS_DB: TEST_DB },
     stderr: "pipe",
     stdin: stdin === undefined ? "pipe" : new Blob([stdin]),
     stdout: "pipe",
