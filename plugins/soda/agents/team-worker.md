@@ -6,4 +6,4 @@ model: sonnet
 permissionMode: bubble
 ---
 
-!`wat agent print team-worker`
+!`sd agent print team-worker`

@@ -6,4 +6,4 @@ argument-hint: [focus or base branch]
 allowed-tools: Bash(git *), Read, Grep, Glob, Task, AskUserQuestion
 ---
 
-!`wat skill print soda-review`
+!`sd skill print soda-review`
