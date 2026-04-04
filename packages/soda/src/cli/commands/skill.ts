@@ -1,5 +1,6 @@
 import path from "path";
 import { exitWithError } from "../helpers.js";
+import { createSkillContext } from "../../core/skill-context.js";
 
 const packageRoot = path.resolve(import.meta.dir, "../../../");
 
@@ -19,15 +20,14 @@ async function skillPrint(name: string | undefined): Promise<void> {
     exitWithError("Usage: soda skill print <name>");
   }
   const baseDir = path.join(packageRoot, "skills");
-  const filePath = path.resolve(baseDir, name, "body.md");
+  const filePath = path.resolve(baseDir, name, "body.ts");
   if (!filePath.startsWith(baseDir + path.sep)) {
     exitWithError(`Invalid skill name: ${name}`);
   }
-  const file = Bun.file(filePath);
-  const exists = await file.exists();
-  if (!exists) {
+  if (!(await Bun.file(filePath).exists())) {
     exitWithError(`Skill not found: ${name}`);
   }
-  const content = await file.text();
-  process.stdout.write(content);
+  const mod = await import(filePath);
+  const ctx = createSkillContext(packageRoot);
+  process.stdout.write(mod.default(ctx));
 }
