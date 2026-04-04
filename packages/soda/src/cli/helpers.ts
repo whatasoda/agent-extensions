@@ -1,4 +1,5 @@
 import { parseArgs } from "node:util";
+import path from "path";
 
 export function outputJson(data: unknown): void {
   console.log(JSON.stringify(data));
@@ -51,6 +52,14 @@ export function parseProps(
   }
 
   return base;
+}
+
+/**
+ * Resolve a script path under packageRoot/scripts/, using .ts in dev and .js in built dist.
+ */
+export function resolveScript(packageRoot: string, name: string): string {
+  const ext = import.meta.file.endsWith(".ts") ? ".ts" : ".js";
+  return path.join(packageRoot, "scripts", `${name}${ext}`);
 }
 
 export function parseCli(
