@@ -45,8 +45,7 @@ switch (command) {
   }
   case "tui":
   case undefined:
-    // @ts-expect-error: .tsx import works at runtime with Bun
-    await import("./tui/index.tsx");
+    await import("./tui/index.js");
     break;
   default:
     console.error(
