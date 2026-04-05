@@ -1,5 +1,5 @@
 import path from "path";
-import { exitWithError } from "../helpers.js";
+import { exitWithError, resolveScript } from "../helpers.js";
 
 const packageRoot = path.resolve(import.meta.dir, "../../../");
 
@@ -15,7 +15,7 @@ export async function handleReview(args: string[]): Promise<void> {
 }
 
 async function reviewDetectBaseBranch(args: string[]): Promise<void> {
-  const scriptPath = path.join(packageRoot, "scripts", "detect-base-branch.ts");
+  const scriptPath = resolveScript(packageRoot, "detect-base-branch");
   const proc = Bun.spawn(["bun", scriptPath, ...args], {
     stdout: "inherit",
     stderr: "inherit",
