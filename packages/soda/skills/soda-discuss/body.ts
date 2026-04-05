@@ -164,7 +164,7 @@ These are flexible guidance, not mandatory steps. Adapt to the conversation.
   Present external research findings alongside codebase findings before asking for decisions — consistent with the "データが先、判断が後" principle.
 - **Iterate naturally**: Some discussions need multiple investigation rounds; others converge quickly. Follow the conversation's natural rhythm.
 - **Record decisions immediately**: When the user approves a design decision, persist it to the DB via \`sd decision create\`. The Bash tool permission prompt serves as a natural approval checkpoint. Include \`--repo-owner\` and \`--repo-name\` when working in a git repository, and \`--tag topic:<topic-slug>\` for grouping.
-- **Capture memos as text during discussion**: When a notable idea or insight emerges, present it as text ("メモ：〇〇") without writing to the DB. Memos are batched and written during wrap-up.
+- **Capture memos as text during discussion**: When a notable idea or insight emerges, present it as text ("メモ：〇〇") without writing to the DB. Memos are written to the DB during wrap-up without user review.
 - **Surface cross-cutting Open Questions**: When multiple decisions have accumulated, step back and consider questions that emerge from the interaction between decisions — patterns, tensions, or implications visible only in aggregate. This is a habit of periodic reflection, not a procedural step with a fixed trigger.
 
 ## Wrap-up Procedure
@@ -173,7 +173,7 @@ Wrap-up can be initiated by the user ("まとめて", "終わり") or suggested 
 
 ### Steps
 
-1. **Memo batch write**: Present a list of memos captured as text during discussion. Let the user review — discard, keep, or adjust. Write accepted memos to DB:
+1. **Memo batch write**: Write all memos captured as text during discussion to DB:
    \`\`\`sh
    sd node create --kind memo --body "<memo content>" --tag "topic:<slug>"
    \`\`\`
@@ -191,13 +191,7 @@ Wrap-up can be initiated by the user ("まとめて", "終わり") or suggested 
    sd link create <memo_id> <conversation_id> --type captured_during
    \`\`\`
 
-4. **Optional memo promotion**: Ask "昇格したいメモはありますか？" If the user wants to promote memos to idea/todo:
-   \`\`\`sh
-   sd node update <memo_id> --kind idea --props-json '{"summary_en":"...","keywords_en":[...]}'
-   \`\`\`
-   Link promoted nodes: \`sd link create <promoted_id> <conversation_id> --type derived_from\`
-
-5. **Summarize**: Present the final state — conversation node + linked decisions + memos + promotions.
+4. **Summarize**: Present the final state — conversation node + linked decisions + memos.
 
 ## Skill Boundaries
 
