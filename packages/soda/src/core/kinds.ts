@@ -74,3 +74,13 @@ registerKind(
     keywords_en: z.array(z.string()).optional(),
   }),
 );
+
+registerKind(
+  "recap",
+  z.object({
+    what_done: z.array(z.string()).describe("Summary of completed work items"),
+    pending: z.array(z.string()).optional().describe("Remaining/deferred work items"),
+    notes: z.array(z.string()).optional().describe("Implementation notes and observations"),
+    keywords_en: z.array(z.string()).optional(),
+  }),
+);
