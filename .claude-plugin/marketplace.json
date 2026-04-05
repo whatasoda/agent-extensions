@@ -13,7 +13,7 @@
       "name": "soda",
       "source": "./plugins/soda",
       "description": "Agent workflow toolkit — design discussions, implementation planning, team orchestration, and knowledge graph",
-      "version": "0.1.2"
+      "version": "0.1.3"
     }
   ]
 }
