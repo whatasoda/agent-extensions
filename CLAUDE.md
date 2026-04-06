@@ -42,8 +42,7 @@ packages/soda/
     soda-plan/body.md
     ...
   agents/               # Agent body .md files (sd agent print reads these)
-    team-worker/body.md
-    ...
+    codex-review/body.md
   scripts/              # Utility scripts (codex-review, resolve-session, detect-base-branch)
 ```
 
@@ -58,8 +57,7 @@ plugins/soda/
     soda-discuss/SKILL.md   # frontmatter + !`sd skill print soda-discuss`
     ...
   agents/
-    team-worker.md          # frontmatter + !`sd agent print team-worker`
-    ...
+    codex-review.md         # frontmatter + !`sd agent print codex-review`
 ```
 
 ### CLI Commands (sd)

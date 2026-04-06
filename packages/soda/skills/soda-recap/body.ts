@@ -7,7 +7,7 @@ If $ARGUMENTS is not empty, use it as a scope hint or summary seed for the recap
 
 ## Purpose
 
-This skill captures **what was done, what remains, and what was learned** after any implementation session. It works after any kind of work — standalone coding, \`/soda-plan\` execution, \`/soda-team-run\` completion, or ad-hoc changes.
+This skill captures **what was done, what remains, and what was learned** after any implementation session. It works after any kind of work — standalone coding, \`/soda-plan\` execution, or ad-hoc changes.
 
 **Position in skill chain**: This skill is invoked **after** implementation, independent of any prior skill. It is not part of the \`soda-research → soda-brief → soda-discuss → soda-plan\` chain.
 
