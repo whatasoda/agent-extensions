@@ -77,7 +77,6 @@ describe("commandDocs embedding", () => {
     "soda-plan": ["decision", "session", "review"],
     "soda-review": ["review", "decision"],
     "soda-review-todos": ["node", "list"],
-    "soda-team-init": ["decision"],
     "soda-todo": ["node", "tag"],
   };
 
@@ -107,9 +106,9 @@ describe("commandDocs embedding", () => {
     });
   }
 
-  const skillsWithoutDocs = ["soda-brief", "soda-research", "soda-team-run"];
+  const skillsWithoutDocs = ["soda-brief", "soda-research"];
 
-  const agentsWithoutDocs = ["team-reviewer", "team-worker"];
+  const agentsWithoutDocs: string[] = [];
 
   for (const name of skillsWithoutDocs) {
     it(`skill/${name} does NOT embed sd CLI Reference`, async () => {
