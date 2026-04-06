@@ -67,25 +67,6 @@ ${ctx.commandDocs(["decision", "session", "review"])}
    Do NOT proceed to Step 3 until the user confirms branch strategy.
 3. **Plan**:
 
-   **Technical Pre-Gathering (M/L tasks only)**: After task scale classification, if the task is scale M or L, pre-gather technical details before entering plan mode:
-   - Identify rough step areas from investigation findings (affected areas, key files, functional groupings)
-   - For each area (up to 3), launch a sub-agent (Task, subagent_type: Explore, model: sonnet) in parallel with the Step Detail Template below
-   - Sub-agent prompts must include the constraint block, the specific area to investigate, and the Step Detail Template
-   - Use gathered details to write the plan with concrete technical context (type signatures, API contracts, test patterns) rather than re-investigating during plan writing
-
-   **Step Detail Template**: When pre-gathering technical details for M/L tasks, each sub-agent prompt MUST end with the following output format:
-   > Return findings in this exact format:
-   > ### File State
-   > - \`path/to/file\` — current exports, key functions, line count
-   > ### Type Signatures
-   > - \`TypeName\` — definition (from source)
-   > ### API Contracts
-   > - endpoint/function — signature and behavior
-   > ### Test Patterns
-   > - test file — existing test patterns, coverage gaps
-   > ### Validation Approaches
-   > - (how to verify changes in this area)
-
    Compose the plan content as markdown text (do not enter plan mode yet). Include the following elements. Do not follow a fixed template — organize and format them as best fits the task. Follow the Compact-Resilience Guidelines below when authoring plan content. After composition, proceed to the Codex Review sub-section before entering plan mode.
 
    **Required elements:**
@@ -103,8 +84,6 @@ ${ctx.commandDocs(["decision", "session", "review"])}
    - **Technical context per step** — type signatures, API contracts, data shapes, algorithms
    - **Design rationale** — for non-obvious decisions, state "why" explicitly as a labeled callout, not embedded in prose
    - **Cross-step shared context** — types, constants, or contracts used by multiple steps. Define once and reference by name in each step.
-   - **Subagent utilization plan** (include for scale M and L) — for each step, indicate whether it should be executed in a subagent or in the main context. See Subagent Criteria below for the decision rules.
-   - **Transition note** (include for scale L only) — note that execution transitions to \`/soda-team-init\` → \`/soda-team-run\`. The plan serves as input context for task decomposition. See Execution Phase for details.
    - **Design decisions** (include when the plan involves architecture, external contracts, or user-facing behavior choices) — present each decision as a labeled callout in the plan body:
      > **Design Decision: [topic]**
      > Option A: ... — [trade-off]
@@ -200,109 +179,7 @@ If no discussion items are identified, skip this phase and proceed directly to E
 
 ## Execution Phase
 
-After plan approval (ExitPlanMode), execution routing depends on the task scale classification.
-
-### Scale S — Main Context
-
-Execute all steps in the main context sequentially. No worktree isolation or review cycle.
-
-### Scale M — Worker → Reviewer Core Loop
-
-Subagent-eligible steps are executed via \`team-worker\` → \`team-reviewer\` cycle on isolated worktrees. Main-context steps execute in the main context as before.
-
-**For each subagent-eligible step:**
-
-1. **Create worktree**:
-   \`\`\`bash
-   git worktree add .worktrees/step-{{N}} -b plan/step-{{N}} HEAD
-   \`\`\`
-
-2. **Launch Worker** via \`Task(subagent_type: soda:team-worker)\` with prompt:
-   \`\`\`
-   ## Task
-   ### Definition
-   {{step description and file changes from plan}}
-   ### Design Constraints
-   {{design decisions and constraints from plan, if any}}
-   ### Context
-   {{investigation summary and cross-step shared context from plan}}
-   ### Validation
-   {{validation criteria from plan step}}
-
-   ## Commit Message
-   {{commit message from plan step}}
-
-   ## Working Directory
-   {{worktree absolute path}}
-   \`\`\`
-
-3. **On Worker DONE** → launch Reviewer via \`Task(subagent_type: soda:team-reviewer)\`:
-   \`\`\`
-   ## Task Definition
-   {{same task sections as Worker input (Definition, Design Constraints, Context, Validation)}}
-   ## Working Directory
-   {{worktree path}}
-   ## Changes to Review
-   {{git diff of worktree branch vs base}}
-   \`\`\`
-
-   > **Why no \`## Architecture Decisions\`**: soda-plan context does not maintain ARCHITECTURE.md. Reviewer evaluates against the step's own Design Constraints and Validation criteria instead.
-
-4. **Handle verdict**:
-   - **PASS / PASS_WITH_FIX** → merge worktree branch to current branch, clean up:
-     \`\`\`bash
-     git checkout {{current_branch}}
-     git merge --squash plan/step-{{N}}
-     git commit -m "{{commit message}} (plan/step-{{N}})"
-     git worktree remove .worktrees/step-{{N}}
-     git branch -D plan/step-{{N}}
-     \`\`\`
-     **Merge conflict handling**: If merge fails due to conflicts:
-     \`\`\`bash
-     git reset --merge
-     \`\`\`
-     Report conflicting files to user via AskUserQuestion with options:
-     - "コンフリクトを手動で解決する" → user resolves, then resume
-     - "このステップをスキップ" → clean up worktree and branch:
-       \`\`\`bash
-       git worktree remove .worktrees/step-{{N}}
-       git branch -D plan/step-{{N}}
-       \`\`\`
-   - **FAIL** → append Reviewer's "For Next Worker" findings to the step's Context section, reset worktree to the base commit, retry Worker once:
-     \`\`\`bash
-     cd .worktrees/step-{{N}}
-     git clean -fd
-     git reset --hard {{current_branch}}
-     \`\`\`
-     > **Why \`{{current_branch}}\` not \`~1\`**: Worker may create multiple commits. Resetting to the branch the worktree was created from guarantees a clean slate, matching soda-team-run's pattern.
-
-     If second attempt also FAILs → report to user via AskUserQuestion with Reviewer findings and options:
-     - "実装を受け入れる" → merge worktree branch as-is (same as PASS flow)
-     - "このステップをスキップ" → clean up worktree and branch, skip this step:
-       \`\`\`bash
-       git worktree remove .worktrees/step-{{N}}
-       git branch -D plan/step-{{N}}
-       \`\`\`
-   - **ESCALATE** → report to user via AskUserQuestion with escalation details and options:
-     - "実装を受け入れる" → merge worktree branch as-is (same as PASS flow)
-     - "このステップをスキップ" → clean up worktree and branch, skip this step:
-       \`\`\`bash
-       git worktree remove .worktrees/step-{{N}}
-       git branch -D plan/step-{{N}}
-       \`\`\`
-
-5. **On Worker BLOCKED** → read BLOCKER.md from worktree root, report to user via AskUserQuestion.
-
-**Sequencing**: Subagent-eligible steps with no mutual dependencies may run in parallel (separate worktrees). Steps with dependencies execute sequentially — wait for the dependency to merge before creating the next worktree.
-
-### Scale L — Transition to /soda-team-init
-
-Scale L tasks are too large for soda-plan's inline execution. After plan approval, present transition guidance:
-
-> このタスクは規模が大きいため、\`/soda-team-init\` でタスク分解し \`/soda-team-run\` で実行することを推奨します。
-> プランの内容を \`/soda-team-init\` の入力コンテキストとして活用できます。
-
-Do NOT execute implementation inline. The approved plan serves as input context for \`/soda-team-init\`.
+After plan approval (ExitPlanMode), execute all steps sequentially in the main context. Update plan step markers from \`- [ ]\` to \`- [x]\` as each step completes.
 
 ## Constraints
 
@@ -324,40 +201,5 @@ Plans must survive context compaction. Follow these rules when authoring plan co
 - **Code over prose**: Prefer code snippets and structured data (\`interface Foo { bar: string }\`) over prose descriptions ("Foo has a bar field of type string"). Code survives intact; prose gets summarized away.
 - **Labeled callouts**: State design rationale as "Why: ..." callouts, not embedded in paragraphs. Labeled callouts are retained as structure; prose rationale is dropped.
 
-## Subagent Criteria
-
-When executing the approved plan, use subagents (Task tool) for steps that meet ALL of the following:
-
-1. **Self-contained** — The step does not need to read results from a prior step's execution at runtime. All inputs are defined in the plan (file paths, type signatures, expected behavior).
-2. **No cross-step file conflicts** — The step does not modify files that a concurrent step also modifies.
-3. **Verifiable in isolation** — The step has validation criteria that can be checked without running the full application or depending on other steps' output.
-
-Use the main context for steps that:
-- Depend on runtime output from a prior step (e.g., "adjust based on test results from Step 2")
-- Modify shared files (e.g., a central config, shared type file) that other steps also touch
-- Require iterative adjustment based on integration feedback
-- Are the final integration or verification step
-
-When the plan includes a subagent utilization plan, annotate each step with one of:
-- **Subagent-eligible** — meets all three criteria above
-- **Main-context** — state which criterion is not met
-
-## Task Scale Classification
-
-Immediately after investigation (Step 1) completes, classify the task scale based on investigation results. The classification determines which conditional elements to include and how execution is routed.
-
-**Classification criteria** (use the first matching category):
-
-- **S (Small)** — 1-3 steps, no cross-step dependencies beyond sequential ordering
-  - Subagent utilization plan: omit (no benefit from subagent overhead)
-  - Execution method: main context (see Execution Phase)
-- **M (Medium)** — 4-6 steps, fewer than 2 independent subtrees in the dependency graph
-  - Subagent utilization plan: include (per-step annotation as before)
-  - Execution method: Worker → Reviewer core loop for subagent-eligible steps (see Execution Phase)
-- **L (Large)** — 7+ steps, OR 4+ steps with 2+ independent subtrees in the dependency graph
-  - Subagent utilization plan: include (per-step annotation)
-  - Execution method: transition to \`/soda-team-init\` → \`/soda-team-run\` (see Execution Phase)
-
-State the classification at the top of the plan body: \`**Task Scale: [S|M|L]**\`
 `;
 }
