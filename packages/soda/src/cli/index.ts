@@ -3,6 +3,7 @@ import path from "path";
 import { Database } from "../core/database.js";
 import { ensureDbDir } from "../core/ensure-dirs.js";
 import { handleDecision } from "./commands/decision.js";
+import { handleHandoff } from "./commands/handoff.js";
 import { handleLink } from "./commands/link.js";
 import { handleList } from "./commands/list.js";
 import { handleNode } from "./commands/node.js";
@@ -32,9 +33,12 @@ export async function runCli(resource: string, args: string[]): Promise<void> {
       case "decision":
         await handleDecision(db, args);
         break;
+      case "handoff":
+        await handleHandoff(db, args);
+        break;
       default:
         exitWithError(
-          "Usage: sd <node|tag|link|list|tui|setup>\n\nCommands:\n  node    Create, read, update, delete, search nodes\n  tag     Add or remove tags\n  link    Create, delete, list links\n  list    List kinds or tags\n  tui     Launch the TUI browser\n  setup   Configure Claude Code integration",
+          "Usage: sd <node|tag|link|list|decision|handoff|tui|setup>\n\nCommands:\n  node      Create, read, update, delete, search nodes\n  tag       Add or remove tags\n  link      Create, delete, list links\n  list      List kinds or tags\n  decision  Create or list design decisions\n  handoff   Write, list, get, complete session handoffs\n  tui       Launch the TUI browser\n  setup     Configure Claude Code integration",
         );
     }
   } catch (e) {
