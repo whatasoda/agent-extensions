@@ -84,3 +84,14 @@ registerKind(
     keywords_en: z.array(z.string()).optional(),
   }),
 );
+
+registerKind(
+  "handoff",
+  z.object({
+    status: z.enum(["active", "completed"]).default("active"),
+    slug: z.string().describe("URL-safe identifier for search and display"),
+    repo_owner: z.string().optional().describe("Repository owner for scoping"),
+    repo_name: z.string().optional().describe("Repository name for scoping"),
+    keywords_en: z.array(z.string()).optional(),
+  }),
+);
