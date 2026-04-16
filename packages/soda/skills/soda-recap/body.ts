@@ -79,6 +79,26 @@ For each related node found:
 
 If no related nodes are found, skip linking.
 
+### Step 4.5: Complete Related Handoffs
+
+Search for active handoffs with the same topic tag:
+
+\`\`\`sh
+sd handoff list --status active --tags topic:<slug>
+\`\`\`
+
+The output is a JSON array. For each active handoff found:
+1. Complete: \`sd handoff complete <handoff_id>\`
+2. Link: \`sd link create <recap_id> <handoff_id> --type completes\`
+
+If no active handoffs are found, skip this step.
+
+If no handoffs match by topic tag, try a broader search by repo:
+\`\`\`sh
+sd handoff list --status active --repo <owner>/<name>
+\`\`\`
+If recent active handoffs exist for the same repo, present them and complete any that are clearly related to the recapped work.
+
 ### Step 5: Present
 
 Display the recorded recap to the user in Japanese:
@@ -90,6 +110,7 @@ Display the recorded recap to the user in Japanese:
 - 完了: <what_done items>
 - 未対応: <pending items, or "なし">
 - メモ: <notes, or "なし">
+- ハンドオフ完了: <completed handoff slugs, or "なし">
 - リンク: <linked nodes, or "なし">
 \`\`\`
 
@@ -102,6 +123,6 @@ Display the recorded recap to the user in Japanese:
 - Keep context gathering lightweight — max 1 sub-agent launch.
 - If no git changes and no useful conversation context exist, write a minimal recap noting the absence and present it.
 
-${ctx.commandDocs(["node", "link", "tag"])}
+${ctx.commandDocs(["node", "link", "tag", "handoff"])}
 `;
 }
