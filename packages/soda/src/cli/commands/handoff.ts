@@ -4,7 +4,9 @@ import path from "path";
 import type { Database } from "../../core/database.js";
 import { exitWithError, outputJson, parseCli } from "../helpers.js";
 
-const HANDOFF_DIR = path.join(os.homedir(), ".soda-agent-tools", "handoffs");
+const HANDOFF_DIR =
+  process.env.SODA_AGENT_TOOLS_HANDOFF_DIR ??
+  path.join(os.homedir(), ".soda-agent-tools", "handoffs");
 
 export async function handleHandoff(db: Database, args: string[]): Promise<void> {
   const [action] = args;
@@ -50,10 +52,15 @@ async function handoffWrite(db: Database, args: string[]): Promise<void> {
     "repo-name": { type: "string" },
     tags: { type: "string" },
     stdin: { default: false, type: "boolean" },
+    output: { type: "string", default: "full" },
   });
 
   const slug = values.slug as string | undefined;
   if (!slug) exitWithError("Error: --slug is required");
+  const outputMode = values.output as string;
+  if (outputMode !== "full" && outputMode !== "compact") {
+    exitWithError("Error: --output must be either full or compact");
+  }
 
   // Read raw Markdown from stdin (NOT JSON)
   const body = (await Bun.stdin.text()).trimEnd();
@@ -84,6 +91,16 @@ async function handoffWrite(db: Database, args: string[]): Promise<void> {
   }
 
   const filePath = exportFile(result.id, body);
+  if (outputMode === "compact") {
+    outputJson({
+      id: result.id,
+      slug,
+      status: "active",
+      updated_at: result.updated_at,
+      file_path: filePath,
+    });
+    return;
+  }
   outputJson({ ...result, file_path: filePath });
 }
 

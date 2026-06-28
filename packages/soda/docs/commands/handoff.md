@@ -1,7 +1,7 @@
 ### sd handoff
 
 #### sd handoff write
-Flags: `--slug` (string, required), `--repo-owner` (string), `--repo-name` (string), `--tags` (comma-separated string), `--stdin` (boolean)
+Flags: `--slug` (string, required), `--repo-owner` (string), `--repo-name` (string), `--tags` (comma-separated string), `--stdin` (boolean), `--output` (`full` | `compact`, default `full`)
 
 `--stdin` reads raw Markdown text from stdin (NOT JSON).
 
@@ -9,10 +9,13 @@ Upsert behavior: if an active handoff with the same slug exists, it updates the 
 
 Exports the Markdown body to `~/.soda-agent-tools/handoffs/<node-id>.md`.
 
+Use `--output compact` in automated workflows to return only
+`{ id, slug, status, updated_at, file_path }` without echoing the Markdown body.
+
 Example:
 ```sh
 echo "# WRM daemon handoff\n\n## Next Actions\n- Fix Dockerfile" \
-  | sd handoff write --slug wrm-daemon --repo-owner dinii-inc --repo-name dinii-self-all --tags topic:wrm-daemon --stdin
+  | sd handoff write --slug wrm-daemon --repo-owner dinii-inc --repo-name dinii-self-all --tags topic:wrm-daemon --stdin --output compact
 ```
 
 #### sd handoff list

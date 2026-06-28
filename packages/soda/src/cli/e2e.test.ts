@@ -1,17 +1,23 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import { unlinkSync } from "fs";
+import { mkdirSync, rmSync, unlinkSync } from "fs";
 import path from "path";
 import os from "os";
 
 const CLI_PATH = path.resolve(import.meta.dir, "../../src/cli.ts");
 const TEST_DB = path.join(os.tmpdir(), `soda-agent-tools-e2e-${Date.now()}.db`);
+const TEST_HANDOFF_DIR = path.join(os.tmpdir(), `soda-agent-tools-e2e-handoffs-${Date.now()}`);
+const TEST_INSIGHTS_DIR = path.join(os.tmpdir(), `soda-agent-tools-e2e-insights-${Date.now()}`);
 
 async function run(
   args: string[],
   stdin?: string,
 ): Promise<{ stdout: string; stderr: string; exitCode: number }> {
   const proc = Bun.spawn(["bun", CLI_PATH, ...args], {
-    env: { ...process.env, SODA_AGENT_TOOLS_DB: TEST_DB },
+    env: {
+      ...process.env,
+      SODA_AGENT_TOOLS_DB: TEST_DB,
+      SODA_AGENT_TOOLS_HANDOFF_DIR: TEST_HANDOFF_DIR,
+    },
     stderr: "pipe",
     stdin: stdin === undefined ? "pipe" : new Blob([stdin]),
     stdout: "pipe",
@@ -42,6 +48,8 @@ describe("CLI E2E", () => {
     } catch {
       // Ignore
     }
+    rmSync(TEST_HANDOFF_DIR, { force: true, recursive: true });
+    rmSync(TEST_INSIGHTS_DIR, { force: true, recursive: true });
   });
 
   describe("node commands", () => {
@@ -287,6 +295,89 @@ describe("CLI E2E", () => {
       const decisions = parseOutput(result.stdout) as { body: string }[];
       expect(decisions.length).toBe(1);
       expect(decisions[0].body).toBe("repo-scoped");
+    });
+  });
+
+  describe("handoff commands", () => {
+    it("returns a compact acknowledgement without echoing the body", async () => {
+      const body = "# Compact handoff\n\n## Next Actions\n- Continue";
+      const result = await run(
+        ["handoff", "write", "--slug", "compact-handoff", "--stdin", "--output", "compact"],
+        body,
+      );
+
+      expect(result.exitCode).toBe(0);
+      const output = parseOutput(result.stdout) as Record<string, unknown>;
+      expect(output.slug).toBe("compact-handoff");
+      expect(output.status).toBe("active");
+      expect(output.id).toBeString();
+      expect(output.file_path).toBeString();
+      expect(output).not.toHaveProperty("body");
+      expect(output).not.toHaveProperty("properties");
+    });
+
+    it("keeps full output as the backward-compatible default", async () => {
+      const body = "# Full handoff\n\n## Next Actions\n- Continue";
+      const result = await run(["handoff", "write", "--slug", "full-handoff", "--stdin"], body);
+
+      expect(result.exitCode).toBe(0);
+      const output = parseOutput(result.stdout) as Record<string, unknown>;
+      expect(output.body).toBe(body);
+      expect(output.properties).toEqual(expect.objectContaining({ slug: "full-handoff" }));
+    });
+  });
+
+  describe("insights commands", () => {
+    it("emits an aggregate report for an empty transcript root", async () => {
+      mkdirSync(TEST_INSIGHTS_DIR, { recursive: true });
+      const result = await run([
+        "insights",
+        "analyze",
+        "--root",
+        TEST_INSIGHTS_DIR,
+        "--since",
+        "2026-06-01T00:00:00.000Z",
+        "--until",
+        "2026-07-01T00:00:00.000Z",
+      ]);
+
+      expect(result.exitCode).toBe(0);
+      const report = parseOutput(result.stdout) as {
+        schema_version: number;
+        api: { unique_calls: number };
+        privacy: { raw_content_retained: boolean };
+      };
+      expect(report.schema_version).toBe(1);
+      expect(report.api.unique_calls).toBe(0);
+      expect(report.privacy.raw_content_retained).toBeFalse();
+    });
+
+    it("emits an empty workstream report from initialized local data", async () => {
+      mkdirSync(TEST_INSIGHTS_DIR, { recursive: true });
+      await run(["node", "create", "--kind", "memo", "--body", "initialize db"]);
+      const result = await run([
+        "insights",
+        "workstreams",
+        "--root",
+        TEST_INSIGHTS_DIR,
+        "--db",
+        TEST_DB,
+        "--since",
+        "2026-06-01T00:00:00.000Z",
+        "--until",
+        "2026-07-01T00:00:00.000Z",
+      ]);
+
+      expect(result.exitCode).toBe(0);
+      const report = parseOutput(result.stdout) as {
+        view: string;
+        summary: { confirmed_workstreams: number; returned_workstreams: number };
+        workstreams: unknown[];
+      };
+      expect(report.view).toBe("summary");
+      expect(report.summary.confirmed_workstreams).toBe(0);
+      expect(report.summary.returned_workstreams).toBe(0);
+      expect(report.workstreams).toEqual([]);
     });
   });
 
