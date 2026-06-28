@@ -71,6 +71,7 @@ sd decision create|list                   # Design decision management
 sd skill print <name>                     # Output skill body for marketplace stubs
 sd agent print <name>                     # Output agent body for marketplace stubs
 sd review detect-base-branch              # Git branch detection utility
+sd insights analyze                       # Aggregate Claude Code transcript usage
 sd tui                                    # Read-only knowledge graph browser
 sd setup                                  # Global install helper
 ```

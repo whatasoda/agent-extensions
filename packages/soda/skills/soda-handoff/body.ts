@@ -74,12 +74,13 @@ Write the body as **rich Markdown** — use code blocks, tables, command example
 Pipe the Markdown body to the handoff command. The command handles DB upsert and file export automatically:
 
 \`\`\`sh
-cat <<'HANDOFF_EOF' | sd handoff write --slug <slug> --repo-owner <owner> --repo-name <name> --tags topic:<slug> --stdin
+cat <<'HANDOFF_EOF' | sd handoff write --slug <slug> --repo-owner <owner> --repo-name <name> --tags topic:<slug> --stdin --output compact
 <full Markdown body here>
 HANDOFF_EOF
 \`\`\`
 
 If a handoff with the same slug already exists (active), it will be updated in place.
+Compact output returns only the handoff ID, slug, status, update time, and exported file path.
 
 The output JSON includes \`file_path\` — the exported Markdown location.
 
