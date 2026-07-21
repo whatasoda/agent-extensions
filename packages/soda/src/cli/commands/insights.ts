@@ -67,7 +67,8 @@ export async function handleInsights(args: string[]): Promise<void> {
   }
 
   const root = path.resolve(
-    (values.root as string | undefined) ?? path.join(os.homedir(), ".claude", "projects"),
+    (values.root as string | undefined) ??
+      path.join(process.env.CLAUDE_CONFIG_DIR ?? path.join(os.homedir(), ".claude"), "projects"),
   );
 
   try {
