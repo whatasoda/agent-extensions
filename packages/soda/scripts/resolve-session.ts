@@ -12,6 +12,12 @@
 
 import { readdir } from "node:fs/promises";
 
+// Claude Code の設定ディレクトリ。mise 等で CLAUDE_CONFIG_DIR が分離されている場合はそれに従い、
+// 未設定なら従来どおり ~/.claude にフォールバックする。
+function claudeConfigDir(home: string): string {
+  return process.env.CLAUDE_CONFIG_DIR || `${home}/.claude`;
+}
+
 async function findInIndex(indexPath: string, sessionId: string): Promise<string | null> {
   const file = Bun.file(indexPath);
   if (!(await file.exists())) return null;
@@ -28,10 +34,11 @@ async function findClaudePid(): Promise<number | null> {
   let pid = process.ppid;
   const home = process.env.HOME;
   if (!home) return null;
+  const configDir = claudeConfigDir(home);
 
   // Check if current ppid has a session file (bash case won't)
   for (let depth = 0; depth < 3; depth++) {
-    const sessionFile = Bun.file(`${home}/.claude/sessions/${pid}.json`);
+    const sessionFile = Bun.file(`${configDir}/sessions/${pid}.json`);
     if (await sessionFile.exists()) return pid;
 
     // Walk up: read ppid from /proc or ps
@@ -54,7 +61,8 @@ async function main() {
     console.error("⚠ HOME environment variable is not set");
     process.exit(0);
   }
-  const projectsDir = `${home}/.claude/projects`;
+  const configDir = claudeConfigDir(home);
+  const projectsDir = `${configDir}/projects`;
 
   // Step 1: Find claude PID by walking process tree
   const claudePid = await findClaudePid();
@@ -63,7 +71,7 @@ async function main() {
     process.exit(0);
   }
 
-  const pidFile = Bun.file(`${home}/.claude/sessions/${claudePid}.json`);
+  const pidFile = Bun.file(`${configDir}/sessions/${claudePid}.json`);
   if (!(await pidFile.exists())) {
     console.error(`⚠ セッションPIDファイルが見つかりません (PID: ${claudePid})`);
     process.exit(0);
