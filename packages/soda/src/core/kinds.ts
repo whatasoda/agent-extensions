@@ -93,5 +93,7 @@ registerKind(
     repo_owner: z.string().optional().describe("Repository owner for scoping"),
     repo_name: z.string().optional().describe("Repository name for scoping"),
     keywords_en: z.array(z.string()).optional(),
+    generated_by: z.string().optional().describe("Who authored the body, e.g. codex"),
+    model: z.string().optional().describe("Model that authored the body"),
   }),
 );

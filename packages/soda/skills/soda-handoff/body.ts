@@ -1,113 +1,71 @@
 export default function (ctx: { commandDocs(commands: string[]): string }): string {
-  return `Write a session handoff for cross-worktree continuity. This skill is **non-interactive** — it auto-generates and writes the handoff without confirmation.
+  return `Write a session handoff for cross-worktree continuity. This skill is **non-interactive** — it runs one command and reports the result.
 
-Use English for internal reasoning (thinking). Handoff content must be in English. Status messages to the user must be in Japanese.
+The handoff document is authored **and reviewed** by Codex, not by you. \`sd handoff generate\` resolves the current Claude transcript, snapshots the repository state, has \`codex exec\` write the document under a read-only sandbox, then has a second Codex pass review it against the same evidence and revise it. Anything the review cannot clear is recorded inside the stored document as an "Unresolved review findings" section.
 
-If $ARGUMENTS is not empty, use it as the workstream name or scope hint.
-
-## Purpose
-
-This skill captures **what the next session needs to know to continue this work**. It writes a rich Markdown document to the knowledge graph with file export, accessible from any worktree.
+Status messages to the user must be in Japanese.
 
 **When to use**: When ending a session with work still in progress. For completed work, use \`/soda-recap\` instead.
 
 ## Procedure
 
-### Step 1: Context Gathering
+### Step 1: Generate
 
-Launch a sub-agent (Task, subagent_type: Explore) to gather session context:
-
-**Sub-agent prompt**:
-> You are a research-only agent. Do NOT use AskUserQuestion, EnterPlanMode, or any interactive/planning tools. Return your findings in the output format specified below.
->
-> ## Task
-> Gather context for a session handoff document.
->
-> ### Git State
-> Run \`git status\`, \`git log --oneline -10\`, and \`git diff --stat\` to understand current working state.
-> Check current branch: \`git branch --show-current\`
-> Check remote: \`git remote get-url origin 2>/dev/null\`
->
-> ### Changed Files
-> For each significantly changed or in-progress file, read enough to understand what was modified and what remains.
->
-> ### Conversation Context
-> If $ARGUMENTS provides a scope hint, focus investigation on that area.
->
-> Return findings in this exact format:
-> ### Current State
-> - branch, uncommitted changes, recent commits
-> ### Work Done
-> - what was accomplished in this session
-> ### In Progress
-> - what is partially done or needs continuation
-> ### References
-> - \\\`path/to/file\\\` — why it matters for the next session
-> ### Repo Info
-> - remote URL (for owner/name extraction)
-
-### Step 2: Synthesize Handoff
-
-From the sub-agent findings and conversation context, compose a rich Markdown document. The document MUST include at minimum:
-
-- **Task**: What is being worked on (one-line summary as H1 heading)
-- **Next Actions**: Concrete steps for the next session to pick up
-
-Additional sections to include when relevant:
-- **Current State**: Branch, PR status, CI status, what's deployed vs local
-- **Architecture / Design**: Key design decisions or patterns the next session should know
-- **References**: File paths, URLs, related PRs, Notion links
-- **Known Issues**: Blockers, flaky tests, environment-specific gotchas
-- **Verification Steps**: How to validate the work (commands, expected output)
-
-Write the body as **rich Markdown** — use code blocks, tables, command examples, and structured sections. This document will be read directly by the next Claude Code session via \`Read\`.
-
-### Step 3: Derive Metadata
-
-- **slug**: From $ARGUMENTS or task name. Kebab-case, max 50 chars (e.g., \`wrm-daemon-distribution\`, \`ci-setup\`)
-- **repo**: Parse \`git remote get-url origin\` output to extract owner and name
-- **tags**: \`topic:<slug>\` plus any relevant existing tags (check with \`sd list tags\`)
-- **keywords_en**: 3-7 English keywords for search
-
-### Step 4: Write to DB + Export
-
-Pipe the Markdown body to the handoff command. The command handles DB upsert and file export automatically:
+Run the command. If $ARGUMENTS is not empty, pass it as the scope hint:
 
 \`\`\`sh
-cat <<'HANDOFF_EOF' | sd handoff write --slug <slug> --repo-owner <owner> --repo-name <name> --tags topic:<slug> --stdin --output compact
-<full Markdown body here>
-HANDOFF_EOF
+sd handoff generate --scope "$ARGUMENTS"
 \`\`\`
 
-If a handoff with the same slug already exists (active), it will be updated in place.
-Compact output returns only the handoff ID, slug, status, update time, and exported file path.
+With no arguments, run \`sd handoff generate\` alone.
 
-The output JSON includes \`file_path\` — the exported Markdown location.
+The command runs several Codex passes and takes several minutes. Do not run anything else while waiting.
 
-### Step 5: Present
+### Step 2: Present
 
-Display the result to the user in Japanese:
+On success the command prints one JSON object. Every path in it is absolute — report paths **exactly as printed**, never shortened, relativized, or rewritten with \`~\`.
 
 \`\`\`
 ハンドオフを記録しました。
 
+**Title**: <title>
 **Slug**: <slug>
 **File**: <file_path>
+**Review**: <review.rounds_run> ラウンド / 修正 <review.revisions> 回 / 判定 <review.verdict>
 
 次のセッションで以下のコマンドで読み込めます:
   Read <file_path>
   sd handoff get <slug>
 \`\`\`
 
+When \`review.blockers\` is greater than 0, say so explicitly — the document was stored with an
+"Unresolved review findings" section listing what Codex could not clear, and the user may want to
+rerun with a higher \`--review-rounds\`:
+
+\`\`\`
+⚠ 未解決の指摘が <review.blockers> 件あります（本文末尾の "Unresolved review findings" に記載）。
+\`\`\`
+
+### Step 3: On failure
+
+The command exits non-zero with \`Error: <reason>\` on stderr and writes nothing. Report the reason to the user in Japanese and stop.
+
+**Do NOT write the handoff yourself.** Generation belongs to Codex; there is no Claude-side fallback. Common causes and the flag that addresses them:
+
+- transcript could not be resolved → \`--transcript <path>\`, \`--session-id <id>\`, or \`--allow-latest-fallback\`
+- \`codex\` not found → the Codex CLI is not installed; the user must fix that
+- timeout → \`--timeout-seconds <n>\` (default 1800, applied per Codex pass)
+- transcript too large → \`--max-transcript-chars <n>\` (default 300000) or \`--from-turn\` / \`--to-turn\`
+
 ## Constraints
 
-- This skill is **non-interactive**. Do NOT use AskUserQuestion.
+- **Never read the handoff.** Do not \`Read\` \`file_path\`, do not run \`sd handoff get\`, do not \`cat\` the exported Markdown. The document is written for the *next* session; pulling it into this session's context wastes it and gives you nothing. The command deliberately never prints the body — do not go looking for it.
+- Do NOT gather context yourself — no sub-agents, no \`git\` inspection, no file reads. The command does all of it.
+- Do NOT compose, review, or edit the handoff body. The review pass is Codex's job, and its verdict is final.
 - Do NOT modify any code — this is a recording-only skill.
-- Do NOT enter plan mode (no EnterPlanMode).
-- Write the handoff directly — do NOT ask for confirmation before DB writes.
-- Keep context gathering lightweight — max 1 sub-agent launch.
-- If the handoff body would be very short (< 5 lines), that's fine — not every handoff needs to be comprehensive. Capture what matters for the next session.
+- Do NOT use AskUserQuestion, and do NOT enter plan mode.
+- Run the command directly — do NOT ask for confirmation first.
 
-${ctx.commandDocs(["handoff", "node", "link", "list"])}
+${ctx.commandDocs(["handoff"])}
 `;
 }
