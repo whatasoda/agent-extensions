@@ -35,6 +35,7 @@ packages/soda/
     cli/                # CLI dispatcher and command handlers
       commands/         # node, tag, link, list, decision, skill, agent, review
     core/               # Database, types, kinds, search, schema
+    handoff/            # Codex-backed handoff generation (transcript → codex exec → Markdown)
     tui/                # Ink/React read-only TUI
     setup/              # Global install helper
   skills/               # Skill body .md files (sd skill print reads these)
@@ -68,6 +69,7 @@ sd tag add|remove                         # Node tagging
 sd link create|delete|list                # Typed directional links
 sd list kinds|tags                         # Metadata listing
 sd decision create|list                   # Design decision management
+sd handoff generate|write|list|get|complete  # Session handoffs (generate = Codex authors, reviews, revises)
 sd skill print <name>                     # Output skill body for marketplace stubs
 sd agent print <name>                     # Output agent body for marketplace stubs
 sd review detect-base-branch              # Git branch detection utility

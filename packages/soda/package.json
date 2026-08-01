@@ -21,11 +21,12 @@
     "dist/"
   ],
   "dependencies": {
-    "ink": "latest",
     "@inkjs/ui": "latest",
+    "@whatasoda/agent-delegator": "^0.1.0-alpha.13",
+    "ink": "latest",
     "react": "latest",
-    "zod": "latest",
-    "ulid": "latest"
+    "ulid": "latest",
+    "zod": "latest"
   },
   "devDependencies": {
     "@types/react": "latest",

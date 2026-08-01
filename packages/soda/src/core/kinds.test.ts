@@ -35,6 +35,23 @@ describe("listRegisteredKinds", () => {
   });
 });
 
+describe("handoff kind", () => {
+  it("keeps the codex provenance properties", () => {
+    const result = validateProperties("handoff", {
+      slug: "codex-handoff",
+      generated_by: "codex",
+      model: "gpt-5.4",
+      keywords_en: ["handoff", "codex"],
+    });
+    expect(result).toMatchObject({
+      status: "active",
+      slug: "codex-handoff",
+      generated_by: "codex",
+      model: "gpt-5.4",
+    });
+  });
+});
+
 describe("decision kind", () => {
   it("accepts valid input with constraint/why/scope", () => {
     const result = validateProperties("decision", {
